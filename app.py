@@ -841,4 +841,564 @@ def build_pitch_node_html(p, is_selected=False, bench_slot=None):
     chance = p.get("chance_of_playing_next_round")
     flag_badge = ""
     if chance is not None and chance < 100:
-        flag_badge
+        flag_badge = f"<div class='badge-flag'>{'OUT' if chance == 0 else f'{chance}%'}</div>"
+    elif bench_slot:
+        flag_badge = f"<div class='badge-flag' style='background:#334155;'>SUB {bench_slot}</div>"
+
+    runway = p.get("runway", [])
+    nxt = runway[0] if runway else {"opp": "TBD", "venue": "H", "fdr": 3}
+    fdr_c = f"fdr-{nxt['fdr']}"
+    sel_c = "selected" if is_selected else ""
+    price = p.get("now_cost", 50) / 10.0
+
+    return f"""
+    <div class="pitch-node {sel_c}">
+      <div class="node-avatar-wrap">
+        <img src="{img_url}" referrerpolicy="no-referrer" loading="lazy"
+             onerror="this.onerror=null;this.src='{fallback_svg}';" />
+        {cap_badge}
+        {flag_badge}
+      </div>
+      <div class="node-name">{p.get('web_name')}</div>
+      <div class="node-meta">£{price:.1f}m &bull; {p.get('xp_next')}xP</div>
+      <div class="fdr-pill {fdr_c}">{nxt['opp']} ({nxt['venue']})</div>
+    </div>
+    """
+
+# =========================================================
+# TAB 1: TACTICAL PITCH & INTERACTIVE PLAYER DOSSIER
+# =========================================================
+with tab_pitch:
+    col_left, col_right = st.columns([1.35, 1], gap="medium")
+
+    with col_left:
+        gks = [p for p in starting_xi if p.get("element_type") == 1]
+        defs = [p for p in starting_xi if p.get("element_type") == 2]
+        mids = [p for p in starting_xi if p.get("element_type") == 3]
+        fwds = [p for p in starting_xi if p.get("element_type") == 4]
+        bench_sorted = sorted(bench_xi, key=lambda x: x.get("pick_pos", 12))
+
+        sel_pid = st.session_state.get("selected_pid")
+
+        # Build Pure CSS Grid Pitch in ONE markdown call (never breaks or squishes)
+        gk_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in gks)
+        def_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in defs)
+        mid_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in mids)
+        fwd_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in fwds)
+
+        st.markdown(f"""
+        <div class="pitch-wrapper">
+          <div class="pitch-row">{gk_html}</div>
+          <div class="pitch-row">{def_html}</div>
+          <div class="pitch-row">{mid_html}</div>
+          <div class="pitch-row">{fwd_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Bench Tray
+        bench_html = "".join(
+            build_pitch_node_html(p, p["id"] == sel_pid, bench_slot=i+1)
+            for i, p in enumerate(bench_sorted)
+        )
+        st.markdown(f"""
+        <div class="bench-tray">
+          <div class="bench-label">
+            <span>🪑 Priority Auto-Sub Bench</span>
+            <span style="color:#10B981;">1 GK + 3 Outfield</span>
+          </div>
+          <div class="pitch-row" style="margin-bottom:0;">{bench_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_right:
+        # Clean Mobile-Friendly Player Selector Pill Bar
+        squad_options = {p["id"]: f"{'⭐ ' if p.get('is_captain') else ''}{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m)" for p in full_squad}
+        if squad_options:
+            chosen_pid = st.selectbox(
+                "🔍 Select Squad Player to Inspect in Dossier:",
+                options=list(squad_options.keys()),
+                format_func=lambda x: squad_options[x],
+                index=list(squad_options.keys()).index(sel_pid) if sel_pid in squad_options else 0
+            )
+            if chosen_pid != sel_pid:
+                st.session_state["selected_pid"] = chosen_pid
+                st.rerun()
+
+        sp = elements_map.get(st.session_state.get("selected_pid"))
+        if sp:
+            code = str(sp.get("code") or sp.get("photo", "").split(".")[0].lstrip("p"))
+            p_img = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
+            p_svg = generate_svg_kit(sp.get("team_short", "EPL"), is_gk=(sp.get("element_type") == 1))
+            pos_name = {1: "Goalkeeper", 2: "Defender", 3: "Midfielder", 4: "Forward"}.get(sp.get("element_type"), "Player")
+            p_price = sp.get("now_cost", 50) / 10.0
+            pts_per_m = round(sp.get("total_points", 0) / max(p_price, 4.0), 1)
+
+            # Build 5-GW Runway HTML
+            runway_chips = ""
+            for r in sp.get("runway", [])[:5]:
+                runway_chips += f"""
+                <div style="flex:1; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:8px 4px; text-align:center;">
+                  <div style="font-size:9.5px; color:var(--text-secondary);">GW{r['gw']}</div>
+                  <div style="font-size:11.5px; font-weight:700; color:#FFF; margin:3px 0;">{r['opp']} ({r['venue']})</div>
+                  <span class="fdr-pill fdr-{r['fdr']}" style="display:inline-block; width:auto; padding:1px 6px;">FDR {r['fdr']}</span>
+                </div>
+                """
+
+            news_banner = ""
+            if sp.get("news"):
+                news_banner = f"""
+                <div style="background:rgba(244,63,94,0.12); border-left:3px solid #F43F5E; padding:10px 12px; border-radius:8px; font-size:12px; color:#FDA4AF; margin-bottom:14px;">
+                  <strong>Medical / Status Alert:</strong> {sp.get('news')}
+                </div>
+                """
+
+            # Verdict logic
+            if sp.get("xp_next", 0) >= 5.5:
+                verdict_tag, verdict_col = "CAPTAIN / LOCK STARTER", "#10B981"
+            elif sp.get("xp_next", 0) >= 3.8:
+                verdict_tag, verdict_col = "SOLID ROTATION HOLD", "#06B6D4"
+            else:
+                verdict_tag, verdict_col = "TRANSFER WATCH / BENCH", "#F59E0B"
+
+            st.markdown(f"""
+            <div class="dossier-card">
+              <div class="dossier-top">
+                <img class="dossier-avatar" src="{p_img}" referrerpolicy="no-referrer"
+                     onerror="this.onerror=null;this.src='{p_svg}';" />
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <span style="font-size:20px; font-weight:800; color:#FFF;">{sp.get('first_name')} {sp.get('second_name')}</span>
+                    <span style="font-size:10px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(16,185,129,0.15); color:{verdict_col}; border:1px solid {verdict_col};">
+                      {verdict_tag}
+                    </span>
+                  </div>
+                  <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">
+                    {pos_name} &bull; <strong>{teams_map.get(sp.get('team'), {}).get('name', 'Premier League')}</strong> &bull; Ownership: {sp.get('selected_by_percent')}%
+                  </div>
+                </div>
+              </div>
+
+              {news_banner}
+
+              <div class="stat-grid-4">
+                <div class="stat-box">
+                  <div class="stat-box-lbl">Current Price</div>
+                  <div class="stat-box-val">£{p_price:.1f}m</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">GW{current_gw} xP</div>
+                  <div class="stat-box-val" style="color:#10B981;">{sp.get('xp_next')}</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">5-GW Projected</div>
+                  <div class="stat-box-val" style="color:#06B6D4;">{sp.get('xp_5gw')}p</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">Form Rating</div>
+                  <div class="stat-box-val">{sp.get('form')}</div>
+                </div>
+              </div>
+
+              <div class="stat-grid-4">
+                <div class="stat-box">
+                  <div class="stat-box-lbl">xG + xA (xGI)</div>
+                  <div class="stat-box-val">{sp.get('expected_goal_involvements', '0.00')}</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">ICT Threat/Index</div>
+                  <div class="stat-box-val">{sp.get('ict_index', '0.0')}</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">Season Points</div>
+                  <div class="stat-box-val">{sp.get('total_points', 0)}</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-box-lbl">Value (Pts/£m)</div>
+                  <div class="stat-box-val">{pts_per_m}</div>
+                </div>
+              </div>
+
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin:14px 0 8px 0;">
+                Next 5 Fixtures Runway (Avg FDR: {sp.get('avg_5_fdr')})
+              </div>
+              <div style="display:flex; gap:8px;">
+                {runway_chips}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+# =========================================================
+# TAB 2: TOP 3 TRANSFER MATRIX & WHAT-IF SIMULATOR
+# =========================================================
+with tab_transfers:
+    st.markdown("""
+    <div class="dossier-card" style="padding:16px 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0; font-size:17px; font-weight:800; color:#FFF;">🔄 ALGORITHMIC SQUAD AUDIT: TOP 3 SELL CANDIDATES</h3>
+          <p style="margin:4px 0 0 0; font-size:12.5px; color:var(--text-secondary);">
+            Ranked by injury risk, depressed form, and upcoming 5-GW fixture difficulty. Each sell candidate displays the top 3 in-budget replacements.
+          </p>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    squad_ids = {p["id"] for p in full_squad}
+    # Score every squad player for replacement urgency
+    sell_rankings = []
+    for p in full_squad:
+        chance = p.get("chance_of_playing_next_round")
+        chance_val = 100 if chance is None else chance
+        urgency = ((100 - chance_val) * 0.55) + ((6.5 - min(p.get("xp_next", 3.0), 6.5)) * 4.2) + (p.get("avg_5_fdr", 3.0) * 2.5)
+        sell_rankings.append((urgency, p))
+
+    sell_rankings.sort(key=lambda x: x[0], reverse=True)
+
+    for idx, (urg_score, sell_p) in enumerate(sell_rankings[:3]):
+        s_cost = sell_p.get("now_cost", 50) / 10.0
+        max_avail = round(s_cost + bank_now, 1)
+        pos_id = sell_p.get("element_type", 3)
+
+        reason_str = sell_p.get("news") or (
+            f"Low projected output ({sell_p.get('xp_next')} xP) & tough 5-GW fixture runway (Avg FDR {sell_p.get('avg_5_fdr')})"
+        )
+
+        # Find Top 3 Replacements within budget
+        replacements = [
+            cand for cand in elements_map.values()
+            if cand["id"] not in squad_ids
+            and cand.get("element_type") == pos_id
+            and (cand.get("now_cost", 999) / 10.0) <= max_avail
+            and (cand.get("chance_of_playing_next_round") is None or cand.get("chance_of_playing_next_round") >= 75)
+        ]
+        replacements.sort(key=lambda x: x.get("xp_5gw", 0), reverse=True)
+        top_3_buys = replacements[:3]
+
+        buy_cards_html = ""
+        for b_i, bp in enumerate(top_3_buys):
+            b_cost = bp.get("now_cost", 50) / 10.0
+            xp_gain_5 = round(bp.get("xp_5gw", 0) - sell_p.get("xp_5gw", 0), 1)
+            nxt_fix = bp["runway"][0] if bp.get("runway") else {"opp": "TBD", "venue": "H", "fdr": 3}
+            buy_cards_html += f"""
+            <div class="buy-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:14px; font-weight:800; color:#FFF;">#{b_i+1} {bp.get('web_name')} ({bp.get('team_short')})</span>
+                <span style="font-size:11px; font-weight:800; color:#10B981; background:rgba(16,185,129,0.18); padding:2px 8px; border-radius:6px;">
+                  +{xp_gain_5} xP (5GW)
+                </span>
+              </div>
+              <div style="font-size:12px; color:var(--text-secondary); margin:6px 0;">
+                Price: <strong>£{b_cost:.1f}m</strong> (Leaves £{max_avail - b_cost:.1f}m) &bull; Next: <strong>{nxt_fix['opp']} ({nxt_fix['venue']})</strong>
+              </div>
+              <div style="display:flex; gap:8px; font-size:11px; font-family:'JetBrains Mono', monospace; color:#CBD5E1;">
+                <span>GW xP: <strong>{bp.get('xp_next')}</strong></span> &bull;
+                <span>Form: <strong>{bp.get('form')}</strong></span> &bull;
+                <span>xGI: <strong>{bp.get('expected_goal_involvements')}</strong></span>
+              </div>
+            </div>
+            """
+
+        st.markdown(f"""
+        <div class="sell-banner">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span style="font-size:11px; font-weight:800; background:#F43F5E; color:#FFF; padding:3px 8px; border-radius:6px; margin-right:8px;">
+                SELL PRIORITY #{idx+1}
+              </span>
+              <span style="font-size:16px; font-weight:800; color:#FFF;">{sell_p.get('web_name')} ({sell_p.get('team_short')})</span>
+            </div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:12.5px; color:#F8FAFC;">
+              Sale Value: <strong>£{s_cost:.1f}m</strong> &bull; Max Budget: <strong style="color:#10B981;">£{max_avail:.1f}m</strong>
+            </div>
+          </div>
+          <div style="font-size:12px; color:#FDA4AF; margin-top:6px;">
+            <strong>Audit Trigger:</strong> {reason_str}
+          </div>
+          <div class="buy-grid-3">
+            {buy_cards_html}
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # INTERACTIVE WHAT-IF SIMULATOR
+    st.markdown("""
+    <div class="dossier-card" style="margin-top:24px;">
+      <h3 style="margin:0 0 12px 0; font-size:17px; font-weight:800; color:#06B6D4;">
+        🧪 INTERACTIVE WHAT-IF TRANSFER & HIT SIMULATOR
+      </h3>
+    """, unsafe_allow_html=True)
+
+    sim_c1, sim_c2, sim_c3 = st.columns([1.2, 1.2, 0.8])
+    out_map = {p["id"]: f"{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m | {p['xp_next']} xP)" for p in full_squad}
+    with sim_c1:
+        sim_out_id = st.selectbox("1. Select Player to Transfer OUT:", options=list(out_map.keys()), format_func=lambda x: out_map[x])
+
+    out_p = elements_map.get(sim_out_id, full_squad[0] if full_squad else {})
+    avail_budget = round((out_p.get("now_cost", 50) / 10.0) + bank_now, 1)
+    eligible_ins = [
+        p for p in elements_map.values()
+        if p["id"] not in squad_ids and p.get("element_type") == out_p.get("element_type", 3)
+        and (p.get("now_cost", 999) / 10.0) <= avail_budget
+    ]
+    eligible_ins.sort(key=lambda x: x.get("xp_5gw", 0), reverse=True)
+    in_map = {p["id"]: f"{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m | {p['xp_next']} xP)" for p in eligible_ins}
+
+    with sim_c2:
+        sim_in_id = st.selectbox(f"2. Select Target IN (Max £{avail_budget:.1f}m):", options=list(in_map.keys()), format_func=lambda x: in_map[x]) if in_map else None
+
+    with sim_c3:
+        take_hit = st.selectbox("3. Transfer Cost:", options=[0, -4], format_func=lambda x: "Free Transfer (0 pts)" if x == 0 else "-4 Point Hit")
+
+    if sim_in_id:
+        in_p = elements_map[sim_in_id]
+        gw1_net = round((in_p["xp_next"] - out_p["xp_next"]) + take_hit, 1)
+        gw5_net = round((in_p["xp_5gw"] - out_p["xp_5gw"]) + take_hit, 1)
+        new_bank_bal = round(avail_budget - (in_p["now_cost"] / 10.0), 1)
+        fdr_diff = round(in_p["avg_5_fdr"] - out_p["avg_5_fdr"], 2)
+
+        verdict_txt = "✅ RECOMMENDED MOVE" if gw5_net >= 4.0 else ("⚖️ MARGINAL / LUXURY SWAP" if gw5_net >= 0 else "⛔ HOLD TRANSFER")
+        verdict_c = "#10B981" if gw5_net >= 4.0 else ("#F59E0B" if gw5_net >= 0 else "#F43F5E")
+
+        st.markdown(f"""
+        <div class="stat-grid-4" style="margin-top:14px;">
+          <div class="stat-box">
+            <div class="stat-box-lbl">Immediate GW{current_gw} Net Impact</div>
+            <div class="stat-box-val" style="color:{'#10B981' if gw1_net >= 0 else '#F43F5E'};">{'+' if gw1_net >= 0 else ''}{gw1_net} xP</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-lbl">5-GW Cumulative Net Gain</div>
+            <div class="stat-box-val" style="color:{'#10B981' if gw5_net >= 0 else '#F43F5E'};">{'+' if gw5_net >= 0 else ''}{gw5_net} xP</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-lbl">Remaining Bank</div>
+            <div class="stat-box-val">£{new_bank_bal:.1f}m</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-lbl">Model Verdict</div>
+            <div class="stat-box-val" style="font-size:13px; color:{verdict_c};">{verdict_txt}</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# =========================================================
+# TAB 3: LIVE MINI-LEAGUE STANDINGS & RIVAL SPY ENGINE
+# =========================================================
+with tab_league:
+    classic_leagues = [
+        lg for lg in entry_data.get("leagues", {}).get("classic", [])
+        if lg.get("league_type") == "x" or lg.get("id", 0) > 350
+    ]
+    if not classic_leagues:
+        classic_leagues = entry_data.get("leagues", {}).get("classic", [])
+
+    if classic_leagues:
+        lg_map = {lg["id"]: f"{lg['name']} (Your Rank: #{lg.get('entry_rank', '?')})" for lg in classic_leagues}
+        sel_lg_id = st.selectbox("🏆 Select Mini-League to Analyze:", options=list(lg_map.keys()), format_func=lambda x: lg_map[x])
+        standings_json = fetch_league_standings(sel_lg_id)
+        rows = standings_json.get("standings", {}).get("results", []) if standings_json else []
+    else:
+        rows = []
+
+    if rows:
+        leader_pts = rows[0]["total"]
+        my_row = next((r for r in rows if r["entry"] == team_id), None)
+        my_pts = my_row["total"] if my_row else total_pts
+        gap_to_first = leader_pts - my_pts
+
+        # Choose top rival (if user is 1st, pick 2nd place; otherwise pick 1st place)
+        rival_Candidates = [r for r in rows[:10] if r["entry"] != team_id]
+        rival_map = {r["entry"]: f"#{r['rank']} {r['entry_name']} ({r['player_name']}) - {r['total']} pts" for r in rival_Candidates}
+
+        col_tbl, col_spy = st.columns([1.15, 1], gap="medium")
+
+        with col_tbl:
+            table_rows_html = ""
+            for r in rows[:12]:
+                is_me = (r["entry"] == team_id)
+                row_cls = "ml-row-me" if is_me else ""
+                gap = r["total"] - my_pts
+                gap_str = "YOU" if is_me else (f"+{gap}" if gap > 0 else f"{gap}")
+                mv = r.get("last_rank", r["rank"]) - r["rank"]
+                mv_icon = "🟢" if mv > 0 else ("🔴" if mv < 0 else "⚪")
+                table_rows_html += f"""
+                <tr class="{row_cls}">
+                  <td>{mv_icon} #{r['rank']}</td>
+                  <td><strong>{r['entry_name']}</strong><br><span style="font-size:11px; color:var(--text-secondary);">{r['player_name']}</span></td>
+                  <td style="font-family:'JetBrains Mono', monospace;">{r['event_total']}</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:700;">{r['total']}</td>
+                  <td style="font-family:'JetBrains Mono', monospace; color:{'#F43F5E' if gap > 0 else '#10B981'};">{gap_str}</td>
+                </tr>
+                """
+
+            st.markdown(f"""
+            <div class="dossier-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:16px; font-weight:800; color:#FFF;">📊 Live Mini-League Table</span>
+                <span style="font-size:12px; font-weight:700; color:#10B981;">
+                  {'Leading League!' if gap_to_first == 0 else f'{gap_to_first} pts behind 1st'}
+                </span>
+              </div>
+              <table class="ml-table">
+                <thead>
+                  <tr><th>Rank</th><th>Team & Manager</th><th>GW</th><th>Total</th><th>vs You</th></tr>
+                </thead>
+                <tbody>{table_rows_html}</tbody>
+              </table>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_spy:
+            st.markdown("<div class='dossier-card'><h4 style='margin:0 0 10px 0; color:#FFF;'>🕵️ Head-to-Head Rival Spy & Strategy</h4>", unsafe_allow_html=True)
+            if rival_map:
+                sel_rival_id = st.selectbox("Select Opponent to Compare:", options=list(rival_map.keys()), format_func=lambda x: rival_map[x])
+                rival_picks_json = fetch_rival_picks(sel_rival_id, current_gw)
+                if rival_picks_json and "picks" in rival_picks_json:
+                    rival_xi_ids = {pk["element"] for pk in rival_picks_json["picks"] if pk.get("position", 1) <= 11}
+                    my_xi_ids = {p["id"] for p in starting_xi}
+
+                    shared_ids = my_xi_ids.intersection(rival_xi_ids)
+                    my_diffs = [elements_map[i] for i in (my_xi_ids - rival_xi_ids) if i in elements_map]
+                    their_diffs = [elements_map[i] for i in (rival_xi_ids - my_xi_ids) if i in elements_map]
+
+                    my_diff_str = ", ".join(f"<strong>{p['web_name']}</strong> ({p['xp_next']}xP)" for p in my_diffs) or "None"
+                    their_diff_str = ", ".join(f"<strong>{p['web_name']}</strong> ({p['xp_next']}xP)" for p in their_diffs) or "None"
+
+                    posture = "AGGRESSIVE DIFFERENTIAL" if gap_to_first > 25 else "DEFENSIVE BLOCKING"
+                    posture_advice = (
+                        "You are chasing points. Avoid copying their template picks; captain your highest-ceiling differential."
+                        if gap_to_first > 25 else
+                        "You are in a tight race or leading. Protect your rank by matching their high-ownership captain and upgrading weak bench links."
+                    )
+
+                    st.markdown(f"""
+                    <div style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.3); border-radius:12px; padding:12px; margin:10px 0;">
+                      <div style="font-size:11px; font-weight:800; color:#06B6D4;">RECOMMENDED TACTICAL POSTURE: {posture}</div>
+                      <div style="font-size:12px; color:#E2E8F0; margin-top:4px;">{posture_advice}</div>
+                    </div>
+                    <div style="font-size:12.5px; margin-top:12px;">
+                      <p>🤝 <strong>Template Overlap ({len(shared_ids)}/11 Starters):</strong> Points from these players cancel out head-to-head.</p>
+                      <p style="color:#34D399;">⚔️ <strong>Your Attacking Differentials ({len(my_diffs)}):</strong><br>{my_diff_str}</p>
+                      <p style="color:#FB7185;">🛡️ <strong>Rival Threat Differentials ({len(their_diffs)}):</strong><br>{their_diff_str}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("No classic mini-leagues found for this Team ID.")
+
+# =========================================================
+# TAB 4: CONTEXT-AWARE AI TACTICAL ADVISOR
+# =========================================================
+with tab_ai:
+    st.markdown("""
+    <div class="dossier-card" style="padding:16px 20px;">
+      <h3 style="margin:0; font-size:17px; font-weight:800; color:#10B981;">🤖 KINGS COUNTY FC AI LINEUP & STRATEGY ADVISOR</h3>
+      <p style="margin:4px 0 0 0; font-size:12.5px; color:var(--text-secondary);">
+        Grounded in your live GW{gw} squad, £{bank:.1f}m bank balance, 5-GW xP projections, and mini-league gap. Tap a quick-action prompt or ask a custom question.
+      </p>
+    </div>
+    """.format(gw=current_gw, bank=bank_now), unsafe_allow_html=True)
+
+    if "ai_messages" not in st.session_state:
+        st.session_state["ai_messages"] = [
+            {"role": "assistant", "content": f"Welcome to the Tactical Room, Manager. Your Starting XI is projected for **{team_xp_total} xP** in GW{current_gw} with **£{bank_now:.1f}m** in the bank. Select a quick-action analysis below or ask any specific transfer/captaincy question."}
+        ]
+
+    # Deterministic Squad-Aware Tactical Engine (Instant, Accurate, Zero Clunkiness)
+    def generate_tactical_response(prompt_text):
+        q = prompt_text.lower()
+        sorted_by_xp = sorted(starting_xi, key=lambda x: x.get("xp_next", 0), reverse=True)
+        top_cap = sorted_by_xp[0] if sorted_by_xp else {}
+        vc_pick = sorted_by_xp[1] if len(sorted_by_xp) > 1 else {}
+        top_sell = sell_rankings[0][1] if sell_rankings else {}
+
+        # Optional Live Gemini / OpenAI API hook if configured in secrets
+        gemini_key = st.secrets.get("GEMINI_API_KEY", "")
+        if gemini_key:
+            try:
+                squad_context = ", ".join(f"{p['web_name']} ({p['team_short']}, £{p['now_cost']/10:.1f}m, {p['xp_next']}xP)" for p in full_squad)
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": f"You are the elite FPL Tactical AI for Kings County FC. Current GW: {current_gw}. Bank: £{bank_now:.1f}m. Squad: {squad_context}. Answer concisely with concrete numbers: {prompt_text}"}]}]
+                }
+                r = requests.post(url, json=payload, timeout=10)
+                if r.status_code == 200:
+                    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception:
+                pass
+
+        if "captain" in q:
+            return (
+                f"### ©️ GW{current_gw} Captaincy Matrix\n"
+                f"1. **Primary Captain — {top_cap.get('web_name')} ({top_cap.get('team_short')}):** Projected for **{top_cap.get('xp_next')} xP** "
+                f"(Form `{top_cap.get('form')}`, xGI `{top_cap.get('expected_goal_involvements')}`). Best combination of minutes security and fixture ceiling.\n"
+                f"2. **Vice-Captain — {vc_pick.get('web_name')} ({vc_pick.get('team_short')}):** Projected for **{vc_pick.get('xp_next')} xP**. Safe high-floor pivot.\n"
+                f"*Recommendation:* Lock the armband on **{top_cap.get('web_name')}**."
+            )
+        elif "transfer" in q or "sell" in q or "buy" in q:
+            s_cost = top_sell.get("now_cost", 50) / 10.0
+            max_b = round(s_cost + bank_now, 1)
+            cands = [
+                c for c in elements_map.values()
+                if c["id"] not in squad_ids and c.get("element_type") == top_sell.get("element_type", 3)
+                and (c.get("now_cost", 999) / 10.0) <= max_b
+            ]
+            cands.sort(key=lambda x: x.get("xp_5gw", 0), reverse=True)
+            best_in = cands[0] if cands else {}
+            gain_5 = round(best_in.get("xp_5gw", 0) - top_sell.get("xp_5gw", 0), 1)
+            return (
+                f"### 🔄 Priority Transfer Directive\n"
+                f"* **Transfer OUT:** **{top_sell.get('web_name')} ({top_sell.get('team_short')})** (£{s_cost:.1f}m) — Projected for only **{top_sell.get('xp_next')} xP** next GW with an average 5-GW FDR of `{top_sell.get('avg_5_fdr')}`.\n"
+                f"* **Top Target IN:** **{best_in.get('web_name')} ({best_in.get('team_short')})** (£{best_in.get('now_cost', 50)/10:.1f}m) — Delivers **+{gain_5} net xP** over the next 5 Gameweeks while leaving **£{max_b - (best_in.get('now_cost',50)/10):.1f}m** in the bank."
+            )
+        elif "bench" in q or "lineup" in q:
+            outfield_bench = [p for p in bench_xi if p.get("element_type") != 1]
+            outfield_bench.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
+            order_str = " → ".join(f"**{i+1}. {p['web_name']}** ({p['xp_next']} xP)" for i, p in enumerate(outfield_bench))
+            return (
+                f"### 🪑 Optimal Auto-Sub Bench Order\n"
+                f"Based on GW{current_gw} Expected Points ($xP$), set your outfield bench priority to:\n"
+                f"{order_str}\n\n"
+                f"*Check:* Ensure no bench player has a higher $xP$ than your lowest projected starter (**{sorted_by_xp[-1].get('web_name')}** at `{sorted_by_xp[-1].get('xp_next')} xP`)."
+            )
+        else:
+            return (
+                f"### 📊 Executive Tactical Summary (GW{current_gw})\n"
+                f"* **Projected Starting XI Score:** `{team_xp_total} pts`\n"
+                f"* **Optimal Captain:** **{top_cap.get('web_name')}** (`{top_cap.get('xp_next')} xP`)\n"
+                f"* **Weakest Starting Link:** **{sorted_by_xp[-1].get('web_name')}** (`{sorted_by_xp[-1].get('xp_next')} xP`)\n"
+                f"* **Available War Chest:** `£{bank_now:.1f}m` in bank (`£{val_now:.1f}m` total squad value)."
+            )
+
+    # Quick-Action Chips
+    qa1, qa2, qa3, qa4 = st.columns(4)
+    if qa1.button("👑 Optimal Captaincy", use_container_width=True):
+        prompt = "Who should I captain and vice-captain this week?"
+        st.session_state["ai_messages"].append({"role": "user", "content": prompt})
+        st.session_state["ai_messages"].append({"role": "assistant", "content": generate_tactical_response(prompt)})
+        st.rerun()
+    if qa2.button("🔄 Best Transfer Move", use_container_width=True):
+        prompt = "What is my highest-value transfer move within budget?"
+        st.session_state["ai_messages"].append({"role": "user", "content": prompt})
+        st.session_state["ai_messages"].append({"role": "assistant", "content": generate_tactical_response(prompt)})
+        st.rerun()
+    if qa3.button("🪑 Audit Bench Order", use_container_width=True):
+        prompt = "How should I order my bench for auto-subs?"
+        st.session_state["ai_messages"].append({"role": "user", "content": prompt})
+        st.session_state["ai_messages"].append({"role": "assistant", "content": generate_tactical_response(prompt)})
+        st.rerun()
+    if qa4.button("📊 Full GW Briefing", use_container_width=True):
+        prompt = "Give me a full tactical summary for this gameweek."
+        st.session_state["ai_messages"].append({"role": "user", "content": prompt})
+        st.session_state["ai_messages"].append({"role": "assistant", "content": generate_tactical_response(prompt)})
+        st.rerun()
+
+    for msg in st.session_state["ai_messages"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_q = st.chat_input("Ask about specific player comparisons, -4pt hits, or mini-league strategy...")
+    if user_q:
+        st.session_state["ai_messages"].append({"role": "user", "content": user_q})
+        st.session_state["ai_messages"].append({"role": "assistant", "content": generate_tactical_response(user_q)})
+        st.rerun()
