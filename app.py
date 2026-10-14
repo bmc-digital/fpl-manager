@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import urllib.request
 
-# Clean HTML helper: strips all leading/trailing indentation so Markdown never triggers code blocks
+# Clean HTML helper: strips all leading/trailing whitespace so Markdown never triggers code blocks
 def clean_html(raw_html: str) -> str:
     lines = [line.strip() for line in raw_html.strip().split('\n') if line.strip()]
     return "".join(lines)
@@ -122,6 +122,7 @@ m3_styles = clean_html("""
         border-radius: 50%;
         background-color: #212430;
         border: 1.5px solid rgba(255, 255, 255, 0.14);
+        display: block;
     }
     .avatar-frame img.crest-img {
         position: absolute;
@@ -305,6 +306,7 @@ if team_id:
             """)
             st.markdown(hero_html, unsafe_allow_html=True)
 
+            # Build enriched player squad list with working CDN URLs
             squad_list = []
             for pick in picks_data["picks"]:
                 p = elements[pick["element"]]
@@ -314,8 +316,10 @@ if team_id:
                 
                 photo_code = str(p.get("code", "")).replace(".jpg", "").replace("p", "")
                 team_code = teams[p["team"]]["code"]
-                photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{photo_code}.png"
-                badge_url = f"https://resources.premierleague.com/premierleague/badges/70/t{team_code}.png"
+                
+                # Verified Premier League CDN paths
+                photo_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{photo_code}.png"
+                badge_url = f"https://resources.premierleague.com/premierleague/badges/t{team_code}.png"
 
                 squad_list.append({
                     "data": p,
@@ -449,7 +453,7 @@ if team_id:
                 </div>
                 """)
 
-            # TAB 1: STARTING XI
+            # --- TAB 1: STARTING XI ---
             with tab_pitch:
                 st.markdown(clean_html(f"""
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
@@ -486,7 +490,6 @@ if team_id:
                 """)
                 st.markdown(dugout_html, unsafe_allow_html=True)
 
-                # Interactive Modal Inspection Selector
                 st.markdown("---")
                 st.markdown("##### Detailed Scouting Report")
                 starter_names = [f"{p['data']['web_name']} ({p['pos']}) - {p['opp']}" for p in squad_list]
@@ -497,90 +500,124 @@ if team_id:
                     else:
                         st.info("Full stats for " + squad_list[inspect_idx]["data"]["web_name"])
 
-            # TAB 2: TRANSFERS
+            # --- TAB 2: TRANSFERS (RANKED TOP 3 OUT + TOP 3 IN FOR EACH) ---
             with tab_transfers:
-                st.markdown("### Transfer Guidance")
-                sell_candidates = []
+                st.markdown("### Strategic Transfer Prioritization")
+                st.caption("Ranked by replacement urgency and projected points upside. Below are your top 3 candidates to divest and the optimal 3 acquisitions for each.")
+
+                transfer_out_eval = []
                 for p_item in squad_list:
                     p = p_item["data"]
+                    pos_id = p_item["pos_id"]
+                    sell_val = p["now_cost"] / 10
+                    max_budget = sell_val + bank
                     fdr = p_item["fdr"]
-                    form = float(p.get("form", 0.0))
+                    form_val = float(p.get("form", 0.0))
+
+                    replacements = []
+                    for cand in bootstrap["elements"]:
+                        if (cand["element_type"] == pos_id and cand["status"] == "a" and 
+                            cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= max_budget):
+                            c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
+                            pot = calculate_potential_score(cand, c_fdr)
+                            c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
+                            c_team_code = teams[cand['team']]['code']
+                            replacements.append({
+                                "data": cand,
+                                "score": pot,
+                                "fdr": c_fdr,
+                                "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
+                                "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{c_photo_code}.png",
+                                "badge": f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png",
+                                "team_name": teams[cand['team']]['name']
+                            })
+
+                    replacements.sort(key=lambda x: x["score"], reverse=True)
+                    top_repl = replacements[0] if replacements else None
+                    max_upside = round(top_repl["score"] - p_item["score"], 2) if top_repl else 0.0
+
                     urgency = 0
                     reasons = []
-
                     if p["status"] != "a":
                         chance = p.get("chance_of_playing_next_round")
-                        urgency += 10 if (chance is not None and chance <= 25) else 6
-                        reasons.append(f"Flagged ({chance}% play chance)" if chance else "Injured / Suspended")
-                    if form < 2.5:
+                        if chance is not None and chance <= 25:
+                            urgency += 12
+                            reasons.append(f"Severe injury or suspension ({chance}% availability)")
+                        else:
+                            urgency += 7
+                            reasons.append(f"Flagged fitness doubt ({chance}% chance)" if chance is not None else "Medical flag")
+                    
+                    if form_val < 2.5:
                         urgency += 3
-                        reasons.append("Cold Form (<2.5 pts)")
+                        reasons.append(f"Subdued rolling form ({form_val} pts/gm)")
+                    
                     if fdr >= 4:
                         urgency += 2
-                        reasons.append(f"Challenging Fixture (FDR {fdr})")
+                        reasons.append(f"Unfavorable fixture difficulty (FDR {fdr})")
 
-                    if urgency >= 4:
-                        sell_candidates.append({"player": p_item, "urgency": urgency, "reason": ", ".join(reasons)})
+                    if not reasons:
+                        reasons.append(f"Tactical upgrade window: Market yields a +{max_upside:.1f} pts projection upgrade within budget")
 
-                sell_candidates.sort(key=lambda x: x["urgency"], reverse=True)
+                    priority_score = (urgency * 1.5) + max(max_upside, 0.0)
+                    transfer_out_eval.append({
+                        "player_item": p_item,
+                        "priority_score": priority_score,
+                        "max_upside": max_upside,
+                        "primary_reason": "; ".join(reasons),
+                        "max_budget": max_budget,
+                        "sell_val": sell_val,
+                        "top_replacements": replacements[:3]
+                    })
 
-                if not sell_candidates:
-                    st.success("Your squad is currently in prime condition. No urgent transfers required.")
-                else:
-                    for target in sell_candidates[:2]:
-                        p_sell = target["player"]["data"]
-                        pos_id = p_sell["element_type"]
-                        sell_val = p_sell["now_cost"] / 10
-                        max_budget = sell_val + bank
+                transfer_out_eval.sort(key=lambda x: x["priority_score"], reverse=True)
+                top3_divestments = transfer_out_eval[:3]
 
-                        sell_card_html = clean_html(f"""
-                        <div class="app-card" style="border-left: 4px solid #ff3b5c; background-color: #1f1418;">
-                            <div style="display: inline-block; background-color: #ff3b5c; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">DIVESTMENT PRIORITY</div>
-                            <h4 style="margin: 8px 0 4px 0; color: #ffb4ab;">{p_sell['web_name']} ({positions[pos_id]}) — £{sell_val:.1f}m</h4>
-                            <p style="font-size: 13px; color: #c4c6d0; margin-bottom: 6px;">Evaluation: <strong>{target['reason']}</strong></p>
-                            <p style="font-size: 12px; color: #00e676;">Available Capital: <strong>£{max_budget:.1f}m</strong> (£{sell_val:.1f}m sale + £{bank:.1f}m bank balance)</p>
+                for rank_idx, divest in enumerate(top3_divestments, start=1):
+                    p_out = divest["player_item"]["data"]
+                    pos_name = divest["player_item"]["pos"]
+                    
+                    st.markdown(clean_html(f"""
+                    <div class="app-card" style="border-left: 4px solid #ff3b5c; margin-top: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <span style="background: #ff3b5c; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
+                                    DIVESTMENT PRIORITY #{rank_idx}
+                                </span>
+                                <h4 style="margin: 6px 0 2px 0; color: #f0f1f5;">{p_out['web_name']} ({pos_name}) — £{divest['sell_val']:.1f}m</h4>
+                                <div style="font-size: 13px; color: #ffb4ab; margin-bottom: 4px;">Strategic Rationale: <strong>{divest['primary_reason']}</strong></div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 12px; color: #8e92a2;">Available Capital</div>
+                                <div style="font-size: 16px; font-weight: 800; color: #00e676;">£{divest['max_budget']:.1f}m</div>
+                            </div>
                         </div>
-                        """)
-                        st.markdown(sell_card_html, unsafe_allow_html=True)
+                    </div>
+                    """), unsafe_allow_html=True)
 
-                        pool = []
-                        for cand in bootstrap["elements"]:
-                            if (cand["element_type"] == pos_id and cand["status"] == "a" and 
-                                cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= max_budget):
-                                c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
-                                pot = calculate_potential_score(cand, c_fdr)
-                                cand_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
-                                cand_team_code = teams[cand['team']]['code']
-                                pool.append({
-                                    "data": cand,
-                                    "score": pot,
-                                    "fdr": c_fdr,
-                                    "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{cand_photo_code}.png",
-                                    "badge": f"https://resources.premierleague.com/premierleague/badges/70/t{cand_team_code}.png"
-                                })
-
-                        pool.sort(key=lambda x: x["score"], reverse=True)
-                        cols_buy = st.columns(min(3, len(pool)))
-                        for idx, buy_cand in enumerate(pool[:3]):
-                            with cols_buy[idx]:
-                                bp = buy_cand["data"]
-                                buy_html = clean_html(f"""
-                                <div class="app-card" style="text-align: center; border-color: rgba(0, 230, 118, 0.4);">
-                                    <div style="font-size: 10px; font-weight: 700; color: #00e676;">TARGET #{idx+1}</div>
-                                    <div class="avatar-frame" style="margin: 8px auto; width: 54px; height: 54px;">
-                                        <img class="player-img" src="{buy_cand['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{buy_cand['badge']}';">
-                                        <img class="crest-img" src="{buy_cand['badge']}" referrerpolicy="no-referrer">
-                                    </div>
-                                    <div style="font-weight: 700; font-size: 13px; color: #f0f1f5;">{bp['web_name']}</div>
-                                    <div style="font-size: 11px; color: #8e92a2;">£{bp['now_cost']/10:.1f}m | Form: {bp['form']}</div>
-                                    <div style="margin-top: 4px;"><span class="fdr-pill fdr-{buy_cand['fdr']}">{buy_cand['opp']}</span></div>
-                                    <div style="margin-top: 6px; font-size: 12px; font-weight: 800; color: #00e676;">{buy_cand['score']} pts</div>
+                    st.markdown(f"**Optimal Replacements for {p_out['web_name']}:**")
+                    repl_cols = st.columns(3)
+                    for c_idx, rep in enumerate(divest["top_replacements"]):
+                        with repl_cols[c_idx]:
+                            cand_p = rep["data"]
+                            c_cost = cand_p["now_cost"] / 10
+                            c_delta = round(rep["score"] - divest["player_item"]["score"], 2)
+                            
+                            st.markdown(clean_html(f"""
+                            <div class="app-card" style="text-align: center; border-color: rgba(0, 230, 118, 0.4); padding: 12px;">
+                                <div style="font-size: 10px; font-weight: 800; color: #00e676;">TARGET #{c_idx+1}</div>
+                                <div class="avatar-frame" style="margin: 8px auto; width: 54px; height: 54px;">
+                                    <img class="player-img" src="{rep['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{rep['badge']}';">
+                                    <img class="crest-img" src="{rep['badge']}" referrerpolicy="no-referrer">
                                 </div>
-                                """)
-                                st.markdown(buy_html, unsafe_allow_html=True)
+                                <div style="font-weight: 700; font-size: 13px; color: #f0f1f5;">{cand_p['web_name']}</div>
+                                <div style="font-size: 11px; color: #8e92a2;">{rep['team_name']} • £{c_cost:.1f}m</div>
+                                <div style="margin-top: 4px;"><span class="fdr-pill fdr-{rep['fdr']}">{rep['opp']}</span></div>
+                                <div style="margin-top: 6px; font-size: 13px; font-weight: 800; color: #00e676;">{c_delta:+} pts gain</div>
+                                <div style="font-size: 10px; color: #8e92a2;">Form: {cand_p['form']} • Potential: {rep['score']}</div>
+                            </div>
+                            """), unsafe_allow_html=True)
 
-            # TAB 3: SIMULATOR
+            # --- TAB 3: SIMULATOR (WITH WORKING IMAGES & EXPANDED RATIONALE) ---
             with tab_simulator:
                 st.markdown("### Transfer Simulator & Scenario Modeling")
                 st.caption("Model potential trades to evaluate projected points gain, capital allocation, and tactical fit.")
@@ -595,6 +632,7 @@ if team_id:
                     sell_price = sell_player["now_cost"] / 10
                     sim_budget = sell_price + bank
 
+                    # Working image card for outgoing player
                     out_card = clean_html(f"""
                     <div class="app-card" style="display: flex; align-items: center; gap: 14px; border-left: 3px solid #ff3b5c; margin-top: 8px;">
                         <div class="avatar-frame" style="width: 52px; height: 52px;">
@@ -603,7 +641,7 @@ if team_id:
                         </div>
                         <div>
                             <div style="font-size: 14px; font-weight: 700; color: #f0f1f5;">{sell_player['web_name']}</div>
-                            <div style="font-size: 12px; color: #8e92a2;">{selected_sell['pos']} • Sale Value: £{sell_price:.1f}m</div>
+                            <div style="font-size: 12px; color: #8e92a2;">{selected_sell['team_name']} • £{sell_price:.1f}m</div>
                             <div style="font-size: 11px; color: #00e676; margin-top: 2px;">Total Buy Budget: £{sim_budget:.1f}m</div>
                         </div>
                     </div>
@@ -624,9 +662,10 @@ if team_id:
                     buy_price = selected_buy["now_cost"] / 10
                     
                     buy_photo_code = str(selected_buy.get("code", "")).replace(".jpg", "").replace("p", "")
-                    buy_badge_url = f"https://resources.premierleague.com/premierleague/badges/70/t{teams[selected_buy['team']]['code']}.png"
-                    buy_photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{buy_photo_code}.png"
+                    buy_badge_url = f"https://resources.premierleague.com/premierleague/badges/t{teams[selected_buy['team']]['code']}.png"
+                    buy_photo_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{buy_photo_code}.png"
 
+                    # Working image card for incoming player
                     in_card = clean_html(f"""
                     <div class="app-card" style="display: flex; align-items: center; gap: 14px; border-left: 3px solid #00e676; margin-top: 8px;">
                         <div class="avatar-frame" style="width: 52px; height: 52px;">
@@ -679,8 +718,9 @@ if team_id:
                         c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                         p_score = calculate_potential_score(cand, c_fdr)
                         c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
-                        c_badge = f"https://resources.premierleague.com/premierleague/badges/70/t{teams[cand['team']]['code']}.png"
-                        c_photo = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{c_photo_code}.png"
+                        c_team_code = teams[cand['team']]['code']
+                        c_badge = f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png"
+                        c_photo = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{c_photo_code}.png"
                         sim_replacements.append({
                             "data": cand,
                             "score": p_score,
@@ -720,7 +760,7 @@ if team_id:
                     """)
                     st.markdown(rep_html, unsafe_allow_html=True)
 
-            # TAB 4: CAPTAINCY & CHIPS
+            # --- TAB 4: CAPTAINCY & CHIPS ---
             with tab_chips:
                 st.markdown("### Captaincy Leadership & Chip Deployment")
                 c1, c2 = st.columns(2)
@@ -776,7 +816,7 @@ if team_id:
                     else:
                         st.info(f"Bench Boost: Hold. {active_bench}/3 outfield bench players are currently active starters.")
 
-            # TAB 5: INTEL & NEWS FEED
+            # --- TAB 5: INTEL & NEWS FEED ---
             with tab_news:
                 st.markdown("### Squad Intelligence & Match Commentary")
                 st.caption("Real-time medical updates, tactical fixture assessments, and manager press conference summaries.")
