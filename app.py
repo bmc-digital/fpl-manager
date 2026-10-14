@@ -11,8 +11,8 @@ st.set_page_config(
 )
 
 # --- PASSWORD AUTHENTICATION VIA SECRETS ---
-APP_PASSWORD = st.secrets.get("APP_PASSWORD", "changeme123")
-DEFAULT_TEAM_ID = int(st.secrets.get("DEFAULT_TEAM_ID", 1))
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", "changeme123") if hasattr(st, "secrets") else "changeme123"
+DEFAULT_TEAM_ID = int(st.secrets.get("DEFAULT_TEAM_ID", 1)) if hasattr(st, "secrets") else 1
 
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -21,116 +21,210 @@ if not st.session_state["authenticated"]:
     st.markdown("""
     <style>
         .stApp {
-            background: linear-gradient(135deg, #180022 0%, #290838 50%, #15001f 100%);
+            background: linear-gradient(135deg, #0b0712 0%, #170d24 50%, #0d0617 100%);
             color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .login-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 14px;
-            padding: 24px;
-            max-width: 420px;
-            margin: 80px auto;
+        .login-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 32px 24px;
+            max-width: 400px;
+            margin: 80px auto 20px auto;
             text-align: center;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
         }
     </style>
-    <div class="login-card">
-        <h2 style="color: #00ff87; margin-bottom: 8px;">🔒 FPL Elite Manager</h2>
-        <p style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;">Enter your passcode to unlock your tactical dashboard.</p>
+    <div class="login-box">
+        <div style="font-size: 42px; margin-bottom: 8px;">⚽</div>
+        <h2 style="color: #00ff87; margin: 0 0 8px 0; font-weight: 800; letter-spacing: -0.5px;">FPL ELITE</h2>
+        <p style="font-size: 14px; opacity: 0.75; margin-bottom: 24px;">Enter your passcode to access your dashboard</p>
     </div>
     """, unsafe_allow_html=True)
     
     col_l, col_center, col_r = st.columns([1, 2, 1])
     with col_center:
-        pwd_input = st.text_input("Passcode / PIN", type="password", label_visibility="collapsed")
+        pwd_input = st.text_input("Passcode", type="password", label_visibility="collapsed", placeholder="Enter passcode")
         if st.button("Unlock Dashboard", type="primary", use_container_width=True):
             if pwd_input == str(APP_PASSWORD):
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
-                st.error("Incorrect passcode. Access denied.")
+                st.error("Incorrect passcode. Please try again.")
     st.stop()
 
 
-# --- MODERN PREMIER LEAGUE STYLING ---
+# --- MODERN STYLING: TACTICAL PITCH & POLISHED CARDS ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
     .stApp {
-        background: linear-gradient(135deg, #180022 0%, #290838 50%, #15001f 100%);
+        background: linear-gradient(180deg, #090610 0%, #12091e 50%, #0a0412 100%);
         color: #ffffff;
     }
     
-    .fpl-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        padding: 16px;
-        margin-bottom: 12px;
+    /* Top stats container */
+    .hero-stat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 18px;
         backdrop-filter: blur(10px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
     }
     
-    .player-card {
-        background: rgba(255, 255, 255, 0.07);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 10px;
-        text-align: center;
-        margin-bottom: 10px;
-        transition: transform 0.2s ease;
+    /* THE FOOTBALL PITCH */
+    .pitch-container {
+        background: radial-gradient(circle at center, #1b3826 0%, #112519 70%, #0a1810 100%);
+        border: 2px solid rgba(0, 255, 135, 0.25);
+        border-radius: 20px;
+        padding: 24px 12px;
+        margin: 16px 0;
+        position: relative;
+        box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.4);
+        overflow: hidden;
     }
-    .player-card:hover {
-        transform: translateY(-2px);
+    
+    .pitch-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+    }
+    
+    /* Pitch Player Card */
+    .pitch-player {
+        background: rgba(14, 10, 22, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        padding: 8px 6px 6px 6px;
+        text-align: center;
+        width: 86px;
+        min-width: 86px;
+        backdrop-filter: blur(8px);
+        position: relative;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .pitch-player:hover {
+        transform: translateY(-3px);
         border-color: #00ff87;
     }
     
-    .badge-c {
-        background: #00ff87;
-        color: #180022;
-        font-weight: 800;
-        font-size: 11px;
-        padding: 2px 6px;
-        border-radius: 6px;
-        display: inline-block;
+    .player-photo-wrap {
+        width: 58px;
+        height: 58px;
+        margin: 0 auto;
+        position: relative;
     }
-    .badge-vc {
-        background: #04f5ff;
-        color: #180022;
-        font-weight: 800;
-        font-size: 11px;
-        padding: 2px 6px;
-        border-radius: 6px;
-        display: inline-block;
+    .player-photo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        border: 1.5px solid rgba(255, 255, 255, 0.2);
     }
-    .fdr-badge {
+    .player-badge-img {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.8);
+        padding: 1px;
+    }
+    
+    .pitch-player-name {
         font-size: 11px;
-        padding: 2px 7px;
-        border-radius: 6px;
         font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 5px;
         color: #ffffff;
     }
-    .fdr-2 { background-color: #01fc7a; color: #000; }
-    .fdr-3 { background-color: #e7e7e7; color: #000; }
-    .fdr-4 { background-color: #ff1751; color: #fff; }
-    .fdr-5 { background-color: #80072d; color: #fff; }
-    
-    .metric-value {
-        font-size: 24px;
+    .pitch-player-pts {
+        font-size: 10px;
         font-weight: 800;
         color: #00ff87;
+        margin-top: 1px;
     }
-    .metric-label {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        opacity: 0.7;
+    
+    /* Badges */
+    .tag-c {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #00ff87;
+        color: #080312;
+        font-size: 9px;
+        font-weight: 900;
+        padding: 2px 5px;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0,255,135,0.4);
+    }
+    .tag-vc {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #00e5ff;
+        color: #080312;
+        font-size: 9px;
+        font-weight: 900;
+        padding: 2px 5px;
+        border-radius: 5px;
+    }
+    .tag-sub {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        font-size: 8px;
+        font-weight: 700;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+    
+    .fdr-pill {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        margin-top: 3px;
+    }
+    .fdr-pill-2 { background: #01fc7a; color: #000; }
+    .fdr-pill-3 { background: #e0e0e0; color: #000; }
+    .fdr-pill-4 { background: #ff2882; color: #fff; }
+    .fdr-pill-5 { background: #80072d; color: #fff; }
+    
+    /* Bench Dugout */
+    .bench-dugout {
+        background: rgba(18, 12, 28, 0.9);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        padding: 14px 10px;
+        margin-top: 14px;
+    }
+    
+    .glass-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -157,12 +251,12 @@ def calculate_potential_score(player, fdr):
     score = (form_val * 0.6) + (ep_val * 0.4) + fdr_bonus
     return round(max(score, 0.0), 2)
 
-# --- HEADER SECTION ---
+# --- HEADER BAR ---
 col_head, col_logout = st.columns([5, 1])
 with col_head:
     st.markdown("""
-        <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #00ff87;">⚽ FPL ELITE MANAGER</h1>
-        <p style="margin: 0; opacity: 0.8; font-size: 14px;">Tactical Lineup Optimizer, Transfer Engine & Simulator</p>
+        <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #00ff87; letter-spacing: -0.5px;">⚽ FPL ELITE MANAGER</h1>
+        <p style="margin: 2px 0 0 0; opacity: 0.75; font-size: 13px;">Tactical Lineup Optimizer, Transfer Advisor & What-If Simulator</p>
     """, unsafe_allow_html=True)
 with col_logout:
     st.write("")
@@ -170,19 +264,17 @@ with col_logout:
         st.session_state["authenticated"] = False
         st.rerun()
 
-# Top Bar Input prefilled from Secrets
+# Controls row
 col_input, col_action = st.columns([3, 1])
 with col_input:
-    team_id = st.number_input("Fantasy Premier League Team ID", min_value=1, value=DEFAULT_TEAM_ID, step=1)
+    team_id = st.number_input("FPL Team ID", min_value=1, value=DEFAULT_TEAM_ID, step=1, label_visibility="collapsed")
 with col_action:
-    st.write("")
-    st.write("")
-    analyze_click = st.button("⚡ Refresh Data", use_container_width=True, type="primary")
+    refresh_click = st.button("🔄 Refresh", use_container_width=True, type="primary")
 
 if team_id:
-    with st.spinner("Analyzing live Premier League data..."):
+    with st.spinner("Analyzing Gameweek data..."):
         try:
-            # 1. Fetch core data
+            # 1. Fetch core FPL metadata
             bootstrap = fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/")
             elements = {p["id"]: p for p in bootstrap["elements"]}
             teams = {t["id"]: t for t in bootstrap["teams"]}
@@ -201,10 +293,10 @@ if team_id:
             club_matches = {}
             for fix in fixtures:
                 h, a = fix["team_h"], fix["team_a"]
-                club_matches[h] = {"opp": f"vs {teams[a]['short_name']} (H)", "fdr": fix["team_h_difficulty"], "opp_id": a}
-                club_matches[a] = {"opp": f"@ {teams[h]['short_name']} (A)", "fdr": fix["team_a_difficulty"], "opp_id": h}
+                club_matches[h] = {"opp": f"vs {teams[a]['short_name']} (H)", "fdr": fix["team_h_difficulty"]}
+                club_matches[a] = {"opp": f"@ {teams[h]['short_name']} (A)", "fdr": fix["team_a_difficulty"]}
 
-            # Team and picks data
+            # User data
             entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{team_id}/")
             picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{current_gw}/picks/")
             
@@ -213,35 +305,44 @@ if team_id:
 
             # --- SQUAD STATS BAR ---
             st.markdown(f"""
-            <div class="fpl-card">
-                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center;">
-                    <div style="min-width: 120px;">
-                        <div class="metric-label">Manager</div>
-                        <div style="font-size: 18px; font-weight: 700;">{entry_data['player_first_name']} {entry_data['player_last_name']}</div>
+            <div class="hero-stat-card">
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center; gap: 12px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; font-weight: 700;">Manager</div>
+                        <div style="font-size: 16px; font-weight: 700;">{entry_data['player_first_name']} {entry_data['player_last_name']}</div>
                     </div>
-                    <div style="min-width: 120px;">
-                        <div class="metric-label">Team</div>
-                        <div style="font-size: 18px; font-weight: 700;">{entry_data['name']}</div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; font-weight: 700;">Team</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #00ff87;">{entry_data['name']}</div>
                     </div>
-                    <div style="min-width: 100px;">
-                        <div class="metric-label">Overall Points</div>
-                        <div class="metric-value">{entry_data['summary_overall_points']}</div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; font-weight: 700;">Points</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #ffffff;">{entry_data['summary_overall_points']}</div>
                     </div>
-                    <div style="min-width: 100px;">
-                        <div class="metric-label">In The Bank</div>
-                        <div class="metric-value">£{bank:.1f}m</div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; font-weight: 700;">In Bank</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #00ff87;">£{bank:.1f}m</div>
                     </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-            # Build enriched player list for user's squad
+            # Build enriched player squad list
             squad_list = []
             for pick in picks_data["picks"]:
                 p = elements[pick["element"]]
                 fdr = club_matches.get(p["team"], {}).get("fdr", 3)
                 opp = club_matches.get(p["team"], {}).get("opp", "TBD")
                 score = calculate_potential_score(p, fdr)
+                
+                # Clean photo & badge code
+                photo_code = str(p.get("code", "")).replace(".jpg", "").replace("p", "")
+                team_code = teams[p["team"]]["code"]
+                
+                photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{photo_code}.png"
+                badge_url = f"https://resources.premierleague.com/premierleague/badges/70/t{team_code}.png"
+                fallback_avatar = f"https://ui-avatars.com/api/?name={p['web_name']}&background=26143d&color=00ff87&size=128"
+
                 squad_list.append({
                     "data": p,
                     "fdr": fdr,
@@ -249,11 +350,12 @@ if team_id:
                     "score": score,
                     "pos_id": p["element_type"],
                     "pos": positions[p["element_type"]],
-                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{p['code']}.png",
-                    "badge": f"https://resources.premierleague.com/premierleague/badges/50/t{teams[p['team']]['code']}.png"
+                    "photo": photo_url,
+                    "badge": badge_url,
+                    "fallback": fallback_avatar
                 })
 
-            # --- OPTIMAL STARTING XI FORMATION SOLVER ---
+            # --- FORMATION SOLVER ---
             gkps = [p for p in squad_list if p["pos_id"] == 1]
             defs = sorted([p for p in squad_list if p["pos_id"] == 2], key=lambda x: x["score"], reverse=True)
             mids = sorted([p for p in squad_list if p["pos_id"] == 3], key=lambda x: x["score"], reverse=True)
@@ -289,84 +391,91 @@ if team_id:
             captain = sorted_by_pot[0]
             vice_captain = sorted_by_pot[1]
 
-            # --- NAVIGATION TABS ---
-            tab_lineup, tab_transfers, tab_simulator, tab_chips = st.tabs([
-                "📋 Optimal Lineup", 
-                "🔄 Transfer Engine", 
-                "🧪 What-If Simulator", 
+            # --- TABS NAVIGATION ---
+            tab_pitch, tab_transfers, tab_simulator, tab_chips = st.tabs([
+                "🏟️ Tactical Pitch", 
+                "🔄 Transfers", 
+                "🧪 Simulator", 
                 "🎯 Captain & Chips"
             ])
 
-            # TAB 1: OPTIMAL LINEUP
-            with tab_lineup:
-                st.markdown(f"### ⭐ Gameweek {next_gw} Optimal Starting XI ({best_formation})")
-                st.caption(f"Projected Starting XI Score: **{best_score:.1f} pts** (excluding captain 2x bonus)")
+            def render_pitch_card(p, tag=""):
+                badge_html = ""
+                if p == captain:
+                    badge_html = '<div class="tag-c">C</div>'
+                elif p == vice_captain:
+                    badge_html = '<div class="tag-vc">VC</div>'
+                elif tag:
+                    badge_html = f'<div class="tag-sub">{tag}</div>'
 
-                def render_player(p, is_bench=False, sub_idx=""):
-                    c_tag = ""
-                    if p == captain:
-                        c_tag = '<div class="badge-c">CAPTAIN (2x)</div>'
-                    elif p == vice_captain:
-                        c_tag = '<div class="badge-vc">VICE-CAPT</div>'
-                    
-                    sub_tag = f'<div style="font-size:11px; opacity:0.8; font-weight:700;">{sub_idx}</div>' if is_bench else ''
-                    fdr_cls = f"fdr-{p['fdr']}"
-
-                    return f"""
-                    <div class="player-card">
-                        {sub_tag}
-                        <div style="position: relative; display: inline-block;">
-                            <img src="{p['photo']}" style="width: 75px; height: 95px; object-fit: cover; border-radius: 8px;">
-                            <img src="{p['badge']}" style="width: 24px; height: 24px; position: absolute; bottom: 0; right: 0;">
-                        </div>
-                        <div style="font-weight: 700; font-size: 13px; margin-top: 4px;">{p['data']['web_name']}</div>
-                        <div style="font-size: 11px; opacity: 0.8;">{p['pos']} | £{p['data']['now_cost']/10:.1f}m</div>
-                        <div style="margin-top: 4px;">
-                            <span class="fdr-badge {fdr_cls}">{p['opp']}</span>
-                        </div>
-                        <div style="font-size: 12px; margin-top: 4px; font-weight: 700; color: #00ff87;">Pot: {p['score']}</div>
-                        <div style="margin-top: 4px;">{c_tag}</div>
+                return f"""
+                <div class="pitch-player">
+                    {badge_html}
+                    <div class="player-photo-wrap">
+                        <img class="player-photo-img" src="{p['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{p['fallback']}';">
+                        <img class="player-badge-img" src="{p['badge']}" referrerpolicy="no-referrer">
                     </div>
-                    """
+                    <div class="pitch-player-name">{p['data']['web_name']}</div>
+                    <div><span class="fdr-pill fdr-pill-{p['fdr']}">{p['opp']}</span></div>
+                    <div class="pitch-player-pts">{p['score']} pts</div>
+                </div>
+                """
 
-                st.markdown("##### Goalkeeper")
-                col_gkp = st.columns(1)[0]
-                with col_gkp:
-                    st.markdown(render_player(starter_gkp), unsafe_allow_html=True)
+            # --- TAB 1: TACTICAL PITCH VIEW ---
+            with tab_pitch:
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 800;">⭐ Gameweek {next_gw} Starting XI</h3>
+                    <div style="font-size: 13px; color: #00ff87; font-weight: 700;">Formation: {best_formation}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                st.markdown("##### Defenders")
-                cur_defs = [p for p in best_starters if p["pos_id"] == 2]
-                cols_def = st.columns(len(cur_defs))
-                for idx, p in enumerate(cur_defs):
-                    with cols_def[idx]:
-                        st.markdown(render_player(p), unsafe_allow_html=True)
+                # RENDER PITCH
+                pitch_html = '<div class="pitch-container">'
+                
+                # GKP
+                pitch_html += '<div class="pitch-row">' + render_pitch_card(starter_gkp) + '</div>'
+                
+                # DEFs
+                pitch_html += '<div class="pitch-row">'
+                for p in [x for x in best_starters if x["pos_id"] == 2]:
+                    pitch_html += render_pitch_card(p)
+                pitch_html += '</div>'
 
-                st.markdown("##### Midfielders")
-                cur_mids = [p for p in best_starters if p["pos_id"] == 3]
-                cols_mid = st.columns(len(cur_mids))
-                for idx, p in enumerate(cur_mids):
-                    with cols_mid[idx]:
-                        st.markdown(render_player(p), unsafe_allow_html=True)
+                # MIDs
+                pitch_html += '<div class="pitch-row">'
+                for p in [x for x in best_starters if x["pos_id"] == 3]:
+                    pitch_html += render_pitch_card(p)
+                pitch_html += '</div>'
 
-                st.markdown("##### Forwards")
-                cur_fwds = [p for p in best_starters if p["pos_id"] == 4]
-                cols_fwd = st.columns(len(cur_fwds))
-                for idx, p in enumerate(cur_fwds):
-                    with cols_fwd[idx]:
-                        st.markdown(render_player(p), unsafe_allow_html=True)
+                # FWDs
+                pitch_html += '<div class="pitch-row">'
+                for p in [x for x in best_starters if x["pos_id"] == 4]:
+                    pitch_html += render_pitch_card(p)
+                pitch_html += '</div>'
 
-                st.markdown("---")
-                st.markdown("##### 🪑 Priority Bench Order")
-                cols_bench = st.columns(4)
-                with cols_bench[0]:
-                    st.markdown(render_player(bench_gkp, is_bench=True, sub_idx="Sub GKP"), unsafe_allow_html=True)
-                for idx, p in enumerate(best_bench_outfield):
-                    with cols_bench[idx + 1]:
-                        st.markdown(render_player(p, is_bench=True, sub_idx=f"Sub {idx + 1}"), unsafe_allow_html=True)
+                pitch_html += '</div>'
+                st.markdown(pitch_html, unsafe_allow_html=True)
 
-            # TAB 2: TRANSFER RECOMMENDATIONS
+                # BENCH DUGOUT
+                bench_html = f"""
+                <div class="bench-dugout">
+                    <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 10px; text-align: center;">
+                        🪑 Priority Bench Order
+                    </div>
+                    <div class="pitch-row" style="margin-bottom: 0;">
+                        {render_pitch_card(bench_gkp, tag="GKP")}
+                        {render_pitch_card(best_bench_outfield[0], tag="SUB 1")}
+                        {render_pitch_card(best_bench_outfield[1], tag="SUB 2")}
+                        {render_pitch_card(best_bench_outfield[2], tag="SUB 3")}
+                    </div>
+                </div>
+                """
+                st.markdown(bench_html, unsafe_allow_html=True)
+
+            # --- TAB 2: TRANSFERS ---
             with tab_transfers:
-                st.markdown("### 🔄 Smart Transfer Guidance")
+                st.markdown("### 🔄 Transfer Guidance")
                 sell_candidates = []
                 for p_item in squad_list:
                     p = p_item["data"]
@@ -381,10 +490,10 @@ if team_id:
                         reasons.append(f"Flagged ({chance}% chance)" if chance else "Injured / Suspended")
                     if form < 2.5:
                         urgency += 3
-                        reasons.append("Cold Form (<2.5 pts)")
+                        reasons.append("Low form")
                     if fdr >= 4:
                         urgency += 2
-                        reasons.append(f"Tough Fixture (FDR {fdr})")
+                        reasons.append(f"Tough fixture (FDR {fdr})")
 
                     if urgency >= 4:
                         sell_candidates.append({"player": p_item, "urgency": urgency, "reason": ", ".join(reasons)})
@@ -392,7 +501,7 @@ if team_id:
                 sell_candidates.sort(key=lambda x: x["urgency"], reverse=True)
 
                 if not sell_candidates:
-                    st.success("🎉 Your squad is in peak condition! No urgent transfers needed. Save your free transfer.")
+                    st.success("🎉 Your squad is healthy and in good form! Roll your free transfer.")
                 else:
                     for target in sell_candidates[:2]:
                         p_sell = target["player"]["data"]
@@ -401,11 +510,11 @@ if team_id:
                         max_budget = sell_val + bank
 
                         st.markdown(f"""
-                        <div class="fpl-card" style="border-left: 4px solid #ff1751;">
-                            <span style="background: #ff1751; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">SELL PRIORITY</span>
+                        <div class="glass-card" style="border-left: 4px solid #ff2882;">
+                            <span style="background: #ff2882; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">SELL RECOMMENDATION</span>
                             <h4 style="margin: 8px 0 4px 0;">🔴 {p_sell['web_name']} ({positions[pos_id]}) — £{sell_val:.1f}m</h4>
-                            <p style="font-size: 13px; opacity: 0.8; margin-bottom: 6px;">Reason: <strong>{target['reason']}</strong></p>
-                            <p style="font-size: 12px; color: #00ff87;">Available Replacement Budget: <strong>£{max_budget:.1f}m</strong> (£{sell_val:.1f}m + £{bank:.1f}m in bank)</p>
+                            <p style="font-size: 13px; opacity: 0.8; margin-bottom: 6px;">Issue: <strong>{target['reason']}</strong></p>
+                            <p style="font-size: 12px; color: #00ff87;">Max Buy Budget: <strong>£{max_budget:.1f}m</strong> (£{sell_val:.1f}m + £{bank:.1f}m in bank)</p>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -415,13 +524,15 @@ if team_id:
                                 cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= max_budget):
                                 c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                                 pot = calculate_potential_score(cand, c_fdr)
+                                cand_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
                                 pool.append({
                                     "data": cand,
                                     "score": pot,
                                     "fdr": c_fdr,
                                     "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                                    "badge": f"https://resources.premierleague.com/premierleague/badges/50/t{teams[cand['team']]['code']}.png",
-                                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{cand['code']}.png"
+                                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{cand_photo_code}.png",
+                                    "badge": f"https://resources.premierleague.com/premierleague/badges/70/t{teams[cand['team']]['code']}.png",
+                                    "fallback": f"https://ui-avatars.com/api/?name={cand['web_name']}&background=26143d&color=00ff87&size=128"
                                 })
 
                         pool.sort(key=lambda x: x["score"], reverse=True)
@@ -430,25 +541,28 @@ if team_id:
                             with cols_buy[idx]:
                                 bp = buy_cand["data"]
                                 st.markdown(f"""
-                                <div class="player-card" style="border: 1px solid #00ff87;">
-                                    <div style="font-size: 11px; font-weight: 800; color: #00ff87;">TOP TARGET #{idx+1}</div>
-                                    <img src="{buy_cand['photo']}" style="width: 65px; height: 80px; object-fit: cover; border-radius: 6px; margin: 4px 0;">
+                                <div class="glass-card" style="text-align: center; border-color: #00ff87;">
+                                    <div style="font-size: 10px; font-weight: 800; color: #00ff87;">TARGET #{idx+1}</div>
+                                    <div class="player-photo-wrap" style="margin: 8px auto;">
+                                        <img class="player-photo-img" src="{buy_cand['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{buy_cand['fallback']}';">
+                                        <img class="player-badge-img" src="{buy_cand['badge']}" referrerpolicy="no-referrer">
+                                    </div>
                                     <div style="font-weight: 700; font-size: 13px;">{bp['web_name']}</div>
                                     <div style="font-size: 11px; opacity: 0.8;">£{bp['now_cost']/10:.1f}m | Form: {bp['form']}</div>
-                                    <div style="margin-top: 4px;"><span class="fdr-badge fdr-{buy_cand['fdr']}">{buy_cand['opp']}</span></div>
-                                    <div style="margin-top: 6px; font-size: 12px; font-weight: 800; color: #00ff87;">Pot: {buy_cand['score']}</div>
+                                    <div style="margin-top: 4px;"><span class="fdr-pill fdr-pill-{buy_cand['fdr']}">{buy_cand['opp']}</span></div>
+                                    <div style="margin-top: 6px; font-size: 12px; font-weight: 800; color: #00ff87;">{buy_cand['score']} pts</div>
                                 </div>
                                 """, unsafe_allow_html=True)
 
-            # TAB 3: WHAT-IF TRANSFER SIMULATOR
+            # --- TAB 3: SIMULATOR ---
             with tab_simulator:
                 st.markdown("### 🧪 What-If Transfer Simulator")
-                st.caption("Test potential transfers and see your net point delta and remaining bank balance in real time.")
+                st.caption("Test trades to see budget changes and expected score impact.")
 
                 sim_col1, sim_col2 = st.columns(2)
                 with sim_col1:
                     sell_names = [f"{p['data']['web_name']} ({p['pos']}) - £{p['data']['now_cost']/10:.1f}m" for p in squad_list]
-                    sell_choice_idx = st.selectbox("1. Choose a player from your squad to SELL:", range(len(sell_names)), format_func=lambda x: sell_names[x])
+                    sell_choice_idx = st.selectbox("Sell Player:", range(len(sell_names)), format_func=lambda x: sell_names[x])
                     selected_sell = squad_list[sell_choice_idx]
                     sell_player = selected_sell["data"]
                     sell_price = sell_player["now_cost"] / 10
@@ -462,7 +576,7 @@ if team_id:
                     ]
                     all_candidates.sort(key=lambda x: x["now_cost"], reverse=True)
                     buy_names = [f"{c['web_name']} ({teams[c['team']]['short_name']}) - £{c['now_cost']/10:.1f}m" for c in all_candidates]
-                    buy_choice_idx = st.selectbox("2. Choose a replacement to BUY:", range(len(buy_names)), format_func=lambda x: buy_names[x])
+                    buy_choice_idx = st.selectbox("Buy Replacement:", range(len(buy_names)), format_func=lambda x: buy_names[x])
                     selected_buy = all_candidates[buy_choice_idx]
                     buy_price = selected_buy["now_cost"] / 10
 
@@ -478,38 +592,41 @@ if team_id:
                 res_col1, res_col2, res_col3 = st.columns(3)
                 with res_col1:
                     if new_bank >= 0:
-                        st.metric("New Bank Balance", f"£{new_bank:.1f}m", f"£{new_bank - bank:.1f}m")
+                        st.metric("New Bank", f"£{new_bank:.1f}m", f"£{new_bank - bank:.1f}m")
                     else:
-                        st.error(f"❌ Over Budget by £{abs(new_bank):.1f}m")
+                        st.error(f"Over budget by £{abs(new_bank):.1f}m")
 
                 with res_col2:
-                    st.metric("Expected Return Delta", f"{delta_score:+} pts", f"{delta_score} vs {sell_player['web_name']}")
+                    st.metric("Expected Delta", f"{delta_score:+} pts", f"vs {sell_player['web_name']}")
 
                 with res_col3:
                     if new_bank >= 0:
                         if delta_score > 1.5:
-                            st.success("🟢 Strong Upgrade! Recommended.")
+                            st.success("🟢 Strong Upgrade!")
                         elif delta_score >= 0:
-                            st.info("🟡 Lateral move. Roll transfer if not urgent.")
+                            st.info("🟡 Lateral Move")
                         else:
-                            st.warning("🔴 Downgrade in immediate potential.")
+                            st.warning("🔴 Downgrade")
                     else:
-                        st.warning("⚠️ Insufficient funds.")
+                        st.warning("⚠️ Insufficient funds")
 
-            # TAB 4: CAPTAINCY & CHIPS
+            # --- TAB 4: CAPTAINCY & CHIPS ---
             with tab_chips:
-                st.markdown("### 🎯 Captaincy & Chip Strategy")
+                st.markdown("### 🎯 Captaincy & Chips")
                 c1, c2 = st.columns(2)
                 with c1:
                     st.markdown(f"""
-                    <div class="fpl-card" style="border: 2px solid #00ff87;">
-                        <span class="badge-c">OPTIMAL CAPTAIN (2x)</span>
-                        <div style="display: flex; align-items: center; margin-top: 10px;">
-                            <img src="{captain['photo']}" style="width: 70px; height: 90px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
+                    <div class="glass-card" style="border: 2px solid #00ff87;">
+                        <span class="tag-c" style="position: static; font-size: 11px;">OPTIMAL CAPTAIN (2x)</span>
+                        <div style="display: flex; align-items: center; margin-top: 10px; gap: 14px;">
+                            <div class="player-photo-wrap" style="width: 64px; height: 64px;">
+                                <img class="player-photo-img" src="{captain['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{captain['fallback']}';">
+                                <img class="player-badge-img" src="{captain['badge']}" referrerpolicy="no-referrer">
+                            </div>
                             <div>
                                 <h3 style="margin: 0; color: #00ff87;">{captain['data']['web_name']}</h3>
-                                <div style="font-size: 13px; opacity: 0.8;">{captain['pos']} | {captain['opp']}</div>
-                                <div style="font-size: 18px; font-weight: 800; margin-top: 6px;">Potential: {captain['score']} / 10</div>
+                                <div style="font-size: 12px; opacity: 0.8;">{captain['pos']} | {captain['opp']}</div>
+                                <div style="font-size: 16px; font-weight: 800; margin-top: 4px;">Potential: {captain['score']} pts</div>
                             </div>
                         </div>
                     </div>
@@ -517,14 +634,17 @@ if team_id:
 
                 with c2:
                     st.markdown(f"""
-                    <div class="fpl-card" style="border: 2px solid #04f5ff;">
-                        <span class="badge-vc">VICE-CAPTAIN BACKUP</span>
-                        <div style="display: flex; align-items: center; margin-top: 10px;">
-                            <img src="{vice_captain['photo']}" style="width: 70px; height: 90px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
+                    <div class="glass-card" style="border: 2px solid #00e5ff;">
+                        <span class="tag-vc" style="position: static; font-size: 11px;">VICE-CAPTAIN</span>
+                        <div style="display: flex; align-items: center; margin-top: 10px; gap: 14px;">
+                            <div class="player-photo-wrap" style="width: 64px; height: 64px;">
+                                <img class="player-photo-img" src="{vice_captain['photo']}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{vice_captain['fallback']}';">
+                                <img class="player-badge-img" src="{vice_captain['badge']}" referrerpolicy="no-referrer">
+                            </div>
                             <div>
-                                <h3 style="margin: 0; color: #04f5ff;">{vice_captain['data']['web_name']}</h3>
-                                <div style="font-size: 13px; opacity: 0.8;">{vice_captain['pos']} | {vice_captain['opp']}</div>
-                                <div style="font-size: 18px; font-weight: 800; margin-top: 6px;">Potential: {vice_captain['score']} / 10</div>
+                                <h3 style="margin: 0; color: #00e5ff;">{vice_captain['data']['web_name']}</h3>
+                                <div style="font-size: 12px; opacity: 0.8;">{vice_captain['pos']} | {vice_captain['opp']}</div>
+                                <div style="font-size: 16px; font-weight: 800; margin-top: 4px;">Potential: {vice_captain['score']} pts</div>
                             </div>
                         </div>
                     </div>
@@ -534,15 +654,15 @@ if team_id:
                 chip1, chip2 = st.columns(2)
                 with chip1:
                     if captain["score"] >= 6.5 and captain["fdr"] == 2:
-                        st.success(f"🔥 **Triple Captain:** VIABLE! {captain['data']['web_name']} faces an FDR 2 matchup in top form.")
+                        st.success(f"🔥 **Triple Captain:** Viable! {captain['data']['web_name']} in peak form with an easy matchup.")
                     else:
-                        st.info("🛡️ **Triple Captain:** SAVE. Hold for a future Double Gameweek.")
+                        st.info("🛡️ **Triple Captain:** Hold. Save for a future Double Gameweek.")
                 with chip2:
                     active_bench = sum(1 for b in best_bench_outfield if b["data"]["status"] == "a" and float(b["data"].get("form", 0)) > 1.5)
                     if active_bench == 3 and bench_gkp["data"]["status"] == "a":
-                        st.success("🟢 **Bench Boost:** STRONG BENCH. All 4 bench players are active starters.")
+                        st.success("🟢 **Bench Boost:** Strong bench. All 4 bench players are active starters.")
                     else:
-                        st.info(f"🛡️ **Bench Boost:** SAVE. Your bench has {active_bench}/3 active outfield starters.")
+                        st.info(f"🛡️ **Bench Boost:** Hold. {active_bench}/3 outfield bench players are active starters.")
 
         except Exception as e:
-            st.error(f"Error loading FPL squad: {e}")
+            st.error(f"Error loading squad: {e}")
