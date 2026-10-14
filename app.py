@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Self-Calibrating xP Engine | Multi-Transfer Cart
+Production Mobile-First Architecture | Full Tactical Pitch View | Self-Calibrating xP Engine
 """
 
 import streamlit as st
@@ -56,6 +56,7 @@ html, body, [class*="css"] {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text-primary);
   background-color: var(--bg-base);
+  scroll-behavior: smooth;
 }
 
 .stApp {
@@ -76,7 +77,7 @@ html, body, [class*="css"] {
 /* PROMINENT EXECUTIVE HERO HEADER */
 .kcfc-hero {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(15, 23, 42, 0.96) 50%, rgba(6, 182, 212, 0.12) 100%);
-  border: 1px solid rgba(0, 255, 133, 0.32);
+  border: 1px solid rgba(0, 255, 133, 0.35);
   border-radius: 22px;
   padding: 20px 24px;
   margin-bottom: 14px;
@@ -95,29 +96,26 @@ html, body, [class*="css"] {
 }
 
 .kcfc-emblem {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
-  background: radial-gradient(circle at 30% 30%, #1E293B 0%, #090D16 100%);
-  border: 2px solid #00FF85;
+  background: linear-gradient(135deg, #00FF85 0%, #10B981 100%);
+  border: 2px solid #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 20px rgba(0, 255, 133, 0.3);
+  box-shadow: 0 0 22px rgba(0, 255, 133, 0.35);
 }
 
 .kcfc-hero-title {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 900;
   letter-spacing: 0.8px;
   color: #FFFFFF;
   margin: 0;
   line-height: 1.08;
   text-transform: uppercase;
-  background: linear-gradient(90deg, #FFFFFF 0%, #CBD5E1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .kcfc-hero-sub {
@@ -130,7 +128,7 @@ html, body, [class*="css"] {
 }
 
 .countdown-box {
-  background: rgba(9, 13, 22, 0.85);
+  background: rgba(9, 13, 22, 0.88);
   border: 1.5px solid rgba(0, 255, 133, 0.45);
   border-radius: 14px;
   padding: 8px 16px;
@@ -217,50 +215,88 @@ html, body, [class*="css"] {
 .delta-warn { background: rgba(245, 158, 11, 0.16); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
 .delta-neutral { background: rgba(148, 163, 184, 0.14); color: #CBD5E1; }
 
-/* TACTICAL PITCH CONTAINER */
-.pitch-surface {
-  background: radial-gradient(circle at 50% 50%, #14432A 0%, #0D2E1C 65%, #081C11 100%);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 14px 8px;
-  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.65);
-  margin-bottom: 12px;
+/* RESTORED FULL TACTICAL PITCH VIEW */
+.pitch-wrapper {
+  background: radial-gradient(circle at 50% 50%, #154D2E 0%, #0E351F 62%, #082012 100%);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 24px;
+  padding: 20px 8px 18px 8px;
+  box-shadow: inset 0 0 65px rgba(0, 0, 0, 0.65), 0 14px 36px rgba(0, 0, 0, 0.5);
+  position: relative;
+  background-image:
+    linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.16) 49.5%, rgba(255,255,255,0.16) 50.5%, transparent 50.5%),
+    radial-gradient(circle at 50% 50%, transparent 52px, rgba(255,255,255,0.16) 53px, rgba(255,255,255,0.16) 55px, transparent 56px),
+    linear-gradient(to right, transparent 22%, rgba(255,255,255,0.12) 22%, rgba(255,255,255,0.12) 78%, transparent 78%),
+    radial-gradient(circle at 50% 50%, #165231 0%, #0D331D 68%, #071C10 100%);
+  background-size: 100% 100%, 100% 100%, 100% 14%, 100% 100%;
+  background-repeat: no-repeat;
+  margin-bottom: 14px;
+}
+
+.pitch-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: nowrap;
+}
+.pitch-row:last-child {
+  margin-bottom: 0;
+}
+
+a.pitch-node-link {
+  text-decoration: none !important;
+  color: inherit !important;
+  flex: 1 1 0;
+  max-width: 122px;
+  min-width: 64px;
+  display: flex;
 }
 
 .pitch-node {
   width: 100%;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 13px;
-  padding: 7px 3px 6px 3px;
+  background: rgba(11, 17, 30, 0.90);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 15px;
+  padding: 8px 4px 6px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   position: relative;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.45);
-  margin-bottom: 3px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+
+.pitch-node:hover {
+  transform: translateY(-2px);
+  border-color: #00FF85;
 }
 
 .pitch-node.selected {
   border: 2px solid #00FF85;
-  box-shadow: 0 0 16px rgba(0, 255, 133, 0.5);
+  box-shadow: 0 0 20px rgba(0, 255, 133, 0.55);
 }
 
+/* ENLARGED PLAYER AVATAR ON PITCH (58px) */
 .node-avatar-wrap {
   position: relative;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 3px;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 5px;
 }
 
 .node-avatar-wrap img {
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   object-fit: cover;
-  background: #070B12;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  object-position: top center;
+  background: radial-gradient(circle, #1E293B 0%, #070B12 100%);
+  border: 2px solid rgba(255, 255, 255, 0.32);
 }
 
 .badge-cap {
@@ -269,24 +305,26 @@ html, body, [class*="css"] {
   right: -4px;
   background: #FBBF24;
   color: #000;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
-  padding: 1px 4px;
-  border-radius: 5px;
-  border: 1px solid #FFF;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1.5px solid #FFF;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
 }
 
 .badge-vc {
   position: absolute;
   bottom: -2px;
   right: -4px;
-  background: #94A3B8;
+  background: #CBD5E1;
   color: #000;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
-  padding: 1px 4px;
-  border-radius: 5px;
-  border: 1px solid #FFF;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1.5px solid #FFF;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
 }
 
 .badge-flag {
@@ -295,9 +333,9 @@ html, body, [class*="css"] {
   left: -4px;
   background: var(--accent-rose);
   color: #FFF;
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 5px;
 }
 
@@ -307,44 +345,85 @@ html, body, [class*="css"] {
   left: -4px;
   background: #334155;
   color: #F8FAFC;
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 5px;
 }
 
 .node-name {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 800;
   color: #FFFFFF;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 95%;
+  width: 96%;
+  line-height: 1.2;
 }
 
 .node-meta {
-  font-size: 9.5px;
+  font-size: 10px;
   color: #CBD5E1;
   font-family: 'JetBrains Mono', monospace;
-  margin: 1px 0 3px 0;
+  margin: 2px 0 4px 0;
 }
 
 .fdr-pill {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 9.5px;
+  font-weight: 800;
   padding: 2px 5px;
   border-radius: 5px;
-  width: 90%;
+  width: 92%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
 .fdr-1 { background: var(--fdr-1); color: #FFF; }
 .fdr-2 { background: var(--fdr-2); color: #052E16; }
 .fdr-3 { background: var(--fdr-3); color: #F8FAFC; }
 .fdr-4 { background: var(--fdr-4); color: #FFF; }
 .fdr-5 { background: var(--fdr-5); color: #FFF; }
+
+.node-dossier-btn {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0, 255, 133, 0.12);
+  color: #00FF85;
+  border: 1px solid rgba(0, 255, 133, 0.35);
+  border-radius: 6px;
+  padding: 2px 0;
+  width: 92%;
+  transition: all 0.15s ease;
+}
+
+.pitch-node:hover .node-dossier-btn {
+  background: #00FF85;
+  color: #070B12;
+}
+
+/* BENCH TRAY */
+.bench-tray {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 14px 10px;
+  margin-bottom: 18px;
+}
+
+.bench-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
 
 /* DOSSIER & SECTION CARDS */
 .dossier-card {
@@ -365,13 +444,16 @@ html, body, [class*="css"] {
   margin-bottom: 14px;
 }
 
+/* ENLARGED DOSSIER PORTRAIT (92px) */
 .dossier-avatar {
-  width: 72px;
-  height: 72px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid #00FF85;
+  object-position: top center;
+  border: 3px solid #00FF85;
   background: #070B12;
+  box-shadow: 0 6px 20px rgba(0, 255, 133, 0.25);
 }
 
 .stat-grid-4 {
@@ -507,8 +589,8 @@ div.stButton > button {
   border-radius: 8px !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  padding: 3px 8px !important;
-  min-height: 28px !important;
+  padding: 4px 10px !important;
+  min-height: 30px !important;
 }
 
 div.stButton > button:hover {
@@ -520,7 +602,7 @@ div.stButton > button:hover {
 """)
 
 # ---------------------------------------------------------
-# 3. AUTHENTICATION & PERSISTENT STATE
+# 3. AUTHENTICATION & URL QUERY PARAM SYNC
 # ---------------------------------------------------------
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
 default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1153921))
@@ -531,6 +613,11 @@ if "authenticated" not in st.session_state:
 if "team_id" not in st.session_state:
     q_tid = st.query_params.get("team_id")
     st.session_state["team_id"] = int(q_tid) if q_tid and str(q_tid).isdigit() else default_team_id
+
+# Sync selected player if clicked on the pitch
+q_pid = st.query_params.get("pid")
+if q_pid and str(q_pid).isdigit():
+    st.session_state["selected_pid"] = int(q_pid)
 
 if not st.session_state["authenticated"]:
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -711,7 +798,6 @@ if deadline_iso:
     except Exception:
         pass
 
-# Build 5-GW Fixture Runway starting from upcoming_gw
 team_runway = {t_id: [] for t_id in teams_map}
 for fix in fixtures_list:
     ev = fix.get("event")
@@ -733,12 +819,10 @@ if live_last_gw and "elements" in live_last_gw:
     for el in live_last_gw["elements"]:
         live_pts_map[el["id"]] = el.get("stats", {}).get("total_points", 0)
 
-# Backtest correlation of Form vs xGI on last GW top performers to calibrate weights
 top_actual = sorted(elements_map.values(), key=lambda x: live_pts_map.get(x["id"], 0), reverse=True)[:25]
 avg_top_form = sum(float(p.get("form") or 0) for p in top_actual) / max(len(top_actual), 1)
 avg_top_xgi = sum(float(p.get("expected_goal_involvements") or 0) for p in top_actual) / max(len(top_actual), 1)
 
-# Dynamic Weight Calibration
 w_form = 0.58 if avg_top_form >= 5.0 else 0.46
 w_xgi = 4.4 if avg_top_xgi >= 2.2 else 3.8
 calibration_note = (
@@ -773,7 +857,6 @@ for pid, p_obj in elements_map.items():
 # ---------------------------------------------------------
 # 8. EXACT SELLING PRICE ESTIMATOR & SQUAD EXTRACTION
 # ---------------------------------------------------------
-# Map latest purchase price from transfer history
 purchase_price_map = {}
 for tr in transfers_list:
     el_in = tr.get("element_in")
@@ -787,7 +870,6 @@ def estimate_selling_price(p):
     if pid in purchase_price_map:
         buy_c = purchase_price_map[pid]
     else:
-        # Estimate GW1 price from season cost_change_start
         buy_c = now_c - p.get("cost_change_start", 0)
     if now_c > buy_c:
         profit = (now_c - buy_c) // 2
@@ -821,7 +903,6 @@ curr_hist = history_data.get("current", [])
 chips_used = {c.get("event"): c.get("name") for c in history_data.get("chips", [])}
 gw_avg = events_map.get(last_active_gw, {}).get("average_entry_score", 50)
 
-# Calculate Free Transfers accumulated (2024/25+ 5-FT accumulation rule)
 ft_available = 1
 for h_row in curr_hist:
     ev_num = h_row.get("event", 1)
@@ -831,7 +912,6 @@ for h_row in curr_hist:
     used_tr = h_row.get("event_transfers", 0)
     chip_in_gw = chips_used.get(ev_num)
     if chip_in_gw in ("wildcard", "freehit"):
-        # FTs preserved across WC/FH under updated FPL rules
         ft_available = min(5, max(1, ft_available))
     else:
         ft_available = min(5, max(0, ft_available - used_tr) + 1)
@@ -864,7 +944,6 @@ team_xp_total = round(sum(
     p["xp_next"] * (2 if p.get("is_captain") else 1) for p in starting_xi
 ), 1)
 
-# Transfer Hold vs Use Recommendation
 starter_flags = [p for p in starting_xi if p.get("chance_of_playing_next_round") is not None and p.get("chance_of_playing_next_round") < 75]
 weak_starters = [p for p in starting_xi if p.get("element_type") != 1 and p.get("xp_next", 0) < 3.4]
 if starter_flags or len(weak_starters) >= 2 or ft_available >= 2:
@@ -875,14 +954,17 @@ else:
     ft_rec_cls = "delta-warn"
 
 # ---------------------------------------------------------
-# 10. RENDER EXECUTIVE HERO HEADER & 6-TILE KPI DASHBOARD
+# 10. RENDER EXECUTIVE HERO HEADER (WITH ATTACHED PL LION VECTOR)
 # ---------------------------------------------------------
-emblem_svg = (
+pl_vector_svg = (
     '<div class="kcfc-emblem">'
-    '<svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">'
-    '<path d="M12 22 L22 10 L32 19 L42 10 L52 22 L47 30 L17 30 Z" fill="#FBBF24"/>'
-    '<circle cx="32" cy="42" r="14" fill="#0F172A" stroke="#00FF85" stroke-width="2.5"/>'
-    '<polygon points="32,34 37,38 35,44 29,44 27,38" fill="#00FF85"/>'
+    '<svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M34 25 L29 14 L38 18 L36 7 L45 14 L50 5 L55 15 L62 6 L61 17 L68 11 L64 22 Q50 18 34 25 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M36 27 Q52 21 63 24 L60 19 Q50 22 36 27 Z" fill="#070B12"/>'
+    '<path d="M38 28 C48 24 62 24 62 28 C64 25 71 29 73 36 C70 33 65 30 64 33 C59 29 48 29 45 34 C48 35 42 36 41 38 C44 38 45 43 49 44 C55 45 61 45 62 45 C58 39 50 39 47 38 C51 35 55 38 59 36 C59 40 62 43 65 44 C70 43 72 43 73 44 C70 39 66 37 68 36 C72 37 76 38 74 41 C75 42 76 40 77 41 C83 52 85 62 81 74 C79 72 78 70 77 73 C75 84 71 89 65 92 C64 90 64 87 63 89 C55 94 45 94 36 90 C38 82 37 74 36 70 C33 74 29 79 26 81 C22 76 22 67 23 59 C20 60 17 61 17 60 C19 52 22 46 25 42 C23 42 20 43 21 41 C24 35 28 31 32 29 C30 33 32 38 35 38 C33 34 34 30 39 30 C41 30 41 28 38 28 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M55 52 L64 47 L69 50 L69 55 L64 59 L58 60 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M72 51 L75 48 L76 55 L75 59 L72 55 Z" stroke="#070B12" stroke-width="3.5" stroke-linejoin="round" fill="none"/>'
+    '<path d="M60 64 L68 59 L72 59 L74 63 L72 68 L69 70 L69 65 L63 68 Z" stroke="#070B12" stroke-width="3.6" stroke-linejoin="round" fill="none"/>'
     '</svg></div>'
 )
 
@@ -902,7 +984,7 @@ bank_delta_str = f"{'+' if bank_delta > 0 else ''}£{bank_delta:.1f}m vs LW"
 render_html(f"""
 <div class="kcfc-hero">
   <div class="kcfc-hero-left">
-    {emblem_svg}
+    {pl_vector_svg}
     <div>
       <div class="kcfc-hero-title">KINGS COUNTY FC</div>
       <div class="kcfc-hero-sub">TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE</div>
@@ -971,7 +1053,7 @@ if classic_leagues:
         default_lg_id = classic_leagues[0]["id"]
 
     chosen_lg_id = st.selectbox(
-        "Primary Mini-League Strategy Focus (Synchronizes Transfers, Differentials & AI Advice):",
+        "Primary Mini-League Strategy Focus:",
         options=list(lg_options.keys()),
         format_func=lambda x: lg_options[x],
         index=list(lg_options.keys()).index(default_lg_id),
@@ -989,7 +1071,6 @@ if classic_leagues:
             my_league_pts = my_entry_row["total"] if my_entry_row else total_pts
             gap_to_leader = leader_total - my_league_pts
 
-            # Scan Top 3 Rivals in Target Mini-League for Block/Attack Matrix
             top_rivals = [r for r in target_league_standings[:4] if r["entry"] != team_id][:3]
             for rv in top_rivals:
                 rv_picks = fetch_rival_picks(rv["entry"], last_active_gw)
@@ -1010,9 +1091,9 @@ tab_pitch, tab_transfers, tab_league, tab_ai = st.tabs([
     "AI Tactical Advisor"
 ])
 
-# Helper to render a single player card + non-refreshing fragment button
-def render_player_column(col_obj, p, sel_pid, bench_slot=None):
-    pid = p["id"]
+# Helper to build a single-line HTML node for a player on the pitch or bench
+def build_pitch_node_html(p, is_selected=False, bench_slot=None):
+    pid = p.get("id")
     code = str(p.get("code") or p.get("photo", "").split(".")[0].lstrip("p"))
     img_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
     fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type") == 1))
@@ -1030,28 +1111,29 @@ def render_player_column(col_obj, p, sel_pid, bench_slot=None):
     runway = p.get("runway", [])
     nxt = runway[0] if runway else {"opp": "TBD", "venue": "H", "fdr": 3}
     fdr_c = f"fdr-{nxt['fdr']}"
-    sel_c = "selected" if pid == sel_pid else ""
+    sel_c = "selected" if is_selected else ""
     price = p.get("now_cost", 50) / 10.0
 
-    with col_obj:
-        render_html(
-            f"<div class='pitch-node {sel_c}'>"
-            f"<div class='node-avatar-wrap'>"
-            f"<img src='{img_url}' referrerpolicy='no-referrer' loading='lazy' "
-            f"onerror=\"this.onerror=null;this.src='{fallback_svg}';\" />"
-            f"{cap_badge}{flag_badge}"
-            f"</div>"
-            f"<div class='node-name'>{p.get('web_name')}</div>"
-            f"<div class='node-meta'>£{price:.1f}m &bull; {p.get('xp_next')}xP</div>"
-            f"<div class='fdr-pill {fdr_c}'>{nxt['opp']} ({nxt['venue']})</div>"
-            f"</div>"
-        )
-        if st.button("Dossier", key=f"dos_btn_{pid}", use_container_width=True):
-            st.session_state["selected_pid"] = pid
-            st.rerun(scope="fragment")
+    lg_param = st.query_params.get("lg_id", "")
+    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&pid={pid}#player-dossier"
+
+    return (
+        f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
+        f"<div class='pitch-node {sel_c}'>"
+        f"<div class='node-avatar-wrap'>"
+        f"<img src='{img_url}' referrerpolicy='no-referrer' loading='lazy' "
+        f"onerror=\"this.onerror=null;this.src='{fallback_svg}';\" />"
+        f"{cap_badge}{flag_badge}"
+        f"</div>"
+        f"<div class='node-name'>{p.get('web_name')}</div>"
+        f"<div class='node-meta'>£{price:.1f}m &bull; {p.get('xp_next')}xP</div>"
+        f"<div class='fdr-pill {fdr_c}'>{nxt['opp']} ({nxt['venue']})</div>"
+        f"<div class='node-dossier-btn'>Dossier</div>"
+        f"</div></a>"
+    )
 
 # =========================================================
-# TAB 1: ZERO-REFRESH TACTICAL PITCH, DOSSIER & GW DEBRIEF
+# TAB 1: FULL TACTICAL PITCH VIEW, DOSSIER & GW DEBRIEF
 # =========================================================
 @st.fragment
 def render_pitch_and_dossier_fragment():
@@ -1065,35 +1147,56 @@ def render_pitch_and_dossier_fragment():
         fwds = [p for p in starting_xi if p.get("element_type") == 4]
         bench_sorted = sorted(bench_xi, key=lambda x: x.get("pick_pos", 12))
 
-        render_html("<div class='pitch-surface'><div style='font-size:10px; font-weight:800; color:#00FF85; text-align:center; letter-spacing:1.2px; margin-bottom:8px;'>STARTING XI FORMATION &bull; TAP DOSSIER UNDER ANY PLAYER</div></div>")
+        gk_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in gks)
+        def_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in defs)
+        mid_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in mids)
+        fwd_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in fwds)
 
-        # GK Row
-        gk_cols = st.columns([1.5, 1, 1.5])
-        if gks:
-            render_player_column(gk_cols[1], gks[0], sel_pid)
+        # Render Full Unified Tactical Pitch View
+        render_html(f"""
+        <div class="pitch-wrapper">
+          <div class="pitch-row">{gk_html}</div>
+          <div class="pitch-row">{def_html}</div>
+          <div class="pitch-row">{mid_html}</div>
+          <div class="pitch-row">{fwd_html}</div>
+        </div>
+        """)
 
-        # DEF Row
-        def_cols = st.columns(max(len(defs), 1))
-        for i, d_p in enumerate(defs):
-            render_player_column(def_cols[i], d_p, sel_pid)
-
-        # MID Row
-        mid_cols = st.columns(max(len(mids), 1))
-        for i, m_p in enumerate(mids):
-            render_player_column(mid_cols[i], m_p, sel_pid)
-
-        # FWD Row
-        fwd_cols = st.columns(max(len(fwds), 1))
-        for i, f_p in enumerate(fwds):
-            render_player_column(fwd_cols[i], f_p, sel_pid)
-
-        render_html("<div style='margin-top:12px; font-size:11px; font-weight:800; color:var(--text-secondary); letter-spacing:0.8px;'>PRIORITY AUTO-SUB BENCH</div>")
-        b_cols = st.columns(4)
-        for i, b_p in enumerate(bench_sorted[:4]):
-            render_player_column(b_cols[i], b_p, sel_pid, bench_slot=i+1)
+        # Render Priority Auto-Sub Bench Tray
+        bench_html = "".join(
+            build_pitch_node_html(p, p["id"] == sel_pid, bench_slot=i+1)
+            for i, p in enumerate(bench_sorted)
+        )
+        render_html(f"""
+        <div class="bench-tray">
+          <div class="bench-label">
+            <span>PRIORITY AUTO-SUB BENCH</span>
+            <span style="color:#00FF85;">TAP ANY PLAYER FOR DOSSIER</span>
+          </div>
+          <div class="pitch-row" style="margin-bottom:0;">{bench_html}</div>
+        </div>
+        """)
 
     with col_right:
-        sp = next((x for x in full_squad if x["id"] == sel_pid), full_squad[0] if full_squad else None)
+        render_html("<div id='player-dossier'></div>")
+
+        # Instant Zero-Reload Player Switcher inside Fragment
+        squad_options = {
+            p["id"]: f"{'[C] ' if p.get('is_captain') else ''}{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m | {p['xp_next']}xP)"
+            for p in full_squad
+        }
+        if squad_options:
+            chosen_pid = st.selectbox(
+                "Quick-Switch Player Dossier (Instant Zero-Refresh):",
+                options=list(squad_options.keys()),
+                format_func=lambda x: squad_options[x],
+                index=list(squad_options.keys()).index(sel_pid) if sel_pid in squad_options else 0
+            )
+            if chosen_pid != sel_pid:
+                st.session_state["selected_pid"] = chosen_pid
+                st.rerun(scope="fragment")
+
+        sp = next((x for x in full_squad if x["id"] == st.session_state.get("selected_pid")), full_squad[0] if full_squad else None)
         if sp:
             code = str(sp.get("code") or sp.get("photo", "").split(".")[0].lstrip("p"))
             p_img = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
@@ -1136,7 +1239,7 @@ def render_pitch_and_dossier_fragment():
                      onerror="this.onerror=null;this.src='{p_svg}';" />
                 <div style="flex:1;">
                   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                    <span style="font-size:19px; font-weight:800; color:#FFF;">{sp.get('first_name')} {sp.get('second_name')}</span>
+                    <span style="font-size:20px; font-weight:800; color:#FFF;">{sp.get('first_name')} {sp.get('second_name')}</span>
                     <span style="font-size:10px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(0,255,133,0.12); color:{verdict_col}; border:1px solid {verdict_col};">
                       {verdict_tag}
                     </span>
@@ -1207,7 +1310,6 @@ with tab_pitch:
     bench_pts_left = sum(p.get("last_gw_pts", 0) for p in bench_xi)
     bench_stars = [p for p in bench_xi if p.get("last_gw_pts", 0) >= 5]
     underperformers = [p for p in starting_xi if p.get("last_gw_pts", 0) <= 2 and p.get("element_type") != 1]
-    squad_alerts = [p for p in full_squad if p.get("news") or p.get("next_fdr", 3) >= 4]
 
     wins_str = ", ".join(f"<strong>{p['web_name']}</strong> ({p['last_gw_pts']} pts)" for p in top_performers) or "Steady baseline contributions."
     imp_str = (
@@ -1269,7 +1371,6 @@ with tab_transfers:
 
     squad_ids = {p["id"] for p in full_squad}
 
-    # Outfield-First Urgency Scoring (GKs penalized by -25 urgency unless injured)
     sell_rankings = []
     for p in full_squad:
         chance = p.get("chance_of_playing_next_round")
@@ -1288,7 +1389,6 @@ with tab_transfers:
 
     sell_rankings.sort(key=lambda x: x[0], reverse=True)
 
-    # Identify best cash-cow downgrade candidate across squad to fund a 2-move luxury upgrade
     funding_pairs = []
     for donor in full_squad:
         if donor.get("element_type") == 1:
@@ -1317,7 +1417,6 @@ with tab_transfers:
             f"Projected for only {sell_p.get('xp_next')} xP next GW ({sell_p.get('xp_5gw')} xP over 5 GWs) with Avg FDR {sell_p.get('avg_5_fdr')}"
         )
 
-        # Direct in-budget replacements
         direct_cands = [
             cand for cand in elements_map.values()
             if cand["id"] not in squad_ids
@@ -1348,7 +1447,6 @@ with tab_transfers:
                 f"</div></div>"
             )
 
-        # Next-Level Feature A: 2-Move Premium Upgrade Path (e.g. Cherki -> Saka)
         upgrade_banner_html = ""
         elite_targets = [
             cand for cand in elements_map.values()
@@ -1371,7 +1469,7 @@ with tab_transfers:
                 upgrade_banner_html = (
                     f"<div class='upgrade-card'>"
                     f"<div style='font-size:11px; font-weight:800; color:#06B6D4; text-transform:uppercase;'>"
-                    f"🚀 2-TRANSFER PREMIUM UPGRADE PATH UNLOCKED: {sell_p.get('web_name')} &rarr; {dream_p.get('web_name')} (£{dream_cost:.1f}m)"
+                    f"2-TRANSFER PREMIUM UPGRADE PATH UNLOCKED: {sell_p.get('web_name')} &rarr; {dream_p.get('web_name')} (£{dream_cost:.1f}m)"
                     f"</div>"
                     f"<div style='font-size:12px; color:#E2E8F0; margin-top:4px;'>"
                     f"You are <strong>£{shortfall:.1f}m</strong> short of <strong>{dream_p.get('web_name')} ({dream_p.get('team_short')}, {dream_p.get('xp_5gw')} 5-GW xP)</strong>. "
@@ -1472,7 +1570,6 @@ with tab_transfers:
         gw1_xp_delta = round(sum(x["xp_next"] for x in selected_in_objs) - sum(x["xp_next"] for x in out_objs) + hit_cost, 1)
         gw5_xp_delta = round(sum(x["xp_5gw"] for x in selected_in_objs) - sum(x["xp_5gw"] for x in out_objs) + hit_cost, 1)
 
-        # Validate 3-players-per-club rule on simulated squad
         sim_squad_teams = [p["team"] for p in full_squad if p["id"] not in selected_out_ids] + [p["team"] for p in selected_in_objs]
         club_violations = [
             teams_map[t_id]["short_name"]
@@ -1566,7 +1663,6 @@ with tab_league:
             """)
 
         with col_spy:
-            # Next-Level Feature B: Top-3 Rival Block/Attack Matrix
             my_xi_ids = {p["id"] for p in starting_xi}
             danger_template_ids = [pid for pid, cnt in rival_threat_players.items() if cnt >= 2 and pid not in my_xi_ids]
             danger_objs = [elements_map[pid] for pid in danger_template_ids if pid in elements_map]
@@ -1575,7 +1671,6 @@ with tab_league:
             my_unique_diffs = [p for p in starting_xi if rival_threat_players.get(p["id"], 0) == 0]
             my_unique_diffs.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
 
-            # Best external differential not owned by you OR top 3 rivals
             unowned_killers = [
                 p for p in elements_map.values()
                 if p["id"] not in squad_ids
@@ -1596,11 +1691,9 @@ with tab_league:
                 rv_cap_id = next((pk["element"] for pk in rv_json.get("picks", []) if pk.get("is_captain")), None) if rv_json else None
                 rv_cap_name = elements_map.get(rv_cap_id, {}).get("web_name", "Unknown")
 
-                shared_cnt = len(my_xi_ids.intersection(rv_xi_ids))
                 their_only = [elements_map[i] for i in (rv_xi_ids - my_xi_ids) if i in elements_map]
                 their_only.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
 
-                # Concrete Action Plan to overtake this specific rival
                 best_my_cap = sorted(starting_xi, key=lambda x: x.get("xp_next", 0), reverse=True)[0]
                 weakest_my_starter = sorted([p for p in starting_xi if p["element_type"] != 1], key=lambda x: x.get("xp_next", 0))[0]
                 top_block_target = their_only[0] if their_only else None
@@ -1680,7 +1773,6 @@ with tab_ai:
             for p in top_market
         )
 
-        # 1. Live Gemini 2.5 Flash + Google Search Grounding
         if active_key:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={active_key}"
@@ -1705,14 +1797,12 @@ with tab_ai:
             except Exception:
                 pass
 
-        # 2. Deep Dynamic Natural-Language Entity & Math Engine (Never repeats canned text)
         q_low = query_str.lower()
         mentioned_players = [
             p for p in elements_map.values()
             if len(p.get("web_name", "")) >= 3 and p["web_name"].lower() in q_low
         ]
 
-        # If user asks about specific player(s) (e.g., "Cherki for Saka" or "What about Palmer?")
         if mentioned_players:
             lines = [f"### Tactical Player Breakdown (GW{upcoming_gw}–GW{upcoming_gw+4})"]
             owned_mentions = [p for p in mentioned_players if p["id"] in squad_ids]
@@ -1754,7 +1844,6 @@ with tab_ai:
                     )
             return "\n".join(lines)
 
-        # Dynamic analytical response based on live squad rankings
         outfield_starters = sorted([p for p in starting_xi if p["element_type"] != 1], key=lambda x: x["xp_next"], reverse=True)
         cap_1, cap_2 = outfield_starters[0], outfield_starters[1]
         weakest_2 = outfield_starters[-2:]
