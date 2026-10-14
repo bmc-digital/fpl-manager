@@ -546,4 +546,78 @@ with tab_transfer:
             c_out_cost = chosen_sell_p.get("now_cost", 50) / 10
             c_in_cost = chosen_buy_p.get("now_cost", 50) / 10
             sim_bank_left = chosen_budget - c_in_cost
-            sim_form_diff = float(chosen_buy_p.get("form", 0) or 0) - float(chosen_sell_p.get("form", 0) or 0
+            sim_form_diff = float(chosen_buy_p.get("form", 0) or 0) - float(chosen_sell_p.get("form", 0) or 0)
+            sim_pts_diff = chosen_buy_p.get("total_points", 0) - chosen_sell_p.get("total_points", 0)
+
+            st.markdown("#### **Simulation Impact Forecast**")
+            col_met1, col_met2, col_met3 = st.columns(3)
+            col_met1.metric("Bank Balance", f"£{sim_bank_left:.1f}m")
+            col_met2.metric("Form Delta", f"{'+' if sim_form_diff >= 0 else ''}{sim_form_diff:.1f}")
+            col_met3.metric("Season Pts Delta", f"{'+' if sim_pts_diff >= 0 else ''}{sim_pts_diff}")
+
+            if st.button("Apply Mockup to Active Squad State", use_container_width=True):
+                new_squad = []
+                for sp in squad_pool:
+                    if sp["id"] == chosen_sell_p["id"]:
+                        swapped = dict(chosen_buy_p)
+                        swapped["is_captain"] = sp.get("is_captain", False)
+                        swapped["is_vice_captain"] = sp.get("is_vice_captain", False)
+                        swapped["pick_position"] = sp.get("pick_position", 1)
+                        swapped["multiplier"] = sp.get("multiplier", 1)
+                        swapped["team_code_str"] = teams_dict.get(swapped["team"], {}).get("short_name", "EPL")
+                        swapped["next_match"] = team_next_fixtures.get(swapped["team"], {"opponent": "TBD", "venue": "H", "fdr": 3})
+                        new_squad.append(swapped)
+                    else:
+                        new_squad.append(sp)
+                st.session_state["active_squad"] = new_squad
+                st.session_state["selected_player_id"] = chosen_buy_p["id"]
+                st.success(f"Mockup applied: {chosen_buy_p['web_name']} is now in your active squad and linked to AI Advisor.")
+                st.rerun()
+
+
+# ---------------------------------------------------------
+# TAB 3: DEDICATED AI LIVE CHAT
+# ---------------------------------------------------------
+with tab_chat:
+    active_squad_ref = st.session_state.get("active_squad", [])
+    
+    with st.container(border=True):
+        st.markdown("### **AI Lineup Advisor & Conversational Intelligence**")
+        st.caption("Active context loaded: 15 squad players, upcoming FDR difficulties, and live budget figures.")
+
+        # Quick Tap Action Chips
+        qc1, qc2, qc3 = st.columns(3)
+        if qc1.button("Optimize Captaincy", key="tab_opt_cap", use_container_width=True):
+            resp = generate_ai_advisor_response("Optimize Captaincy", active_squad_ref, m_bank, current_gw)
+            st.session_state["chat_messages"].append({"role": "user", "content": "Optimize Captaincy"})
+            st.session_state["chat_messages"].append({"role": "assistant", "content": resp})
+            st.rerun()
+
+        if qc2.button("Manage Injuries", key="tab_man_inj", use_container_width=True):
+            resp = generate_ai_advisor_response("Manage Injuries", active_squad_ref, m_bank, current_gw)
+            st.session_state["chat_messages"].append({"role": "user", "content": "Manage Injuries"})
+            st.session_state["chat_messages"].append({"role": "assistant", "content": resp})
+            st.rerun()
+
+        if qc3.button("Suggest Free Hit", key="tab_sug_fh", use_container_width=True):
+            resp = generate_ai_advisor_response("Suggest Free Hit", active_squad_ref, m_bank, current_gw)
+            st.session_state["chat_messages"].append({"role": "user", "content": "Suggest Free Hit"})
+            st.session_state["chat_messages"].append({"role": "assistant", "content": resp})
+            st.rerun()
+
+        st.divider()
+
+        @st.fragment
+        def render_chat_stream():
+            for message in st.session_state["chat_messages"]:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+
+        render_chat_stream()
+
+        user_query = st.chat_input("Enter your tactical or transfer question...", key="tab_chat_input")
+        if user_query:
+            st.session_state["chat_messages"].append({"role": "user", "content": user_query})
+            bot_reply = generate_ai_advisor_response(user_query, active_squad_ref, m_bank, current_gw)
+            st.session_state["chat_messages"].append({"role": "assistant", "content": bot_reply})
+            st.rerun()
