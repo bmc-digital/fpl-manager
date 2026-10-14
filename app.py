@@ -44,7 +44,7 @@ if not st.session_state["authenticated"]:
                 st.error("Incorrect passcode.")
     st.stop()
 
-# HIGH-END PREMIER LEAGUE APP STYLES (CLEAN, NO BANNERS, SEAMLESS IMAGES)
+# HIGH-END PREMIER LEAGUE APP STYLES (CLEAN, NO BANNERS, ZERO BROKEN IMAGES)
 pl_styles = clean_html("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
@@ -63,13 +63,13 @@ pl_styles = clean_html("""
     }
     
     .stApp {
-        background-color: #0b0914;
+        background-color: #0a0812;
         color: #e2e4ec;
         padding-top: 0 !important;
     }
     
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 1.2rem !important;
         padding-bottom: 2rem !important;
         max-width: 950px !important;
     }
@@ -80,7 +80,7 @@ pl_styles = clean_html("""
     }
     
     .app-card {
-        background-color: #151622;
+        background-color: #141520;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 16px;
         padding: 16px 18px;
@@ -88,77 +88,15 @@ pl_styles = clean_html("""
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     
+    /* Tactical Pitch Surface */
     .pitch-surface {
-        background: radial-gradient(circle at 50% 30%, #152d1d 0%, #0d1e13 65%, #07100a 100%);
+        background: radial-gradient(circle at 50% 30%, #152d1d 0%, #0d1e13 65%, #07130b 100%);
         border: 1.5px solid rgba(0, 230, 118, 0.25);
         border-radius: 20px;
-        padding: 22px 10px;
+        padding: 18px 10px;
         margin: 12px 0;
         position: relative;
         box-shadow: inset 0 0 50px rgba(0,0,0,0.6), 0 8px 30px rgba(0,0,0,0.3);
-    }
-    
-    .pitch-row-flex {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-        flex-wrap: wrap;
-    }
-    
-    .pitch-player-item {
-        background-color: rgba(21, 22, 34, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        padding: 8px 6px;
-        width: 84px;
-        min-width: 84px;
-        text-align: center;
-        backdrop-filter: blur(8px);
-        position: relative;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-        transition: transform 0.15s ease, border-color 0.15s ease;
-    }
-    .pitch-player-item:hover {
-        transform: translateY(-2px);
-        border-color: #00e676;
-    }
-    
-    .avatar-frame {
-        width: 50px;
-        height: 50px;
-        margin: 0 auto;
-        position: relative;
-        border-radius: 50%;
-        background-color: #1c1d2a;
-        overflow: hidden;
-        border: 1.5px solid rgba(255, 255, 255, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .avatar-frame img.player-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-    .avatar-frame img.crest-fallback {
-        width: 28px;
-        height: 28px;
-        object-fit: contain;
-        display: block;
-    }
-    
-    .player-label {
-        font-size: 11px;
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-top: 5px;
-        color: #f0f1f5;
     }
     
     .fdr-pill {
@@ -176,50 +114,76 @@ pl_styles = clean_html("""
     .fdr-5 { background-color: #b70028; color: #ffffff; }
     
     .badge-c {
-        position: absolute;
-        top: -6px;
-        right: -6px;
         background: #00e676;
         color: #002e14;
         font-weight: 900;
         font-size: 9px;
-        padding: 2px 5px;
-        border-radius: 5px;
-        box-shadow: 0 2px 6px rgba(0, 230, 118, 0.4);
+        padding: 1px 4px;
+        border-radius: 4px;
+        display: inline-block;
     }
     .badge-vc {
-        position: absolute;
-        top: -6px;
-        right: -6px;
         background: #00d2ff;
         color: #002a35;
         font-weight: 900;
         font-size: 9px;
-        padding: 2px 5px;
-        border-radius: 5px;
-    }
-    .badge-sub {
-        position: absolute;
-        top: -6px;
-        left: -6px;
-        background: #434654;
-        color: #e2e4ec;
-        font-weight: 700;
-        font-size: 8px;
-        padding: 2px 4px;
+        padding: 1px 4px;
         border-radius: 4px;
+        display: inline-block;
     }
     
     .bench-shelf {
         background-color: #12131d;
         border: 1px dashed rgba(255,255,255,0.12);
         border-radius: 16px;
-        padding: 14px 10px;
+        padding: 12px 10px;
         margin-top: 14px;
     }
 </style>
 """)
 st.markdown(pl_styles, unsafe_allow_html=True)
+
+# Official Premier League Club Kit Colors
+TEAM_COLORS = {
+    'ARS': {'primary': '#EF0107', 'secondary': '#FFFFFF'},
+    'AVL': {'primary': '#670E36', 'secondary': '#95BFE5'},
+    'BOU': {'primary': '#DA291C', 'secondary': '#000000'},
+    'BRE': {'primary': '#E30613', 'secondary': '#FFFFFF'},
+    'BHA': {'primary': '#0057B8', 'secondary': '#FFFFFF'},
+    'CHE': {'primary': '#034694', 'secondary': '#FFFFFF'},
+    'CRY': {'primary': '#1B458F', 'secondary': '#C4122E'},
+    'EVE': {'primary': '#003399', 'secondary': '#FFFFFF'},
+    'FUL': {'primary': '#FFFFFF', 'secondary': '#000000'},
+    'IPS': {'primary': '#004488', 'secondary': '#FFFFFF'},
+    'LEI': {'primary': '#003090', 'secondary': '#FDBE11'},
+    'LIV': {'primary': '#C8102E', 'secondary': '#FFFFFF'},
+    'MCI': {'primary': '#6CABDD', 'secondary': '#FFFFFF'},
+    'MUN': {'primary': '#DA291C', 'secondary': '#000000'},
+    'NEW': {'primary': '#241F20', 'secondary': '#FFFFFF'},
+    'NFO': {'primary': '#DD0000', 'secondary': '#FFFFFF'},
+    'SOU': {'primary': '#D71920', 'secondary': '#FFFFFF'},
+    'TOT': {'primary': '#FFFFFF', 'secondary': '#132257'},
+    'WHU': {'primary': '#7A263A', 'secondary': '#1BB1E7'},
+    'WOL': {'primary': '#FDB913', 'secondary': '#231F20'}
+}
+
+# Generates clean, authentic vector soccer kit jersey (100% vector SVG - never broken, never 404, never XML error)
+def generate_kit_svg(team_short, is_gkp=False, size=46):
+    if is_gkp:
+        p_col, s_col = "#00e676", "#003919"
+    else:
+        colors = TEAM_COLORS.get(team_short, {'primary': '#37003c', 'secondary': '#00ff87'})
+        p_col = colors['primary']
+        s_col = colors['secondary']
+
+    return clean_html(f"""
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="{size}" height="{size}" style="display:block; margin:0 auto; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
+      <path d="M30,18 L15,35 L28,45 L35,36 L35,82 L65,82 L65,36 L72,45 L85,35 L70,18 L58,22 C55,25 45,25 42,22 Z" fill="{p_col}" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <path d="M15,35 L28,45 L24,50 L12,40 Z" fill="{s_col}"/>
+      <path d="M85,35 L72,45 L76,50 L88,40 Z" fill="{s_col}"/>
+      <path d="M42,22 C45,25 55,25 58,22 C55,27 45,27 42,22 Z" fill="{s_col}"/>
+    </svg>
+    """)
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -243,16 +207,7 @@ def calculate_potential_score(player, fdr):
     score = (form_val * 0.6) + (ep_val * 0.4) + fdr_bonus
     return round(max(score, 0.0), 2)
 
-# Helper to render seamless player avatar (auto-hides broken images, falls back to official crest)
-def render_avatar_html(photo_url, badge_url, size=50):
-    return clean_html(f"""
-    <div class="avatar-frame" style="width: {size}px; height: {size}px;">
-        <img class="player-img" src="{photo_url}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <img class="crest-fallback" src="{badge_url}" referrerpolicy="no-referrer" style="display: none; width: {int(size*0.58)}px; height: {int(size*0.58)}px;">
-    </div>
-    """)
-
-# APP HEADER (CLEAN TOP BAR, NO INPUT FIELD NEEDED)
+# TOP HEADER
 col_head, col_actions = st.columns([4, 2])
 with col_head:
     st.markdown("""
@@ -260,9 +215,7 @@ with col_head:
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
             </svg>
-            <div>
-                <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #f0f1f5; letter-spacing: -0.3px;">FPL Elite Manager</h1>
-            </div>
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #f0f1f5; letter-spacing: -0.3px;">FPL Elite Manager</h1>
         </div>
     """, unsafe_allow_html=True)
 
@@ -277,7 +230,6 @@ with col_actions:
             st.session_state["authenticated"] = False
             st.rerun()
 
-# Automatically load using default configured team_id
 team_id = DEFAULT_TEAM_ID
 
 with st.spinner("Analyzing live Premier League metrics..."):
@@ -294,7 +246,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
             if event["is_next"]:
                 next_gw = event["id"]
 
-        fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={next_gw}")
+            fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={next_gw}")
         club_matches = {}
         for fix in fixtures:
             h, a = fix["team_h"], fix["team_a"]
@@ -338,12 +290,8 @@ with st.spinner("Analyzing live Premier League metrics..."):
             fdr = club_matches.get(p["team"], {}).get("fdr", 3)
             opp = club_matches.get(p["team"], {}).get("opp", "TBD")
             score = calculate_potential_score(p, fdr)
+            t_short = teams[p["team"]]["short_name"]
             
-            photo_code = str(p.get("code", "")).replace(".jpg", "").replace("p", "")
-            team_code = teams[p["team"]]["code"]
-            photo_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{photo_code}.png"
-            badge_url = f"https://resources.premierleague.com/premierleague/badges/t{team_code}.png"
-
             squad_list.append({
                 "data": p,
                 "fdr": fdr,
@@ -351,10 +299,10 @@ with st.spinner("Analyzing live Premier League metrics..."):
                 "score": score,
                 "pos_id": p["element_type"],
                 "pos": positions[p["element_type"]],
-                "photo": photo_url,
-                "badge": badge_url,
+                "team_short": t_short,
                 "team_name": teams[p["team"]]["name"],
-                "team_code": team_code
+                "team_code": teams[p["team"]]["code"],
+                "is_gkp": (p["element_type"] == 1)
             })
 
         # FORMATION SOLVER
@@ -389,58 +337,19 @@ with st.spinner("Analyzing live Premier League metrics..."):
                 remaining_outfield = defs[d_cnt:] + mids[m_cnt:] + fwds[f_cnt:]
                 best_bench_outfield = sorted(remaining_outfield, key=lambda x: x["score"], reverse=True)
 
-            sorted_by_pot = sorted(best_starters, key=lambda x: x["score"], reverse=True)
-            captain = sorted_by_pot[0]
-            vice_captain = sorted_by_pot[1]
+        sorted_by_pot = sorted(best_starters, key=lambda x: x["score"], reverse=True)
+        captain = sorted_by_pot[0]
+        vice_captain = sorted_by_pot[1]
 
-        # POPUP MODAL FOR DETAILED PLAYER STATS
-        if hasattr(st, "dialog"):
-            @st.dialog("Player Dossier & Match Readiness")
-            def show_player_modal(p_item):
-                p = p_item["data"]
-                chance = p.get("chance_of_playing_next_round")
-                status_text = "100% Fit & Available"
-                status_color = "#00e676"
-                if p["status"] != "a":
-                    if chance is not None:
-                        status_text = f"{chance}% Chance of Playing"
-                        status_color = "#ffb300" if chance >= 50 else "#ff3b5c"
-                    else:
-                        status_text = "Out / Suspended (0%)"
-                        status_color = "#ff3b5c"
+        # Selection state for one-click player inspection
+        if "selected_player_id" not in st.session_state:
+            st.session_state["selected_player_id"] = captain["data"]["id"]
 
-                avatar_html = render_avatar_html(p_item['photo'], p_item['badge'], size=60)
-                header_html = clean_html(f"""
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    {avatar_html}
-                    <div>
-                        <h3 style="margin: 0; font-size: 18px; color: #f0f1f5;">{p['first_name']} {p['second_name']}</h3>
-                        <div style="font-size: 12px; color: #8e92a2;">{p_item['team_name']} • {p_item['pos']} • £{p['now_cost']/10:.1f}m</div>
-                        <div style="display: inline-block; background: {status_color}22; color: {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 4px;">
-                            {status_text}
-                        </div>
-                    </div>
-                </div>
-                """)
-                st.markdown(header_html, unsafe_allow_html=True)
-
-                if p.get("news"):
-                    st.info(f"Official Bulletin: {p['news']}")
-
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Current Form", p.get("form", "0.0"))
-                c2.metric("Total Points", p.get("total_points", 0))
-                c3.metric("Selected By", f"{p.get('selected_by_percent', '0')}%")
-
-                c4, c5, c6 = st.columns(3)
-                c4.metric("Exp. Goals (xG)", p.get("expected_goals", "0.00"))
-                c5.metric("Exp. Assists (xA)", p.get("expected_assists", "0.00"))
-                c6.metric("Exp. Involvements", p.get("expected_goal_involvements", "0.00"))
-
-                c7, c8, c9 = st.columns(3)
-                c7.metric("Minutes Played", p.get("minutes", 0))
-                c8.metric("Bonus Points", p.get("bonus", 0))
-                c9.metric("Next Match", p_item["opp"])
+        def get_inspected_player():
+            for sp in squad_list:
+                if sp["data"]["id"] == st.session_state["selected_player_id"]:
+                    return sp
+            return captain
 
         # NAVIGATION TABS
         tab_pitch, tab_transfers, tab_simulator, tab_chips, tab_news = st.tabs([
@@ -451,70 +360,137 @@ with st.spinner("Analyzing live Premier League metrics..."):
             "Intel Feed"
         ])
 
-        def render_pitch_card(p, tag=""):
-            badge_html = ""
-            if p == captain:
-                badge_html = '<div class="badge-c">C</div>'
-            elif p == vice_captain:
-                badge_html = '<div class="badge-vc">VC</div>'
-            elif tag:
-                badge_html = f'<div class="badge-sub">{tag}</div>'
-
-            avatar_html = render_avatar_html(p['photo'], p['badge'], size=48)
-            return clean_html(f"""
-            <div class="pitch-player-item">
-                {badge_html}
-                {avatar_html}
-                <div class="player-label">{p['data']['web_name']}</div>
-                <div><span class="fdr-pill fdr-{p['fdr']}">{p['opp']}</span></div>
-                <div style="font-size: 10px; font-weight: 800; color: #00e676; margin-top: 2px;">{p['score']} pts</div>
-            </div>
-            """)
-
-        # --- TAB 1: STARTING XI ---
+        # --- TAB 1: STARTING XI (ONE-CLICK SELECTION UPDATES DOSSIER AT BOTTOM) ---
         with tab_pitch:
             st.markdown(clean_html(f"""
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
                 <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #f0f1f5;">Gameweek {next_gw} Starting XI</h3>
                 <div style="font-size: 12px; color: #00e676; font-weight: 700;">Tactical Formation: {best_formation}</div>
             </div>
+            <p style="font-size: 12px; color: #8e92a2; margin: 2px 0 8px 0;">Tap any player to open their match readiness dossier below.</p>
             """), unsafe_allow_html=True)
 
-            pitch_rows = []
-            pitch_rows.append(f'<div class="pitch-row-flex">{render_pitch_card(starter_gkp)}</div>')
-            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_pitch_card(p) for p in best_starters if p["pos_id"] == 2])}</div>')
-            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_pitch_card(p) for p in best_starters if p["pos_id"] == 3])}</div>')
-            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_pitch_card(p) for p in best_starters if p["pos_id"] == 4])}</div>')
+            def render_interactive_player_col(col, p, tag=""):
+                with col:
+                    is_active = (p["data"]["id"] == st.session_state["selected_player_id"])
+                    active_border = "border: 2px solid #00e676; box-shadow: 0 0 10px rgba(0,230,118,0.5);" if is_active else "border: 1px solid rgba(255,255,255,0.12);"
+                    
+                    role_badge = ""
+                    if p == captain:
+                        role_badge = '<div style="position: absolute; top: -6px; right: -6px; background: #00e676; color: #002e14; font-weight: 900; font-size: 9px; padding: 1px 4px; border-radius: 4px;">C</div>'
+                    elif p == vice_captain:
+                        role_badge = '<div style="position: absolute; top: -6px; right: -6px; background: #00d2ff; color: #002a35; font-weight: 900; font-size: 9px; padding: 1px 4px; border-radius: 4px;">VC</div>'
+                    elif tag:
+                        role_badge = f'<div style="position: absolute; top: -6px; left: -6px; background: #434654; color: #e2e4ec; font-weight: 700; font-size: 8px; padding: 1px 4px; border-radius: 4px;">{tag}</div>'
 
-            pitch_html = clean_html(f'<div class="pitch-surface">{"".join(pitch_rows)}</div>')
-            st.markdown(pitch_html, unsafe_allow_html=True)
+                    kit_svg = generate_kit_svg(p["team_short"], is_gkp=p["is_gkp"], size=40)
+                    
+                    st.markdown(clean_html(f"""
+                    <div style="background: rgba(20,22,34,0.9); {active_border} border-radius: 12px; padding: 6px 2px; text-align: center; position: relative;">
+                        {role_badge}
+                        {kit_svg}
+                        <div style="font-size: 11px; font-weight: 700; color: #f0f1f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;">{p['data']['web_name']}</div>
+                        <div><span class="fdr-pill fdr-{p['fdr']}">{p['opp']}</span></div>
+                        <div style="font-size: 10px; font-weight: 800; color: #00e676; margin-top: 2px;">{p['score']} pts</div>
+                    </div>
+                    """), unsafe_allow_html=True)
 
-            bench_cards = "".join([
-                render_pitch_card(bench_gkp, tag="GKP"),
-                render_pitch_card(best_bench_outfield[0], tag="SUB 1"),
-                render_pitch_card(best_bench_outfield[1], tag="SUB 2"),
-                render_pitch_card(best_bench_outfield[2], tag="SUB 3")
-            ])
-            dugout_html = clean_html(f"""
+                    btn_lbl = "Selected" if is_active else "Inspect"
+                    if st.button(btn_lbl, key=f"sel_p_{p['data']['id']}", use_container_width=True):
+                        st.session_state["selected_player_id"] = p["data"]["id"]
+                        st.rerun()
+
+            # PITCH
+            st.markdown('<div class="pitch-surface">', unsafe_allow_html=True)
+            
+            # Goalkeeper
+            c_gk = st.columns([2, 1.2, 2])[1]
+            render_interactive_player_col(c_gk, starter_gkp)
+
+            # Defenders
+            defs_line = [p for p in best_starters if p["pos_id"] == 2]
+            cols_def = st.columns(len(defs_line))
+            for idx, p in enumerate(defs_line):
+                render_interactive_player_col(cols_def[idx], p)
+
+            # Midfielders
+            mids_line = [p for p in best_starters if p["pos_id"] == 3]
+            cols_mid = st.columns(len(mids_line))
+            for idx, p in enumerate(mids_line):
+                render_interactive_player_col(cols_mid[idx], p)
+
+            # Forwards
+            fwds_line = [p for p in best_starters if p["pos_id"] == 4]
+            cols_fwd = st.columns(len(fwds_line))
+            for idx, p in enumerate(fwds_line):
+                render_interactive_player_col(cols_fwd[idx], p)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Bench Dugout
+            st.markdown("""
             <div class="bench-shelf">
                 <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #8e92a2; margin-bottom: 8px; text-align: center;">
                     Priority Bench Order
                 </div>
-                <div class="pitch-row-flex" style="margin-bottom: 0;">
-                    {bench_cards}
+            </div>
+            """, unsafe_allow_html=True)
+            cols_bench = st.columns(4)
+            render_interactive_player_col(cols_bench[0], bench_gkp, tag="GKP")
+            render_interactive_player_col(cols_bench[1], best_bench_outfield[0], tag="SUB 1")
+            render_interactive_player_col(cols_bench[2], best_bench_outfield[1], tag="SUB 2")
+            render_interactive_player_col(cols_bench[3], best_bench_outfield[2], tag="SUB 3")
+
+            # --- LIVE PLAYER DOSSIER (UPDATES LIVE AT BOTTOM ON CLICK) ---
+            st.markdown("---")
+            inspected = get_inspected_player()
+            ip_data = inspected["data"]
+
+            chance = ip_data.get("chance_of_playing_next_round")
+            status_text = "100% Fit & Available"
+            status_color = "#00e676"
+            if ip_data["status"] != "a":
+                if chance is not None:
+                    status_text = f"{chance}% Chance of Playing"
+                    status_color = "#ffb300" if chance >= 50 else "#ff3b5c"
+                else:
+                    status_text = "Out / Suspended (0%)"
+                    status_color = "#ff3b5c"
+
+            kit_hero = generate_kit_svg(inspected["team_short"], is_gkp=inspected["is_gkp"], size=58)
+            st.markdown(clean_html(f"""
+            <div class="app-card" style="border-left: 4px solid #00e676;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div>{kit_hero}</div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: #00e676; font-weight: 800;">Scouting Dossier & Match Readiness</div>
+                        <h3 style="margin: 2px 0 2px 0; color: #f0f1f5; font-size: 19px;">{ip_data['first_name']} {ip_data['second_name']}</h3>
+                        <div style="font-size: 12px; color: #8e92a2;">{inspected['team_name']} • {inspected['pos']} • £{ip_data['now_cost']/10:.1f}m</div>
+                        <div style="display: inline-block; background: {status_color}22; color: {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 4px;">
+                            {status_text}
+                        </div>
+                    </div>
                 </div>
             </div>
-            """)
-            st.markdown(dugout_html, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
 
-            st.markdown("---")
-            starter_names = [f"{p['data']['web_name']} ({p['pos']}) - {p['opp']}" for p in squad_list]
-            inspect_idx = st.selectbox("Select player to open official scouting dossier:", range(len(starter_names)), format_func=lambda x: starter_names[x])
-            if st.button("Open Player Dossier", type="secondary", use_container_width=True):
-                if hasattr(st, "dialog"):
-                    show_player_modal(squad_list[inspect_idx])
-                else:
-                    st.info("Scouting report loaded for " + squad_list[inspect_idx]["data"]["web_name"])
+            if ip_data.get("news"):
+                st.warning(f"Press Conference Bulletin: {ip_data['news']}")
+
+            mc1, mc2, mc3 = st.columns(3)
+            mc1.metric("Current Form", ip_data.get("form", "0.0"))
+            mc2.metric("Total Points", ip_data.get("total_points", 0))
+            mc3.metric("Selected By", f"{ip_data.get('selected_by_percent', '0')}%")
+
+            mc4, mc5, mc6 = st.columns(3)
+            mc4.metric("Exp. Goals (xG)", ip_data.get("expected_goals", "0.00"))
+            mc5.metric("Exp. Assists (xA)", ip_data.get("expected_assists", "0.00"))
+            mc6.metric("Exp. Involvements", ip_data.get("expected_goal_involvements", "0.00"))
+
+            mc7, mc8, mc9 = st.columns(3)
+            mc7.metric("Minutes Played", ip_data.get("minutes", 0))
+            mc8.metric("Bonus Points", ip_data.get("bonus", 0))
+            mc9.metric("Next Opponent", inspected["opp"])
 
         # --- TAB 2: TRANSFERS (RANKED TOP 3 OUT + TOP 3 IN FOR EACH) ---
         with tab_transfers:
@@ -536,16 +512,15 @@ with st.spinner("Analyzing live Premier League metrics..."):
                         cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= max_budget):
                         c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                         pot = calculate_potential_score(cand, c_fdr)
-                        c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
-                        c_team_code = teams[cand['team']]['code']
+                        c_t_short = teams[cand['team']]['short_name']
                         replacements.append({
                             "data": cand,
                             "score": pot,
                             "fdr": c_fdr,
                             "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                            "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{c_photo_code}.png",
-                            "badge": f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png",
-                            "team_name": teams[cand['team']]['name']
+                            "team_short": c_t_short,
+                            "team_name": teams[cand['team']]['name'],
+                            "is_gkp": (cand["element_type"] == 1)
                         })
 
                 replacements.sort(key=lambda x: x["score"], reverse=True)
@@ -591,16 +566,20 @@ with st.spinner("Analyzing live Premier League metrics..."):
             for rank_idx, divest in enumerate(top3_divestments, start=1):
                 p_out = divest["player_item"]["data"]
                 pos_name = divest["player_item"]["pos"]
+                out_kit = generate_kit_svg(divest["player_item"]["team_short"], is_gkp=divest["player_item"]["is_gkp"], size=44)
                 
                 st.markdown(clean_html(f"""
                 <div class="app-card" style="border-left: 4px solid #ff3b5c; margin-top: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <span style="background: #ff3b5c; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
-                                DIVESTMENT PRIORITY #{rank_idx}
-                            </span>
-                            <h4 style="margin: 6px 0 2px 0; color: #f0f1f5;">{p_out['web_name']} ({pos_name}) — £{divest['sell_val']:.1f}m</h4>
-                            <div style="font-size: 13px; color: #ffb4ab; margin-bottom: 4px;">Strategic Rationale: <strong>{divest['primary_reason']}</strong></div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div>{out_kit}</div>
+                            <div>
+                                <span style="background: #ff3b5c; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
+                                    DIVESTMENT PRIORITY #{rank_idx}
+                                </span>
+                                <h4 style="margin: 4px 0 2px 0; color: #f0f1f5;">{p_out['web_name']} ({pos_name}) — £{divest['sell_val']:.1f}m</h4>
+                                <div style="font-size: 13px; color: #ffb4ab;">Strategic Rationale: <strong>{divest['primary_reason']}</strong></div>
+                            </div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 12px; color: #8e92a2;">Available Capital</div>
@@ -617,12 +596,12 @@ with st.spinner("Analyzing live Premier League metrics..."):
                         cand_p = rep["data"]
                         c_cost = cand_p["now_cost"] / 10
                         c_delta = round(rep["score"] - divest["player_item"]["score"], 2)
-                        c_avatar = render_avatar_html(rep['photo'], rep['badge'], size=48)
+                        rep_kit = generate_kit_svg(rep["team_short"], is_gkp=rep["is_gkp"], size=42)
                         
                         st.markdown(clean_html(f"""
                         <div class="app-card" style="text-align: center; border-color: rgba(0, 230, 118, 0.4); padding: 12px;">
                             <div style="font-size: 10px; font-weight: 800; color: #00e676;">TARGET #{c_idx+1}</div>
-                            <div style="margin: 8px auto;">{c_avatar}</div>
+                            <div style="margin: 6px auto;">{rep_kit}</div>
                             <div style="font-weight: 700; font-size: 13px; color: #f0f1f5;">{cand_p['web_name']}</div>
                             <div style="font-size: 11px; color: #8e92a2;">{rep['team_name']} • £{c_cost:.1f}m</div>
                             <div style="margin-top: 4px;"><span class="fdr-pill fdr-{rep['fdr']}">{rep['opp']}</span></div>
@@ -631,7 +610,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
                         </div>
                         """), unsafe_allow_html=True)
 
-        # --- TAB 3: SIMULATOR (RECOMMENDATIONS PLACED DIRECTLY UNDER SELECTION) ---
+        # --- TAB 3: SIMULATOR (REPLACEMENTS DIRECTLY BELOW OUTGOING PLAYER) ---
         with tab_simulator:
             st.markdown("### Transfer Simulator & Scenario Modeling")
             st.caption("Model potential trades with instant recommended options directly beneath your selected outgoing player.")
@@ -644,10 +623,10 @@ with st.spinner("Analyzing live Premier League metrics..."):
             sim_budget = sell_price + bank
             target_pos_id = selected_sell["pos_id"]
 
-            out_avatar = render_avatar_html(selected_sell['photo'], selected_sell['badge'], size=52)
+            out_kit = generate_kit_svg(selected_sell["team_short"], is_gkp=selected_sell["is_gkp"], size=48)
             out_card = clean_html(f"""
             <div class="app-card" style="display: flex; align-items: center; gap: 14px; border-left: 3px solid #ff3b5c; margin-top: 10px;">
-                {out_avatar}
+                <div>{out_kit}</div>
                 <div>
                     <div style="font-size: 15px; font-weight: 700; color: #f0f1f5;">{sell_player['web_name']} ({selected_sell['pos']})</div>
                     <div style="font-size: 12px; color: #8e92a2;">{selected_sell['team_name']} • Sale Value: £{sell_price:.1f}m</div>
@@ -665,18 +644,15 @@ with st.spinner("Analyzing live Premier League metrics..."):
                     cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= sim_budget):
                     c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                     p_score = calculate_potential_score(cand, c_fdr)
-                    c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
-                    c_team_code = teams[cand['team']]['code']
-                    c_badge = f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png"
-                    c_photo = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{c_photo_code}.png"
+                    c_t_short = teams[cand['team']]['short_name']
                     sim_replacements.append({
                         "data": cand,
                         "score": p_score,
                         "fdr": c_fdr,
                         "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                        "photo": c_photo,
-                        "badge": c_badge,
-                        "team_name": teams[cand['team']]['name']
+                        "team_short": c_t_short,
+                        "team_name": teams[cand['team']]['name'],
+                        "is_gkp": (cand["element_type"] == 1)
                     })
 
             sim_replacements.sort(key=lambda x: x["score"], reverse=True)
@@ -686,7 +662,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
                 rp = r_item["data"]
                 r_cost = rp["now_cost"] / 10
                 r_delta = round(r_item["score"] - selected_sell["score"], 2)
-                r_avatar = render_avatar_html(r_item['photo'], r_item['badge'], size=48)
+                r_kit = generate_kit_svg(r_item["team_short"], is_gkp=r_item["is_gkp"], size=44)
                 
                 rationale_text = ""
                 if r_delta > 1.5:
@@ -701,7 +677,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="font-weight: 800; font-size: 14px; color: #00e676;">#{idx}</div>
-                            {r_avatar}
+                            <div>{r_kit}</div>
                             <div>
                                 <div style="font-size: 14px; font-weight: 700; color: #f0f1f5;">{rp['web_name']} ({r_item['team_name']}) — £{r_cost:.1f}m</div>
                                 <div style="font-size: 12px; color: #8e92a2;">Form: {rp['form']} • Next: {r_item['opp']} (FDR {r_item['fdr']})</div>
@@ -808,7 +784,6 @@ with st.spinner("Analyzing live Premier League metrics..."):
             </div>
             """), unsafe_allow_html=True)
 
-            # Long-View Mini-League Principles
             st.markdown("#### The 3 Golden Rules to Win Your Mini-League")
             st.markdown("""
             1. **Hit Discipline (-4 Point Avoidance):** Taking frequent hits is the #1 reason casual managers lose mini-leagues. A player bought for a -4 hit must outscore their predecessor by 5+ points just to break even. Roll free transfers to execute free double moves.
