@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC - FPL TACTICAL COMMAND & ROSTER INTELLIGENCE
-Designed with Google Material 3 Dark System & Sleeper-Inspired UI Density
+Designed with Google Material 3 System Architecture
 """
 
 import streamlit as st
@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 
 # ---------------------------------------------------------
-# PAGE CONFIGURATION & MATERIAL 3 / SLEEPER THEME
+# PAGE CONFIGURATION & GOOGLE MATERIAL 3 THEME
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Kings County FC | FPL Manager",
@@ -20,27 +20,32 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Custom CSS for Material 3 & Sleeper Aesthetics
+# Custom CSS for Google Material 3 System & Responsive Tactical Pitch
 st.markdown("""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
   :root {
     --m3-surface: #111318;
-    --m3-surface-container: #1b1e24;
-    --m3-surface-container-high: #232730;
-    --m3-surface-container-highest: #2d323e;
+    --m3-surface-dim: #0d0f13;
+    --m3-surface-container-lowest: #14161b;
+    --m3-surface-container-low: #181b21;
+    --m3-surface-container: #1d2027;
+    --m3-surface-container-high: #242831;
+    --m3-surface-container-highest: #2b303b;
     --m3-primary: #00E676;
     --m3-primary-container: #004d25;
     --m3-on-primary: #00220e;
     --m3-secondary: #00D2FF;
+    --m3-secondary-container: #003644;
+    --m3-tertiary: #FFB74D;
     --m3-on-surface: #E3E2E6;
     --m3-on-surface-variant: #C4C6D0;
     --m3-outline: #44474F;
     --m3-outline-variant: #2D3038;
     --m3-error: #FF5252;
     --fdr-2: #00E676;
-    --fdr-3: #B0BEC5;
+    --fdr-3: #90A4AE;
     --fdr-4: #FF9100;
     --fdr-5: #FF3D00;
   }
@@ -59,19 +64,19 @@ st.markdown("""
     display: none;
   }
 
-  /* App Banner */
+  /* M3 App Top Banner */
   .kcfc-banner {
-    background: linear-gradient(135deg, #0d1b13 0%, #15241b 45%, #101c24 100%);
-    border: 1px solid rgba(0, 230, 118, 0.25);
-    border-radius: 20px;
-    padding: 20px 28px;
-    margin-bottom: 22px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    background: linear-gradient(135deg, #0e1913 0%, #15271d 45%, #101c25 100%);
+    border: 1px solid rgba(0, 230, 118, 0.28);
+    border-radius: 24px;
+    padding: 22px 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 18px;
   }
 
   .kcfc-banner-left {
@@ -92,7 +97,7 @@ st.markdown("""
 
   .kcfc-subtitle {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--m3-primary);
     letter-spacing: 1.5px;
     text-transform: uppercase;
@@ -107,10 +112,10 @@ st.markdown("""
   }
 
   .kcfc-stat-chip {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--m3-outline-variant);
-    border-radius: 12px;
-    padding: 8px 14px;
+    border-radius: 14px;
+    padding: 8px 16px;
     text-align: center;
   }
 
@@ -119,86 +124,94 @@ st.markdown("""
     text-transform: uppercase;
     color: var(--m3-on-surface-variant);
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
   }
 
   .kcfc-stat-val {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: #FFFFFF;
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* Tactical Pitch Container */
-  .pitch-container {
-    background: radial-gradient(circle at 50% 50%, #1c4527 0%, #13331b 60%, #0d2413 100%);
-    border: 2px solid rgba(255, 255, 255, 0.12);
-    border-radius: 24px;
-    padding: 24px 16px;
-    position: relative;
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6), 0 12px 36px rgba(0,0,0,0.5);
-    margin-bottom: 20px;
-    overflow: hidden;
+  /* ---------------------------------------------------------
+     MATERIAL 3 TACTICAL PITCH SYSTEM
+     --------------------------------------------------------- */
+  div[data-testid="stVerticalBlock"]:has(> div #tactical-pitch-anchor) {
+    background: radial-gradient(circle at 50% 50%, #174222 0%, #103319 60%, #09210e 100%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 26px !important;
+    padding: 24px 10px 20px 10px !important;
+    box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.65), 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+    position: relative !important;
+    background-image: 
+      linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.14) 49.5%, rgba(255,255,255,0.14) 50.5%, transparent 50.5%),
+      radial-gradient(circle at 50% 50%, transparent 48px, rgba(255,255,255,0.14) 49px, rgba(255,255,255,0.14) 51px, transparent 52px),
+      linear-gradient(to right, transparent 24%, rgba(255,255,255,0.11) 24%, rgba(255,255,255,0.11) 76%, transparent 76%),
+      radial-gradient(circle at 50% 50%, #184523 0%, #11351a 65%, #09220f 100%) !important;
+    background-size: 100% 100%, 100% 100%, 100% 15%, 100% 100% !important;
+    background-repeat: no-repeat !important;
+    margin-bottom: 22px !important;
   }
 
-  .pitch-lines {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    background: 
-      linear-gradient(to bottom, transparent 49.6%, rgba(255, 255, 255, 0.15) 49.6%, rgba(255, 255, 255, 0.15) 50.4%, transparent 50.4%),
-      linear-gradient(to right, transparent 25%, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.12) 75%, transparent 75%),
-      radial-gradient(circle at 50% 50%, transparent 55px, rgba(255, 255, 255, 0.12) 56px, rgba(255, 255, 255, 0.12) 58px, transparent 59px);
-    background-size: 100% 100%, 100% 18%, 100% 100%;
-    background-repeat: no-repeat;
+  div[data-testid="stVerticalBlock"]:has(> div #tactical-pitch-anchor) div[data-testid="stHorizontalBlock"] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 4px 0 !important;
+    gap: 4px !important;
   }
 
-  /* Player Card */
-  .player-slot {
+  div[data-testid="stVerticalBlock"]:has(> div #tactical-pitch-anchor) div[data-testid="stHorizontalBlock"] > div {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 110px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .pitch-player-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 6px 4px;
+    padding: 5px 3px;
     border-radius: 14px;
-    background: rgba(18, 20, 24, 0.75);
+    background: rgba(17, 19, 24, 0.82);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
     transition: transform 0.2s ease, border-color 0.2s ease;
-    margin: 4px auto;
     width: 100%;
-    max-width: 135px;
+    margin-bottom: 3px;
   }
 
-  .player-slot:hover {
-    transform: translateY(-2px);
-    border-color: var(--m3-primary);
+  .pitch-player-card.active-selected {
+    border: 2px solid var(--m3-primary) !important;
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.45) !important;
   }
 
-  .player-slot.selected {
-    border: 2px solid var(--m3-primary);
-    box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
-  }
-
-  .avatar-box {
+  .pitch-avatar-box {
     position: relative;
-    width: 62px;
-    height: 62px;
+    width: 46px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
-  .avatar-box img {
-    width: 60px;
-    height: 60px;
+  .pitch-avatar-box img {
+    width: 44px;
+    height: 44px;
     object-fit: cover;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
   }
 
   .captain-pill {
@@ -207,11 +220,11 @@ st.markdown("""
     right: -2px;
     background: #FFD700;
     color: #000;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
-    border-radius: 6px;
-    padding: 1px 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    border-radius: 5px;
+    padding: 0px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
     border: 1px solid #FFF;
   }
 
@@ -221,11 +234,11 @@ st.markdown("""
     right: -2px;
     background: #CFD8DC;
     color: #1a1a1a;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
-    border-radius: 6px;
-    padding: 1px 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    border-radius: 5px;
+    padding: 0px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
     border: 1px solid #FFF;
   }
 
@@ -235,11 +248,11 @@ st.markdown("""
     left: -2px;
     background: var(--m3-error);
     color: #FFF;
-    font-size: 9px;
-    font-weight: 700;
-    border-radius: 6px;
-    padding: 1px 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    font-size: 8px;
+    font-weight: 800;
+    border-radius: 5px;
+    padding: 0px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
   }
 
   .status-doubt {
@@ -248,40 +261,40 @@ st.markdown("""
     left: -2px;
     background: #FF9800;
     color: #000;
-    font-size: 9px;
-    font-weight: 700;
-    border-radius: 6px;
-    padding: 1px 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    font-size: 8px;
+    font-weight: 800;
+    border-radius: 5px;
+    padding: 0px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
   }
 
-  .player-name {
-    font-size: 12px;
+  .pitch-player-name {
+    font-size: 11px;
     font-weight: 700;
     color: #FFFFFF;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 110px;
+    max-width: 95px;
     line-height: 1.2;
   }
 
-  .player-meta {
-    font-size: 10px;
+  .pitch-player-meta {
+    font-size: 9.5px;
     color: var(--m3-on-surface-variant);
-    margin-top: 2px;
+    margin-top: 1px;
     display: flex;
-    gap: 4px;
+    gap: 3px;
     justify-content: center;
     font-family: 'JetBrains Mono', monospace;
   }
 
   .fdr-badge {
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 700;
     border-radius: 4px;
-    padding: 2px 5px;
-    margin-top: 3px;
+    padding: 1px 4px;
+    margin-top: 2px;
     display: inline-block;
     color: #000;
   }
@@ -290,17 +303,37 @@ st.markdown("""
   .fdr-4 { background: var(--fdr-4); color: #fff; }
   .fdr-5 { background: var(--fdr-5); color: #fff; }
 
-  /* Bench Shelf */
-  .bench-shelf {
-    background: rgba(20, 24, 30, 0.9);
-    border: 1px solid var(--m3-outline-variant);
-    border-radius: 18px;
-    padding: 16px;
-    margin-top: 14px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  div[data-testid="stVerticalBlock"]:has(> div #tactical-pitch-anchor) div.stButton > button {
+    background: rgba(36, 40, 49, 0.9) !important;
+    color: #E3E2E6 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    padding: 2px 4px !important;
+    min-height: 24px !important;
+    height: 24px !important;
+    width: 100% !important;
+    margin-top: 2px !important;
   }
 
-  .bench-header {
+  div[data-testid="stVerticalBlock"]:has(> div #tactical-pitch-anchor) div.stButton > button:hover {
+    background: var(--m3-primary-container) !important;
+    border-color: var(--m3-primary) !important;
+    color: #FFF !important;
+  }
+
+  /* Priority Bench Shelf */
+  .m3-bench-shelf {
+    background: var(--m3-surface-container);
+    border: 1px solid var(--m3-outline-variant);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 22px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .m3-bench-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -309,29 +342,29 @@ st.markdown("""
     border-bottom: 1px solid var(--m3-outline-variant);
   }
 
-  .bench-title {
-    font-size: 12px;
+  .m3-bench-title {
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    color: var(--m3-on-surface-variant);
+    color: var(--m3-on-surface);
   }
 
-  /* Material 3 Card Containers */
+  /* Generic M3 Card Containers */
   .m3-card {
     background-color: var(--m3-surface-container);
     border: 1px solid var(--m3-outline-variant);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    margin-bottom: 18px;
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.35);
+    margin-bottom: 20px;
   }
 
   .m3-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .m3-card-title {
@@ -341,16 +374,17 @@ st.markdown("""
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: 0.3px;
   }
 
   div.stButton > button {
     background: var(--m3-surface-container-high) !important;
     color: var(--m3-on-surface) !important;
     border: 1px solid var(--m3-outline-variant) !important;
-    border-radius: 10px !important;
-    font-size: 11px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
     font-weight: 600 !important;
-    padding: 4px 8px !important;
+    padding: 6px 14px !important;
     transition: all 0.2s ease !important;
   }
 
@@ -358,19 +392,19 @@ st.markdown("""
     background: var(--m3-surface-container-highest) !important;
     border-color: var(--m3-primary) !important;
     color: #FFF !important;
-    box-shadow: 0 0 10px rgba(0, 230, 118, 0.25) !important;
+    box-shadow: 0 0 12px rgba(0, 230, 118, 0.25) !important;
   }
 
   .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
     background-color: var(--m3-surface-container);
     padding: 6px;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid var(--m3-outline-variant);
   }
 
   .stTabs [data-baseweb="tab"] {
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 8px 18px;
     font-weight: 600;
     font-size: 13px;
@@ -638,11 +672,12 @@ st.markdown(f"""
 
 
 # ---------------------------------------------------------
-# MAIN TACTICAL WORKSPACE: PITCH VIEW & TABS
+# PRIMARY APPLICATION TABS (INCLUDING DEDICATED NEWS TAB)
 # ---------------------------------------------------------
-main_tab1, main_tab2, main_tab3 = st.tabs([
+tab_pitch, tab_transfers, tab_news, tab_chips = st.tabs([
     "🏟️ Pitch View & Starting XI", 
     "🔄 Transfer Engine & Simulator", 
+    "📰 League News & Press Room",
     "🎯 Chip Strategy Directive"
 ])
 
@@ -677,11 +712,12 @@ def render_player_pitch_item(p, is_bench=False, sub_idx=None):
     fdr_val = next_fix.get("fdr", 3)
     fdr_class = f"fdr-{fdr_val}"
     
-    selected_class = "selected" if st.session_state.get("selected_player_id") == p_id else ""
+    is_sel = (st.session_state.get("selected_player_id") == p_id)
+    selected_class = "active-selected" if is_sel else ""
     
     st.markdown(f"""
-    <div class="player-slot {selected_class}">
-      <div class="avatar-box">
+    <div class="pitch-player-card {selected_class}">
+      <div class="pitch-avatar-box">
         <img src="{official_photo_url}" 
              referrerpolicy="no-referrer" 
              loading="lazy" 
@@ -690,9 +726,9 @@ def render_player_pitch_item(p, is_bench=False, sub_idx=None):
         {cap_html}
         {status_html}
       </div>
-      <div class="player-name">{web_name}</div>
-      <div class="player-meta">
-        <span>£{price:.1f}m</span> &bull; <span>{pts} pts</span>
+      <div class="pitch-player-name">{web_name}</div>
+      <div class="pitch-player-meta">
+        <span>£{price:.1f}m</span> &bull; <span>{pts}p</span>
       </div>
       <div>
         <span class="fdr-badge {fdr_class}">{next_fix['opp']} ({venue})</span>
@@ -701,58 +737,49 @@ def render_player_pitch_item(p, is_bench=False, sub_idx=None):
     """, unsafe_allow_html=True)
     
     btn_label = f"Sub {sub_idx}" if is_bench else "Scout"
-    if st.button(f"🔍 {btn_label}", key=f"btn_inspect_{p_id}", use_container_width=True):
+    if st.button(btn_label, key=f"btn_pitch_{p_id}", use_container_width=True):
         st.session_state["selected_player_id"] = p_id
         st.rerun()
 
 
 # ---------------------------------------------------------
-# TAB 1: TACTICAL FIELD VIEW & STARTING 11
+# TAB 1: TACTICAL FIELD VIEW & SCOUTING DOSSIER
 # ---------------------------------------------------------
-with main_tab1:
+with tab_pitch:
+    # Anchor container that wraps the ENTIRE tactical pitch
+    with st.container():
+        st.markdown('<div id="tactical-pitch-anchor"></div>', unsafe_allow_html=True)
+        
+        # 1. GOALKEEPER LINE
+        c_gk = st.columns([1, 1, 1])
+        with c_gk[1]:
+            if gks:
+                render_player_pitch_item(gks[0])
+                
+        # 2. DEFENDER LINE
+        c_def = st.columns(len(defs) if defs else 4)
+        for i, df in enumerate(defs):
+            with c_def[i]:
+                render_player_pitch_item(df)
+
+        # 3. MIDFIELDER LINE
+        c_mid = st.columns(len(mids) if mids else 4)
+        for i, md in enumerate(mids):
+            with c_mid[i]:
+                render_player_pitch_item(md)
+
+        # 4. FORWARD LINE
+        c_fwd = st.columns(len(fwds) if fwds else 3)
+        for i, fw in enumerate(fwds):
+            with c_fwd[i]:
+                render_player_pitch_item(fw)
+
+    # PRIORITY BENCH SHELF (Directly below tactical pitch)
     st.markdown("""
-    <div class="pitch-container">
-      <div class="pitch-lines"></div>
-    """, unsafe_allow_html=True)
-    
-    # 1. GOALKEEPER LINE
-    c_gk = st.columns([1, 1, 1])
-    with c_gk[1]:
-        if gks:
-            render_player_pitch_item(gks[0])
-            
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-
-    # 2. DEFENDER LINE
-    c_def = st.columns(len(defs) if defs else 4)
-    for i, df in enumerate(defs):
-        with c_def[i]:
-            render_player_pitch_item(df)
-
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-
-    # 3. MIDFIELDER LINE
-    c_mid = st.columns(len(mids) if mids else 4)
-    for i, md in enumerate(mids):
-        with c_mid[i]:
-            render_player_pitch_item(md)
-
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-
-    # 4. FORWARD LINE
-    c_fwd = st.columns(len(fwds) if fwds else 3)
-    for i, fw in enumerate(fwds):
-        with c_fwd[i]:
-            render_player_pitch_item(fw)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # PRIORITY BENCH SHELF
-    st.markdown("""
-    <div class="bench-shelf">
-      <div class="bench-header">
-        <div class="bench-title">🪑 Priority Bench Shelf (Auto-Sub Order)</div>
-        <div style="font-size: 11px; color: #80D582; font-weight: 600;">1 GKP + 3 Outfield Substitutes</div>
+    <div class="m3-bench-shelf">
+      <div class="m3-bench-header">
+        <div class="m3-bench-title">🪑 Priority Bench Shelf (Auto-Sub Order)</div>
+        <div style="font-size: 11px; color: var(--m3-primary); font-weight: 700;">1 GKP + 3 Outfield Substitutes</div>
       </div>
     """, unsafe_allow_html=True)
     
@@ -763,7 +790,9 @@ with main_tab1:
             
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # DYNAMIC PLAYER DOSSIER (BOTTOM OF SCREEN)
+    # ---------------------------------------------------------
+    # DYNAMIC PLAYER SCOUTING DOSSIER (MATERIAL 3 CARD)
+    # ---------------------------------------------------------
     sel_id = st.session_state.get("selected_player_id")
     sel_player = elements_dict.get(sel_id)
 
@@ -777,14 +806,13 @@ with main_tab1:
         p_photo_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{p_photo_code}.png"
         p_kit_fallback = generate_svg_kit_data_url(t_short, is_gk=is_gk)
         
-        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
         st.markdown(f"""
-        <div class="m3-card">
+        <div class="m3-card" id="scouting-dossier-card">
           <div class="m3-card-header">
             <div class="m3-card-title">
-              <span style="color: var(--m3-primary);">📋 SCOUTING DOSSIER</span> &bull; {sel_player.get('first_name')} {sel_player.get('second_name')}
+              <span style="color: var(--m3-primary);">📋 MATERIAL 3 SCOUTING DOSSIER</span> &bull; {sel_player.get('first_name')} {sel_player.get('second_name')}
             </div>
-            <div style="font-size: 11px; background: rgba(0, 230, 118, 0.12); color: var(--m3-primary); padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+            <div style="font-size: 11px; background: rgba(0, 230, 118, 0.12); color: var(--m3-primary); padding: 4px 12px; border-radius: 10px; font-weight: 700;">
               {pos_str.upper()} &bull; {t_name.upper()}
             </div>
           </div>
@@ -793,21 +821,21 @@ with main_tab1:
         d_col1, d_col2 = st.columns([1, 3])
         with d_col1:
             st.markdown(f"""
-            <div style="text-align: center; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 16px; border: 1px solid var(--m3-outline-variant);">
+            <div style="text-align: center; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 18px; border: 1px solid var(--m3-outline-variant);">
               <img src="{p_photo_url}" 
                    referrerpolicy="no-referrer" 
                    loading="lazy" 
-                   style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--m3-primary); box-shadow: 0 4px 16px rgba(0,0,0,0.5);"
+                   style="width: 105px; height: 105px; border-radius: 50%; object-fit: cover; border: 3px solid var(--m3-primary); box-shadow: 0 6px 20px rgba(0,0,0,0.6);"
                    onerror="this.onerror=null;this.src='{p_kit_fallback}';" />
-              <div style="font-size: 17px; font-weight: 800; color: #FFF; margin-top: 10px;">{sel_player.get('web_name')}</div>
-              <div style="font-size: 12px; color: var(--m3-on-surface-variant); font-family: 'JetBrains Mono', monospace;">Price: £{p_cost:.1f}m</div>
+              <div style="font-size: 18px; font-weight: 800; color: #FFF; margin-top: 10px;">{sel_player.get('web_name')}</div>
+              <div style="font-size: 13px; color: var(--m3-on-surface-variant); font-family: 'JetBrains Mono', monospace;">Price: £{p_cost:.1f}m</div>
             </div>
             """, unsafe_allow_html=True)
             
             news = sel_player.get("news")
             if news:
                 st.markdown(f"""
-                <div style="margin-top: 10px; background: rgba(255, 61, 0, 0.12); border-left: 3px solid #FF3D00; padding: 10px; border-radius: 8px; font-size: 11px; color: #FFAB91;">
+                <div style="margin-top: 12px; background: rgba(255, 61, 0, 0.12); border-left: 3px solid #FF3D00; padding: 12px; border-radius: 10px; font-size: 11.5px; color: #FFAB91;">
                   <strong>Medical / Press Alert:</strong><br>{news}
                 </div>
                 """, unsafe_allow_html=True)
@@ -825,6 +853,7 @@ with main_tab1:
             m7.metric("xG Involvement (xGI)", sel_player.get("expected_goal_involvements", "0.00"))
             m8.metric("Minutes Played", f"{sel_player.get('minutes', 0)}'")
 
+            # Next 5 Fixtures Runway
             st.markdown("<div style='margin-top: 14px; font-size: 11px; font-weight: 700; color: var(--m3-on-surface-variant); text-transform: uppercase;'>Upcoming Match Runway (FDR Analysis)</div>", unsafe_allow_html=True)
             
             p_team_id = sel_player.get("team")
@@ -845,9 +874,9 @@ with main_tab1:
                 for f_i, (gw_num, opp_str, diff) in enumerate(upcoming_matches):
                     with f_cols[f_i]:
                         st.markdown(f"""
-                        <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 6px; text-align: center; border: 1px solid var(--m3-outline-variant);">
+                        <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px; text-align: center; border: 1px solid var(--m3-outline-variant);">
                           <div style="font-size: 9px; color: var(--m3-on-surface-variant);">GW{gw_num}</div>
-                          <div style="font-size: 11px; font-weight: 700; color: #FFF; margin: 2px 0;">{opp_str}</div>
+                          <div style="font-size: 12px; font-weight: 700; color: #FFF; margin: 2px 0;">{opp_str}</div>
                           <span class="fdr-badge fdr-{diff}">FDR {diff}</span>
                         </div>
                         """, unsafe_allow_html=True)
@@ -856,150 +885,265 @@ with main_tab1:
 
 
 # ---------------------------------------------------------
-# TAB 2: TRANSFER ENGINE & WHAT-IF SIMULATOR
+# TAB 2: TRANSFER ENGINE & WHAT-IF SIMULATOR (ONE UNIFIED TAB)
 # ---------------------------------------------------------
-with main_tab2:
+with tab_transfers:
     st.markdown("""
     <div class="m3-card">
       <div class="m3-card-header">
         <div class="m3-card-title">
-          <span>🔄 SQUAD DIVESTMENT AUDIT & TRANSFER ENGINE</span>
+          <span>🔄 SQUAD DIVESTMENT AUDIT & RECOMMENDATIONS ENGINE</span>
         </div>
-        <div style="font-size: 11px; color: #80D582; font-weight: 600;">ALGORITHMIC FORM & FIXTURE OPTIMIZER</div>
+        <div style="font-size: 11px; color: var(--m3-primary); font-weight: 700;">ALGORITHMIC FORM & FIXTURE OPTIMIZER</div>
+      </div>
+      <div style="font-size: 13px; color: var(--m3-on-surface-variant); margin-bottom: 16px;">
+        Every flagged or underperforming squad player is evaluated below. For <strong>each</strong> asset up for replacement, the top 3 recommended targets are generated within your available bank balance.
       </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h4 style='font-size: 13px; text-transform: uppercase; color: var(--m3-on-surface-variant);'>1. Urgency Roster Divestment Ranking</h4>", unsafe_allow_html=True)
-    
     all_squad = starting_xi + bench_players
-    scored_squad = []
+    all_elements = raw_fpl.get("elements", [])
+    squad_ids = set(p["id"] for p in all_squad)
+    current_bank = (entry_info.get("last_deadline_bank", 5) or 5) / 10 if entry_info else 0.5
+    
+    # Identify divestment candidates
+    flagged_squad = []
     for p in all_squad:
         f_val = float(p.get("form", "0.0") or 0.0)
         chance = p.get("chance_of_playing_next_round", 100)
         if chance is None: chance = 100
         fdr = p.get("next_fix", {}).get("fdr", 3)
-        urgency = (100 - chance) * 0.5 + (10 - min(f_val, 10)) * 4 + (fdr * 3)
-        scored_squad.append((urgency, p))
+        urgency = (100 - chance) * 0.6 + (10 - min(f_val, 10)) * 3.5 + (fdr * 3.0)
+        flagged_squad.append((urgency, p))
         
-    scored_squad.sort(key=lambda x: x[0], reverse=True)
-    top_divest = scored_squad[:3]
-
-    div_cols = st.columns(3)
-    for d_idx, (urg, d_player) in enumerate(top_divest):
-        with div_cols[d_idx]:
-            p_price = d_player.get("now_cost", 50) / 10
-            status_desc = d_player.get("news") or ("Low Form Rating" if float(d_player.get("form", 0)) < 3.0 else "Tough Fixture Swing")
-            st.markdown(f"""
-            <div style="background: rgba(255, 61, 0, 0.08); border: 1px solid rgba(255, 61, 0, 0.3); border-radius: 14px; padding: 12px; margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; font-size: 13px; color: #FFF;">#{d_idx+1} {d_player.get('web_name')}</span>
-                <span style="font-size: 10px; background: rgba(255,61,0,0.25); color: #FF8A80; padding: 2px 6px; border-radius: 6px; font-weight: 700;">SELL PRIORITY</span>
-              </div>
-              <div style="font-size: 11px; color: var(--m3-on-surface-variant); margin-top: 4px;">
-                £{p_price:.1f}m &bull; Form: {d_player.get('form')} &bull; Next: {d_player.get('next_fix', {}).get('opp')}
-              </div>
-              <div style="font-size: 10px; color: #FFAB91; margin-top: 6px; font-style: italic;">
-                {status_desc[:65]}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    st.markdown("<hr style='border-color: var(--m3-outline-variant); margin: 18px 0;'>", unsafe_allow_html=True)
+    flagged_squad.sort(key=lambda x: x[0], reverse=True)
     
-    # WHAT-IF SIMULATOR WITH REPLACEMENTS DIRECTLY BELOW
-    st.markdown("<h4 style='font-size: 13px; text-transform: uppercase; color: var(--m3-primary);'>2. Interactive Transfer Simulator</h4>", unsafe_allow_html=True)
-    
-    squad_options = {p["id"]: f"{p['web_name']} (£{p['now_cost']/10:.1f}m, {p.get('team_short')})" for p in all_squad}
-    default_out_id = top_divest[0][1]["id"] if top_divest else (all_squad[0]["id"] if all_squad else None)
-    
-    out_col1, out_col2 = st.columns([2, 1])
-    with out_col1:
-        sel_out_id = st.selectbox(
-            "Select Outgoing Player to Replace:", 
-            options=list(squad_options.keys()), 
-            format_func=lambda x: squad_options[x],
-            index=list(squad_options.keys()).index(default_out_id) if default_out_id in squad_options else 0
-        )
+    # Display the top 3 divestment priorities, EACH with their 3 tailored replacements
+    for rank_idx, (urg, sell_p) in enumerate(flagged_squad[:3]):
+        sell_cost = sell_p.get("now_cost", 50) / 10
+        sell_pos = sell_p.get("element_type", 3)
+        max_budget = sell_cost + current_bank
+        status_note = sell_p.get("news") or ("Below squad form threshold" if float(sell_p.get("form", 0)) < 3.5 else "Unfavorable upcoming fixture run")
         
-    out_player = elements_dict.get(sel_out_id)
-    out_budget = (out_player.get("now_cost", 50) + (entry_info.get("last_deadline_bank", 5) or 5)) / 10 if out_player else 10.0
-    out_pos = out_player.get("element_type", 3) if out_player else 3
-    
-    with out_col2:
         st.markdown(f"""
-        <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 12px; padding: 10px; text-align: center; margin-top: 4px;">
-          <div style="font-size: 10px; color: var(--m3-on-surface-variant); text-transform: uppercase;">Max Available Budget</div>
-          <div style="font-size: 18px; font-weight: 800; color: var(--m3-primary); font-family: 'JetBrains Mono', monospace;">£{out_budget:.1f}m</div>
+        <div style="background: rgba(255, 61, 0, 0.06); border: 1px solid rgba(255, 61, 0, 0.28); border-radius: 18px; padding: 18px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <span style="font-weight: 800; font-size: 16px; color: #FFFFFF;">Priority #{rank_idx+1}: {sell_p.get('web_name')} ({sell_p.get('team_short')})</span>
+              <span style="font-size: 11px; background: rgba(255,61,0,0.25); color: #FF8A80; padding: 3px 8px; border-radius: 6px; font-weight: 700; margin-left: 8px;">SELL CANDIDATE</span>
+            </div>
+            <div style="font-size: 12px; color: var(--m3-on-surface); font-family: 'JetBrains Mono', monospace;">
+              Value: £{sell_cost:.1f}m &bull; Max Reinvestment: <strong style="color: var(--m3-primary);">£{max_budget:.1f}m</strong>
+            </div>
+          </div>
+          <div style="font-size: 11.5px; color: #FFAB91; margin: 6px 0 14px 0;">
+            Reason: {status_note}
+          </div>
+        """, unsafe_allow_html=True)
+        
+        # Calculate 3 specific replacements for this specific player
+        specific_cands = []
+        for cand in all_elements:
+            if cand["id"] in squad_ids: continue
+            if cand.get("element_type") != sell_pos: continue
+            c_cost = cand.get("now_cost", 999) / 10
+            if c_cost > max_budget: continue
+            if cand.get("chance_of_playing_next_round") is not None and cand.get("chance_of_playing_next_round") < 75: continue
+            
+            c_form = float(cand.get("form", "0.0") or 0.0)
+            c_ict = float(cand.get("ict_index", "0.0") or 0.0)
+            c_pts = cand.get("total_points", 0)
+            score = (c_form * 4.0) + (c_ict * 0.45) + (c_pts * 0.12)
+            specific_cands.append((score, cand))
+            
+        specific_cands.sort(key=lambda x: x[0], reverse=True)
+        top_recs_for_p = specific_cands[:3]
+        
+        st.markdown(f"<div style='font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--m3-primary); margin-bottom: 8px;'>Top 3 Recommended Replacements for {sell_p.get('web_name')}:</div>", unsafe_allow_html=True)
+        
+        r_cols = st.columns(3)
+        for r_i, (sc, r_cand) in enumerate(top_recs_for_p):
+            with r_cols[r_i]:
+                rc_cost = r_cand.get("now_cost", 50) / 10
+                rc_team = teams_dict.get(r_cand.get("team"), {}).get("short_name", "EPL")
+                rc_pts = r_cand.get("total_points", 0)
+                rem_bank = max_budget - rc_cost
+                
+                st.markdown(f"""
+                <div style="background: rgba(0, 230, 118, 0.05); border: 1px solid rgba(0, 230, 118, 0.22); border-radius: 14px; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 800; font-size: 13.5px; color: #FFF;">#{r_i+1} {r_cand.get('web_name')}</span>
+                    <span style="font-size: 10px; background: rgba(0,230,118,0.2); color: #00E676; padding: 2px 6px; border-radius: 6px; font-weight: 700;">BUY</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--m3-on-surface-variant); margin-top: 4px;">
+                    {rc_team} &bull; <strong>£{rc_cost:.1f}m</strong> &bull; {rc_pts} Pts
+                  </div>
+                  <div style="display: flex; gap: 6px; margin-top: 6px; font-size: 10px;">
+                    <span style="background: rgba(255,255,255,0.06); padding: 2px 5px; border-radius: 4px;">Form: <strong>{r_cand.get('form')}</strong></span>
+                    <span style="background: rgba(255,255,255,0.06); padding: 2px 5px; border-radius: 4px;">xGI: <strong>{r_cand.get('expected_goal_involvements')}</strong></span>
+                  </div>
+                  <div style="margin-top: 8px; font-size: 11px; color: var(--m3-primary); font-weight: 600;">
+                    Bank Left: £{rem_bank:.1f}m
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    st.markdown("<hr style='border-color: var(--m3-outline-variant); margin: 24px 0;'>", unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # INTERACTIVE WHAT-IF TRANSFER SIMULATOR (SANDBOX)
+    # ---------------------------------------------------------
+    st.markdown("""
+    <div class="m3-card-header" style="margin-bottom: 10px;">
+      <div class="m3-card-title">
+        <span style="color: var(--m3-secondary);">🧪 INTERACTIVE WHAT-IF TRANSFER SIMULATOR</span>
+      </div>
+      <div style="font-size: 11px; color: var(--m3-secondary); font-weight: 700;">TEST CUSTOM SWAPS & PROJECT IMPACT</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    sim_squad_opts = {p["id"]: f"{p['web_name']} (£{p['now_cost']/10:.1f}m, {p.get('team_short')})" for p in all_squad}
+    default_sim_out = flagged_squad[0][1]["id"] if flagged_squad else list(sim_squad_opts.keys())[0]
+
+    sim_col1, sim_col2 = st.columns(2)
+    with sim_col1:
+        sim_out_id = st.selectbox(
+            "Transfer OUT (Player to Sell):",
+            options=list(sim_squad_opts.keys()),
+            format_func=lambda x: sim_squad_opts[x],
+            index=list(sim_squad_opts.keys()).index(default_sim_out) if default_sim_out in sim_squad_opts else 0
+        )
+    
+    sim_out_player = elements_dict.get(sim_out_id)
+    sim_budget_avail = ((sim_out_player.get("now_cost", 50) if sim_out_player else 50) / 10) + current_bank
+    sim_pos = sim_out_player.get("element_type", 3) if sim_out_player else 3
+
+    sim_buy_cands = [p for p in all_elements if p["id"] not in squad_ids and p.get("element_type") == sim_pos and (p.get("now_cost", 0)/10) <= sim_budget_avail]
+    sim_buy_cands.sort(key=lambda x: float(x.get("form", 0) or 0), reverse=True)
+    sim_buy_opts = {p["id"]: f"{p['web_name']} (£{p['now_cost']/10:.1f}m, {teams_dict.get(p.get('team'),{}).get('short_name','EPL')}) - Form {p.get('form')}" for p in sim_buy_cands}
+
+    with sim_col2:
+        if sim_buy_opts:
+            sim_in_id = st.selectbox(
+                f"Transfer IN (Eligible { {1:'GKPs',2:'DEFs',3:'MIDs',4:'FWDs'}.get(sim_pos) } within £{sim_budget_avail:.1f}m):",
+                options=list(sim_buy_opts.keys()),
+                format_func=lambda x: sim_buy_opts[x]
+            )
+        else:
+            st.warning("No replacement candidates available within current budget.")
+            sim_in_id = None
+
+    if sim_out_player and sim_in_id:
+        sim_in_player = elements_dict.get(sim_in_id)
+        cost_out = sim_out_player.get("now_cost", 50) / 10
+        cost_in = sim_in_player.get("now_cost", 50) / 10
+        new_bank = sim_budget_avail - cost_in
+        form_delta = float(sim_in_player.get("form", 0) or 0) - float(sim_out_player.get("form", 0) or 0)
+        pts_delta = sim_in_player.get("total_points", 0) - sim_out_player.get("total_points", 0)
+
+        st.markdown(f"""
+        <div style="background: rgba(0, 210, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 16px; padding: 18px; margin-top: 14px;">
+          <div style="font-weight: 800; font-size: 15px; color: #FFF; margin-bottom: 12px;">Simulation Delta Forecast:</div>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 10px; color: var(--m3-on-surface-variant); text-transform: uppercase;">Bank After Move</div>
+              <div style="font-size: 17px; font-weight: 800; color: var(--m3-primary); font-family: 'JetBrains Mono', monospace;">£{new_bank:.1f}m</div>
+            </div>
+            <div style="flex: 1; min-width: 140px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 10px; color: var(--m3-on-surface-variant); text-transform: uppercase;">Form Momentum Delta</div>
+              <div style="font-size: 17px; font-weight: 800; color: {'#00E676' if form_delta >= 0 else '#FF5252'}; font-family: 'JetBrains Mono', monospace;">{'+' if form_delta > 0 else ''}{form_delta:.1f}</div>
+            </div>
+            <div style="flex: 1; min-width: 140px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 10px; color: var(--m3-on-surface-variant); text-transform: uppercase;">Season Points Delta</div>
+              <div style="font-size: 17px; font-weight: 800; color: {'#00E676' if pts_delta >= 0 else '#FF5252'}; font-family: 'JetBrains Mono', monospace;">{'+' if pts_delta > 0 else ''}{pts_delta} pts</div>
+            </div>
+          </div>
         </div>
         """, unsafe_allow_html=True)
-
-    all_elements = raw_fpl.get("elements", [])
-    squad_ids = set(p["id"] for p in all_squad)
-    
-    candidates = []
-    for cand in all_elements:
-        if cand["id"] in squad_ids:
-            continue
-        if cand.get("element_type") != out_pos:
-            continue
-        c_cost = cand.get("now_cost", 999) / 10
-        if c_cost > out_budget:
-            continue
-        if cand.get("chance_of_playing_next_round") is not None and cand.get("chance_of_playing_next_round") < 75:
-            continue
-            
-        c_form = float(cand.get("form", "0.0") or 0.0)
-        c_ict = float(cand.get("ict_index", "0.0") or 0.0)
-        c_pts = cand.get("total_points", 0)
         
-        score = (c_form * 4.0) + (c_ict * 0.5) + (c_pts * 0.15)
-        candidates.append((score, cand))
-        
-    candidates.sort(key=lambda x: x[0], reverse=True)
-    top_3_in = candidates[:3]
-
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-    st.markdown(f"**Top 3 Recommended Replacements (Shown directly below {out_player.get('web_name') if out_player else 'outgoing'}):**")
-
-    rec_cols = st.columns(3)
-    for r_idx, (sc, rec_p) in enumerate(top_3_in):
-        with rec_cols[r_idx]:
-            r_cost = rec_p.get("now_cost", 50) / 10
-            r_team = teams_dict.get(rec_p.get("team"), {}).get("short_name", "EPL")
-            r_pts = rec_p.get("total_points", 0)
-            st.markdown(f"""
-            <div style="background: rgba(0, 230, 118, 0.05); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 14px; padding: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 800; font-size: 14px; color: #FFF;">#{r_idx+1} {rec_p.get('web_name')}</span>
-                <span style="font-size: 10px; background: rgba(0,230,118,0.2); color: #00E676; padding: 2px 6px; border-radius: 6px; font-weight: 700;">TARGET</span>
-              </div>
-              <div style="font-size: 11px; color: var(--m3-on-surface-variant); margin-top: 6px;">
-                {r_team} &bull; <strong>£{r_cost:.1f}m</strong> &bull; {r_pts} Pts
-              </div>
-              <div style="display: flex; gap: 8px; margin-top: 8px; font-size: 10px;">
-                <span style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">Form: <strong>{rec_p.get('form')}</strong></span>
-                <span style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">xGI: <strong>{rec_p.get('expected_goal_involvements')}</strong></span>
-              </div>
-              <div style="margin-top: 10px; font-size: 11px; color: var(--m3-primary); font-weight: 600;">
-                Net Budget Left: £{out_budget - r_cost:.1f}m
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
     st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------
-# TAB 3: DEFINITIVE CHIP STRATEGY DIRECTIVE
+# TAB 3: DEDICATED LEAGUE NEWS & INJURY INTEL ROOM
 # ---------------------------------------------------------
-with main_tab3:
+with tab_news:
+    st.markdown("""
+    <div class="m3-card">
+      <div class="m3-card-header">
+        <div class="m3-card-title">
+          <span>📰 PREMIER LEAGUE INTELLIGENCE & PRESS CONFERENCE RADAR</span>
+        </div>
+        <div style="font-size: 11px; color: var(--m3-primary); font-weight: 700;">LIVE API MEDICAL & SQUAD DISPATCHES</div>
+      </div>
+      <div style="font-size: 13px; color: var(--m3-on-surface-variant); margin-bottom: 20px;">
+        Curated live bulletins from Premier League press conferences, medical reports, and market transfer momentum alerts for Gameweek {current_gw}.
+      </div>
+    """.format(current_gw=current_gw), unsafe_allow_html=True)
+
+    # 1. My Squad Medical Bulletins
+    st.markdown("<h4 style='font-size: 14px; text-transform: uppercase; color: var(--m3-primary); margin-bottom: 12px;'>1. Kings County FC Squad Alerts</h4>", unsafe_allow_html=True)
+    my_squad_flags = [p for p in (starting_xi + bench_players) if p.get("news")]
+
+    if my_squad_flags:
+        for p in my_squad_flags:
+            ch_col = "#FF5252" if (p.get("chance_of_playing_next_round") == 0) else "#FF9800"
+            st.markdown(f"""
+            <div style="background: rgba(255, 61, 0, 0.08); border-left: 4px solid {ch_col}; border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 800; font-size: 14px; color: #FFF;">{p.get('web_name')} ({p.get('team_short')})</span>
+                <span style="font-size: 11px; background: rgba(0,0,0,0.4); color: {ch_col}; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                  Chance of Playing: {p.get('chance_of_playing_next_round', 'Doubt')}%
+                </span>
+              </div>
+              <div style="font-size: 12px; color: #FFAB91; margin-top: 6px;">
+                {p.get('news')}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.success("✅ Clean bill of health: No flagged injuries across your Starting 11 and bench!")
+
+    st.markdown("<hr style='border-color: var(--m3-outline-variant); margin: 20px 0;'>", unsafe_allow_html=True)
+
+    # 2. League-Wide Medical & Absence Watch
+    st.markdown("<h4 style='font-size: 14px; text-transform: uppercase; color: var(--m3-on-surface); margin-bottom: 12px;'>2. League-Wide Key Asset Status & Injuries</h4>", unsafe_allow_html=True)
+    all_flagged = [p for p in all_elements if p.get("news") and float(p.get("selected_by_percent", 0)) > 5.0]
+    all_flagged.sort(key=lambda x: float(x.get("selected_by_percent", 0)), reverse=True)
+
+    n_cols = st.columns(2)
+    for idx, p_news in enumerate(all_flagged[:8]):
+        col_target = n_cols[idx % 2]
+        with col_target:
+            t_s = teams_dict.get(p_news.get("team"), {}).get("short_name", "EPL")
+            st.markdown(f"""
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 14px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 700; font-size: 13px; color: #FFF;">{p_news.get('web_name')} ({t_s})</span>
+                <span style="font-size: 10px; color: var(--m3-on-surface-variant);">{p_news.get('selected_by_percent')}% owned</span>
+              </div>
+              <div style="font-size: 11.5px; color: #FFCC80; margin-top: 4px;">
+                {p_news.get('news')}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------
+# TAB 4: DEFINITIVE CHIP STRATEGY DIRECTIVE
+# ---------------------------------------------------------
+with tab_chips:
     st.markdown("""
     <div class="m3-card">
       <div class="m3-card-header">
         <div class="m3-card-title">
           <span>🎯 DEFINITIVE CHIP & MINILEAGUE DOMINANCE DIRECTIVE</span>
         </div>
-        <div style="font-size: 11px; color: #80D582; font-weight: 600;">MATHEMATICAL ROADMAP</div>
+        <div style="font-size: 11px; color: var(--m3-primary); font-weight: 700;">MATHEMATICAL ROADMAP</div>
       </div>
       <div style="font-size: 13px; line-height: 1.6; color: var(--m3-on-surface-variant); margin-bottom: 18px;">
         High-performing FPL managers win mini-leagues by exploiting Double Gameweeks (DGWs) and navigating Blank Gameweeks (BGWs) without points hits. Below is your tailored directive:
@@ -1009,7 +1153,7 @@ with main_tab3:
     ch1, ch2 = st.columns(2)
     with ch1:
         st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 16px; padding: 16px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 14px; font-weight: 800; color: #FFF;">⚡ TRIPLE CAPTAIN (TC)</span>
             <span style="font-size: 10px; background: rgba(0, 230, 118, 0.2); color: #00E676; padding: 2px 8px; border-radius: 6px; font-weight: 700;">RESERVE FOR DGW</span>
@@ -1020,7 +1164,7 @@ with main_tab3:
           </div>
         </div>
         
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 14px; padding: 16px;">
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 16px; padding: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 14px; font-weight: 800; color: #FFF;">🪑 BENCH BOOST (BB)</span>
             <span style="font-size: 10px; background: rgba(0, 210, 255, 0.2); color: #00D2FF; padding: 2px 8px; border-radius: 6px; font-weight: 700;">PAIR WITH WILDCARD</span>
@@ -1034,7 +1178,7 @@ with main_tab3:
         
     with ch2:
         st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 16px; padding: 16px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 14px; font-weight: 800; color: #FFF;">🃏 FREE HIT (FH)</span>
             <span style="font-size: 10px; background: rgba(255, 145, 0, 0.2); color: #FF9100; padding: 2px 8px; border-radius: 6px; font-weight: 700;">BLANK GW SHIELD</span>
@@ -1045,7 +1189,7 @@ with main_tab3:
           </div>
         </div>
         
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 14px; padding: 16px;">
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--m3-outline-variant); border-radius: 16px; padding: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 14px; font-weight: 800; color: #FFF;">⚠️ HIT DISCIPLINE PRINCIPLE</span>
             <span style="font-size: 10px; background: rgba(255, 61, 0, 0.2); color: #FF5252; padding: 2px 8px; border-radius: 6px; font-weight: 700;">MAX 1 HIT / 5 GWs</span>
@@ -1060,10 +1204,10 @@ with main_tab3:
 
 
 # ---------------------------------------------------------
-# FOOTER & SYSTEM HEALTH
+# FOOTER & SYSTEM ATTRIBUTION
 # ---------------------------------------------------------
 st.markdown("""
-<div style="text-align: center; padding: 20px 0 10px 0; font-size: 11px; color: var(--m3-outline);">
-  Kings County FC Tactical Intelligence &bull; Google Material 3 Dark System &bull; Powered by Live FPL Data Engine
+<div style="text-align: center; padding: 24px 0 12px 0; font-size: 11px; color: var(--m3-outline);">
+  Kings County FC Tactical Command &bull; Google Material 3 System Architecture &bull; Official Premier League Data Stream
 </div>
 """, unsafe_allow_html=True)
