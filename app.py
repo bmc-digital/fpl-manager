@@ -2,14 +2,14 @@ import streamlit as st
 import json
 import urllib.request
 
-# Clean HTML helper: strips all leading/trailing whitespace so Markdown never triggers code blocks
+# Helper to clean multi-line HTML so Markdown never triggers code blocks
 def clean_html(raw_html: str) -> str:
     lines = [line.strip() for line in raw_html.strip().split('\n') if line.strip()]
     return "".join(lines)
 
 # Page configuration
 st.set_page_config(
-    page_title="FPL Elite Manager",
+    page_title="FPL Elite - Brooklyn FC",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -23,12 +23,12 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state["authenticated"]:
     login_html = clean_html("""
-    <div style="background: #14161f; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 40px 24px; max-width: 360px; margin: 80px auto 20px auto; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.6);">
-        <div style="width: 44px; height: 44px; background: rgba(0, 230, 118, 0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <div style="background: #141a24; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px 24px; max-width: 360px; margin: 80px auto 20px auto; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.6);">
+        <div style="width: 52px; height: 52px; background: rgba(0, 240, 255, 0.12); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <h2 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 700; color: #f0f1f5; letter-spacing: -0.3px;">FPL Elite Manager</h2>
-        <p style="margin: 0; font-size: 13px; color: #8e92a2;">Private Tactical Workspace</p>
+        <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: #f0f3f8; letter-spacing: -0.3px;">Brooklyn FC</h2>
+        <p style="margin: 0; font-size: 13px; color: #8e9bb0;">FPL Tactical Intelligence</p>
     </div>
     """)
     st.markdown(login_html, unsafe_allow_html=True)
@@ -44,12 +44,12 @@ if not st.session_state["authenticated"]:
                 st.error("Incorrect passcode.")
     st.stop()
 
-# HIGH-END PREMIER LEAGUE APP STYLES (CLEAN, NO BANNERS, ZERO BROKEN IMAGES)
-pl_styles = clean_html("""
+# SLEEPER APP DESIGN SYSTEM (DARK NAVY / OBSIDIAN, ELECTRIC CYAN & NEON ACCENTS)
+sleeper_styles = clean_html("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
     
-    /* HIDE STREAMLIT BANNERS, GITHUB FORK BADGE, HEADER & FOOTER */
+    /* HIDE STREAMLIT BANNERS & GITHUB WATERMARKS */
     #MainMenu {visibility: hidden; display: none !important;}
     header {visibility: hidden; display: none !important;}
     footer {visibility: hidden; display: none !important;}
@@ -59,44 +59,109 @@ pl_styles = clean_html("""
     .viewerBadge_container__1QSob {display: none !important;}
     
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     }
     
     .stApp {
-        background-color: #0a0812;
-        color: #e2e4ec;
-        padding-top: 0 !important;
+        background-color: #0b0e14;
+        color: #e3e8f0;
     }
     
     .block-container {
         padding-top: 1.2rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 950px !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 960px !important;
     }
     
-    h1, h2, h3, h4 {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        letter-spacing: -0.4px;
-    }
-    
+    /* SLEEPER SURFACE CARDS */
     .app-card {
-        background-color: #141520;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
+        background-color: #141a24;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 18px;
         padding: 16px 18px;
         margin-bottom: 14px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.35);
     }
     
-    /* Tactical Pitch Surface */
+    /* SLEEPER TACTICAL PITCH */
     .pitch-surface {
-        background: radial-gradient(circle at 50% 30%, #152d1d 0%, #0d1e13 65%, #07130b 100%);
-        border: 1.5px solid rgba(0, 230, 118, 0.25);
-        border-radius: 20px;
-        padding: 18px 10px;
+        background: radial-gradient(ellipse at 50% 20%, #152d22 0%, #0d1e16 60%, #09130e 100%);
+        border: 1.5px solid rgba(0, 240, 255, 0.3);
+        border-radius: 22px;
+        padding: 22px 10px;
         margin: 12px 0;
         position: relative;
-        box-shadow: inset 0 0 50px rgba(0,0,0,0.6), 0 8px 30px rgba(0,0,0,0.3);
+        box-shadow: inset 0 0 60px rgba(0,0,0,0.7), 0 8px 30px rgba(0,0,0,0.4);
+        overflow: hidden;
+    }
+    
+    .pitch-row-flex {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+    }
+    
+    /* INTERACTIVE SLEEPER PITCH PLAYER CARD */
+    .pitch-player-card {
+        background-color: rgba(20, 26, 36, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 8px 6px;
+        width: 86px;
+        min-width: 86px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        position: relative;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        cursor: pointer;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+    .pitch-player-card:hover {
+        transform: translateY(-3px);
+        border-color: #00f0ff;
+        box-shadow: 0 6px 18px rgba(0, 240, 255, 0.25);
+    }
+    .pitch-player-card.is-active {
+        border-color: #00f0ff !important;
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.45) !important;
+        background-color: rgba(14, 32, 44, 0.95) !important;
+    }
+    
+    /* LARGE HIGH-RES AVATAR CONTAINER */
+    .avatar-frame-lg {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto;
+        position: relative;
+        border-radius: 50%;
+        background-color: #1a2230;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .avatar-frame-lg img.player-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .player-label-name {
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 5px;
+        color: #f0f3f8;
     }
     
     .fdr-pill {
@@ -109,81 +174,55 @@ pl_styles = clean_html("""
         letter-spacing: 0.3px;
     }
     .fdr-2 { background-color: #00e676; color: #002e14; }
-    .fdr-3 { background-color: #434654; color: #ffffff; }
-    .fdr-4 { background-color: #ff3b5c; color: #ffffff; }
-    .fdr-5 { background-color: #b70028; color: #ffffff; }
+    .fdr-3 { background-color: #485366; color: #ffffff; }
+    .fdr-4 { background-color: #ff4d6d; color: #ffffff; }
+    .fdr-5 { background-color: #c9002b; color: #ffffff; }
     
     .badge-c {
+        position: absolute;
+        top: -6px;
+        right: -6px;
         background: #00e676;
         color: #002e14;
         font-weight: 900;
         font-size: 9px;
-        padding: 1px 4px;
-        border-radius: 4px;
-        display: inline-block;
+        padding: 2px 5px;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0, 230, 118, 0.4);
     }
     .badge-vc {
-        background: #00d2ff;
-        color: #002a35;
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #00f0ff;
+        color: #002e35;
         font-weight: 900;
         font-size: 9px;
-        padding: 1px 4px;
+        padding: 2px 5px;
+        border-radius: 5px;
+    }
+    .badge-sub {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        background: #485366;
+        color: #f0f3f8;
+        font-weight: 700;
+        font-size: 8px;
+        padding: 2px 4px;
         border-radius: 4px;
-        display: inline-block;
     }
     
     .bench-shelf {
-        background-color: #12131d;
+        background-color: #10151f;
         border: 1px dashed rgba(255,255,255,0.12);
-        border-radius: 16px;
-        padding: 12px 10px;
+        border-radius: 18px;
+        padding: 14px 10px;
         margin-top: 14px;
     }
 </style>
 """)
-st.markdown(pl_styles, unsafe_allow_html=True)
-
-# Official Premier League Club Kit Colors
-TEAM_COLORS = {
-    'ARS': {'primary': '#EF0107', 'secondary': '#FFFFFF'},
-    'AVL': {'primary': '#670E36', 'secondary': '#95BFE5'},
-    'BOU': {'primary': '#DA291C', 'secondary': '#000000'},
-    'BRE': {'primary': '#E30613', 'secondary': '#FFFFFF'},
-    'BHA': {'primary': '#0057B8', 'secondary': '#FFFFFF'},
-    'CHE': {'primary': '#034694', 'secondary': '#FFFFFF'},
-    'CRY': {'primary': '#1B458F', 'secondary': '#C4122E'},
-    'EVE': {'primary': '#003399', 'secondary': '#FFFFFF'},
-    'FUL': {'primary': '#FFFFFF', 'secondary': '#000000'},
-    'IPS': {'primary': '#004488', 'secondary': '#FFFFFF'},
-    'LEI': {'primary': '#003090', 'secondary': '#FDBE11'},
-    'LIV': {'primary': '#C8102E', 'secondary': '#FFFFFF'},
-    'MCI': {'primary': '#6CABDD', 'secondary': '#FFFFFF'},
-    'MUN': {'primary': '#DA291C', 'secondary': '#000000'},
-    'NEW': {'primary': '#241F20', 'secondary': '#FFFFFF'},
-    'NFO': {'primary': '#DD0000', 'secondary': '#FFFFFF'},
-    'SOU': {'primary': '#D71920', 'secondary': '#FFFFFF'},
-    'TOT': {'primary': '#FFFFFF', 'secondary': '#132257'},
-    'WHU': {'primary': '#7A263A', 'secondary': '#1BB1E7'},
-    'WOL': {'primary': '#FDB913', 'secondary': '#231F20'}
-}
-
-# Generates clean, authentic vector soccer kit jersey (100% vector SVG - never broken, never 404, never XML error)
-def generate_kit_svg(team_short, is_gkp=False, size=46):
-    if is_gkp:
-        p_col, s_col = "#00e676", "#003919"
-    else:
-        colors = TEAM_COLORS.get(team_short, {'primary': '#37003c', 'secondary': '#00ff87'})
-        p_col = colors['primary']
-        s_col = colors['secondary']
-
-    return clean_html(f"""
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="{size}" height="{size}" style="display:block; margin:0 auto; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
-      <path d="M30,18 L15,35 L28,45 L35,36 L35,82 L65,82 L65,36 L72,45 L85,35 L70,18 L58,22 C55,25 45,25 42,22 Z" fill="{p_col}" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-      <path d="M15,35 L28,45 L24,50 L12,40 Z" fill="{s_col}"/>
-      <path d="M85,35 L72,45 L76,50 L88,40 Z" fill="{s_col}"/>
-      <path d="M42,22 C45,25 55,25 58,22 C55,27 45,27 42,22 Z" fill="{s_col}"/>
-    </svg>
-    """)
+st.markdown(sleeper_styles, unsafe_allow_html=True)
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
@@ -207,17 +246,40 @@ def calculate_potential_score(player, fdr):
     score = (form_val * 0.6) + (ep_val * 0.4) + fdr_bonus
     return round(max(score, 0.0), 2)
 
-# TOP HEADER
+# Seamless large avatar helper: loads official cutout with reliable club crest fallback
+def render_player_avatar(photo_url, badge_url, size=60):
+    return clean_html(f"""
+    <div class="avatar-frame-lg" style="width: {size}px; height: {size}px;">
+        <img class="player-img" src="{photo_url}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{badge_url}'; this.style.padding='8px';">
+    </div>
+    """)
+
+# BROOKLYN FC PREMIER LEAGUE STYLE EMBLEM (SVG)
+def get_brooklyn_badge_svg():
+    return clean_html("""
+    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 5 L88 20 V55 C88 78 50 95 50 95 C50 95 12 78 12 55 V20 L50 5Z" fill="#0d182b" stroke="#ffd166" stroke-width="3"/>
+        <path d="M22 68 L50 25 L78 68 Z" stroke="#00f0ff" stroke-width="2.5" fill="none"/>
+        <line x1="30" y1="68" x2="30" y2="40" stroke="#ffd166" stroke-width="2"/>
+        <line x1="70" y1="68" x2="70" y2="40" stroke="#ffd166" stroke-width="2"/>
+        <path d="M20 58 Q50 64 80 58" stroke="#00e676" stroke-width="2.5" fill="none"/>
+        <circle cx="50" cy="74" r="8" fill="#ffd166"/>
+        <text x="50" y="24" fill="#ffffff" font-size="9" font-weight="900" font-family="'Plus Jakarta Sans',sans-serif" text-anchor="middle">BKLYN</text>
+    </svg>
+    """)
+
+# TOP BANNER
 col_head, col_actions = st.columns([4, 2])
 with col_head:
-    st.markdown("""
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
-            </svg>
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #f0f1f5; letter-spacing: -0.3px;">FPL Elite Manager</h1>
+    st.markdown(clean_html(f"""
+        <div style="display: flex; align-items: center; gap: 12px;">
+            {get_brooklyn_badge_svg()}
+            <div>
+                <h1 style="margin: 0; font-size: 21px; font-weight: 800; color: #f0f3f8; letter-spacing: -0.4px;">Brooklyn FC</h1>
+                <div style="font-size: 12px; color: #00f0ff; font-weight: 700; letter-spacing: 0.5px;">TACTICAL COMMAND</div>
+            </div>
         </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
 with col_actions:
     btn_c1, btn_c2 = st.columns(2)
@@ -232,7 +294,7 @@ with col_actions:
 
 team_id = DEFAULT_TEAM_ID
 
-with st.spinner("Analyzing live Premier League metrics..."):
+with st.spinner("Synchronizing live Premier League data..."):
     try:
         bootstrap = fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/")
         elements = {p["id"]: p for p in bootstrap["elements"]}
@@ -246,7 +308,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
             if event["is_next"]:
                 next_gw = event["id"]
 
-            fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={next_gw}")
+        fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={next_gw}")
         club_matches = {}
         for fix in fixtures:
             h, a = fix["team_h"], fix["team_a"]
@@ -259,24 +321,24 @@ with st.spinner("Analyzing live Premier League metrics..."):
         squad_ids = {p["element"] for p in picks_data["picks"]}
         bank = picks_data.get("entry_history", {}).get("bank", 0) / 10
 
-        # METRIC OVERVIEW CARD
+        # SLEEPER METRIC OVERVIEW
         hero_html = clean_html(f"""
-        <div class="app-card" style="margin-top: 10px;">
+        <div class="app-card" style="margin-top: 10px; border-left: 4px solid #00f0ff;">
             <div style="display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center; gap: 14px;">
                 <div>
-                    <div style="font-size: 11px; text-transform: uppercase; color: #8e92a2; font-weight: 700;">Manager</div>
-                    <div style="font-size: 15px; font-weight: 700; color: #f0f1f5;">{entry_data['player_first_name']} {entry_data['player_last_name']}</div>
+                    <div style="font-size: 11px; text-transform: uppercase; color: #8e9bb0; font-weight: 700;">Manager</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #f0f3f8;">{entry_data['player_first_name']} {entry_data['player_last_name']}</div>
                 </div>
                 <div>
-                    <div style="font-size: 11px; text-transform: uppercase; color: #8e92a2; font-weight: 700;">Squad</div>
-                    <div style="font-size: 15px; font-weight: 700; color: #00e676;">{entry_data['name']}</div>
+                    <div style="font-size: 11px; text-transform: uppercase; color: #8e9bb0; font-weight: 700;">Franchise</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #00f0ff;">{entry_data['name']}</div>
                 </div>
                 <div>
-                    <div style="font-size: 11px; text-transform: uppercase; color: #8e92a2; font-weight: 700;">Overall Points</div>
-                    <div style="font-size: 18px; font-weight: 800; color: #f0f1f5;">{entry_data['summary_overall_points']}</div>
+                    <div style="font-size: 11px; text-transform: uppercase; color: #8e9bb0; font-weight: 700;">Overall Points</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #f0f3f8;">{entry_data['summary_overall_points']}</div>
                 </div>
                 <div>
-                    <div style="font-size: 11px; text-transform: uppercase; color: #8e92a2; font-weight: 700;">Bank Balance</div>
+                    <div style="font-size: 11px; text-transform: uppercase; color: #8e9bb0; font-weight: 700;">Salary Available</div>
                     <div style="font-size: 18px; font-weight: 800; color: #00e676;">£{bank:.1f}m</div>
                 </div>
             </div>
@@ -290,8 +352,12 @@ with st.spinner("Analyzing live Premier League metrics..."):
             fdr = club_matches.get(p["team"], {}).get("fdr", 3)
             opp = club_matches.get(p["team"], {}).get("opp", "TBD")
             score = calculate_potential_score(p, fdr)
-            t_short = teams[p["team"]]["short_name"]
             
+            photo_code = str(p.get("code", "")).replace(".jpg", "").replace("p", "")
+            team_code = teams[p["team"]]["code"]
+            photo_url = f"https://resources.premierleague.com/premierleague/photos/250x250/p{photo_code}.png"
+            badge_url = f"https://resources.premierleague.com/premierleague/badges/t{team_code}.png"
+
             squad_list.append({
                 "data": p,
                 "fdr": fdr,
@@ -299,10 +365,10 @@ with st.spinner("Analyzing live Premier League metrics..."):
                 "score": score,
                 "pos_id": p["element_type"],
                 "pos": positions[p["element_type"]],
-                "team_short": t_short,
+                "photo": photo_url,
+                "badge": badge_url,
                 "team_name": teams[p["team"]]["name"],
-                "team_code": teams[p["team"]]["code"],
-                "is_gkp": (p["element_type"] == 1)
+                "team_code": team_code
             })
 
         # FORMATION SOLVER
@@ -341,8 +407,14 @@ with st.spinner("Analyzing live Premier League metrics..."):
         captain = sorted_by_pot[0]
         vice_captain = sorted_by_pot[1]
 
-        # Selection state for one-click player inspection
-        if "selected_player_id" not in st.session_state:
+        # Handle one-click selection using URL query parameters
+        query_pid = st.query_params.get("player_id")
+        if query_pid:
+            try:
+                st.session_state["selected_player_id"] = int(query_pid)
+            except (ValueError, TypeError):
+                pass
+        elif "selected_player_id" not in st.session_state:
             st.session_state["selected_player_id"] = captain["data"]["id"]
 
         def get_inspected_player():
@@ -360,86 +432,68 @@ with st.spinner("Analyzing live Premier League metrics..."):
             "Intel Feed"
         ])
 
-        # --- TAB 1: STARTING XI (ONE-CLICK SELECTION UPDATES DOSSIER AT BOTTOM) ---
+        # --- TAB 1: SLEEPER TACTICAL PITCH (CLICK PICTURE TO UPDATE DOSSIER AT BOTTOM) ---
         with tab_pitch:
             st.markdown(clean_html(f"""
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
-                <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #f0f1f5;">Gameweek {next_gw} Starting XI</h3>
-                <div style="font-size: 12px; color: #00e676; font-weight: 700;">Tactical Formation: {best_formation}</div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #f0f3f8;">Gameweek {next_gw} Starting Lineup</h3>
+                <div style="font-size: 12px; color: #00f0ff; font-weight: 700;">Tactical Formation: {best_formation}</div>
             </div>
-            <p style="font-size: 12px; color: #8e92a2; margin: 2px 0 8px 0;">Tap any player to open their match readiness dossier below.</p>
+            <p style="font-size: 12px; color: #8e9bb0; margin: 2px 0 8px 0;">Tap any player card to inspect their live scouting dossier below.</p>
             """), unsafe_allow_html=True)
 
-            def render_interactive_player_col(col, p, tag=""):
-                with col:
-                    is_active = (p["data"]["id"] == st.session_state["selected_player_id"])
-                    active_border = "border: 2px solid #00e676; box-shadow: 0 0 10px rgba(0,230,118,0.5);" if is_active else "border: 1px solid rgba(255,255,255,0.12);"
-                    
-                    role_badge = ""
-                    if p == captain:
-                        role_badge = '<div style="position: absolute; top: -6px; right: -6px; background: #00e676; color: #002e14; font-weight: 900; font-size: 9px; padding: 1px 4px; border-radius: 4px;">C</div>'
-                    elif p == vice_captain:
-                        role_badge = '<div style="position: absolute; top: -6px; right: -6px; background: #00d2ff; color: #002a35; font-weight: 900; font-size: 9px; padding: 1px 4px; border-radius: 4px;">VC</div>'
-                    elif tag:
-                        role_badge = f'<div style="position: absolute; top: -6px; left: -6px; background: #434654; color: #e2e4ec; font-weight: 700; font-size: 8px; padding: 1px 4px; border-radius: 4px;">{tag}</div>'
+            def render_sleeper_pitch_card(p, tag=""):
+                is_active = (p["data"]["id"] == st.session_state["selected_player_id"])
+                active_cls = "is-active" if is_active else ""
+                
+                role_tag = ""
+                if p == captain:
+                    role_tag = '<div class="badge-c">C</div>'
+                elif p == vice_captain:
+                    role_tag = '<div class="badge-vc">VC</div>'
+                elif tag:
+                    role_tag = f'<div class="badge-sub">{tag}</div>'
 
-                    kit_svg = generate_kit_svg(p["team_short"], is_gkp=p["is_gkp"], size=40)
-                    
-                    st.markdown(clean_html(f"""
-                    <div style="background: rgba(20,22,34,0.9); {active_border} border-radius: 12px; padding: 6px 2px; text-align: center; position: relative;">
-                        {role_badge}
-                        {kit_svg}
-                        <div style="font-size: 11px; font-weight: 700; color: #f0f1f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;">{p['data']['web_name']}</div>
-                        <div><span class="fdr-pill fdr-{p['fdr']}">{p['opp']}</span></div>
-                        <div style="font-size: 10px; font-weight: 800; color: #00e676; margin-top: 2px;">{p['score']} pts</div>
-                    </div>
-                    """), unsafe_allow_html=True)
+                avatar_html = render_player_avatar(p['photo'], p['badge'], size=60)
+                
+                return clean_html(f"""
+                <a href="?player_id={p['data']['id']}" target="_self" class="pitch-player-card {active_cls}">
+                    {role_tag}
+                    {avatar_html}
+                    <div class="player-label-name">{p['data']['web_name']}</div>
+                    <div><span class="fdr-pill fdr-{p['fdr']}">{p['opp']}</span></div>
+                    <div style="font-size: 10px; font-weight: 800; color: #00e676; margin-top: 2px;">{p['score']} pts</div>
+                </a>
+                """)
 
-                    btn_lbl = "Selected" if is_active else "Inspect"
-                    if st.button(btn_lbl, key=f"sel_p_{p['data']['id']}", use_container_width=True):
-                        st.session_state["selected_player_id"] = p["data"]["id"]
-                        st.rerun()
+            # RENDER THE PITCH ROWS
+            pitch_rows = []
+            pitch_rows.append(f'<div class="pitch-row-flex">{render_sleeper_pitch_card(starter_gkp)}</div>')
+            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_sleeper_pitch_card(p) for p in best_starters if p["pos_id"] == 2])}</div>')
+            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_sleeper_pitch_card(p) for p in best_starters if p["pos_id"] == 3])}</div>')
+            pitch_rows.append(f'<div class="pitch-row-flex">{"".join([render_sleeper_pitch_card(p) for p in best_starters if p["pos_id"] == 4])}</div>')
 
-            # PITCH
-            st.markdown('<div class="pitch-surface">', unsafe_allow_html=True)
-            
-            # Goalkeeper
-            c_gk = st.columns([2, 1.2, 2])[1]
-            render_interactive_player_col(c_gk, starter_gkp)
-
-            # Defenders
-            defs_line = [p for p in best_starters if p["pos_id"] == 2]
-            cols_def = st.columns(len(defs_line))
-            for idx, p in enumerate(defs_line):
-                render_interactive_player_col(cols_def[idx], p)
-
-            # Midfielders
-            mids_line = [p for p in best_starters if p["pos_id"] == 3]
-            cols_mid = st.columns(len(mids_line))
-            for idx, p in enumerate(mids_line):
-                render_interactive_player_col(cols_mid[idx], p)
-
-            # Forwards
-            fwds_line = [p for p in best_starters if p["pos_id"] == 4]
-            cols_fwd = st.columns(len(fwds_line))
-            for idx, p in enumerate(fwds_line):
-                render_interactive_player_col(cols_fwd[idx], p)
-
-            st.markdown('</div>', unsafe_allow_html=True)
+            pitch_html = clean_html(f'<div class="pitch-surface">{"".join(pitch_rows)}</div>')
+            st.markdown(pitch_html, unsafe_allow_html=True)
 
             # Bench Dugout
-            st.markdown("""
+            bench_cards = "".join([
+                render_sleeper_pitch_card(bench_gkp, tag="GKP"),
+                render_sleeper_pitch_card(best_bench_outfield[0], tag="SUB 1"),
+                render_sleeper_pitch_card(best_bench_outfield[1], tag="SUB 2"),
+                render_sleeper_pitch_card(best_bench_outfield[2], tag="SUB 3")
+            ])
+            dugout_html = clean_html(f"""
             <div class="bench-shelf">
-                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #8e92a2; margin-bottom: 8px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #8e9bb0; margin-bottom: 10px; text-align: center;">
                     Priority Bench Order
                 </div>
+                <div class="pitch-row-flex" style="margin-bottom: 0;">
+                    {bench_cards}
+                </div>
             </div>
-            """, unsafe_allow_html=True)
-            cols_bench = st.columns(4)
-            render_interactive_player_col(cols_bench[0], bench_gkp, tag="GKP")
-            render_interactive_player_col(cols_bench[1], best_bench_outfield[0], tag="SUB 1")
-            render_interactive_player_col(cols_bench[2], best_bench_outfield[1], tag="SUB 2")
-            render_interactive_player_col(cols_bench[3], best_bench_outfield[2], tag="SUB 3")
+            """)
+            st.markdown(dugout_html, unsafe_allow_html=True)
 
             # --- LIVE PLAYER DOSSIER (UPDATES LIVE AT BOTTOM ON CLICK) ---
             st.markdown("---")
@@ -452,20 +506,20 @@ with st.spinner("Analyzing live Premier League metrics..."):
             if ip_data["status"] != "a":
                 if chance is not None:
                     status_text = f"{chance}% Chance of Playing"
-                    status_color = "#ffb300" if chance >= 50 else "#ff3b5c"
+                    status_color = "#ffd166" if chance >= 50 else "#ff4d6d"
                 else:
                     status_text = "Out / Suspended (0%)"
-                    status_color = "#ff3b5c"
+                    status_color = "#ff4d6d"
 
-            kit_hero = generate_kit_svg(inspected["team_short"], is_gkp=inspected["is_gkp"], size=58)
+            avatar_hero = render_player_avatar(inspected['photo'], inspected['badge'], size=72)
             st.markdown(clean_html(f"""
-            <div class="app-card" style="border-left: 4px solid #00e676;">
+            <div class="app-card" style="border-left: 4px solid #00f0ff;">
                 <div style="display: flex; align-items: center; gap: 16px;">
-                    <div>{kit_hero}</div>
+                    <div>{avatar_hero}</div>
                     <div>
-                        <div style="font-size: 11px; text-transform: uppercase; color: #00e676; font-weight: 800;">Scouting Dossier & Match Readiness</div>
-                        <h3 style="margin: 2px 0 2px 0; color: #f0f1f5; font-size: 19px;">{ip_data['first_name']} {ip_data['second_name']}</h3>
-                        <div style="font-size: 12px; color: #8e92a2;">{inspected['team_name']} • {inspected['pos']} • £{ip_data['now_cost']/10:.1f}m</div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: #00f0ff; font-weight: 800;">Scouting Dossier & Match Readiness</div>
+                        <h3 style="margin: 2px 0 2px 0; color: #f0f3f8; font-size: 20px;">{ip_data['first_name']} {ip_data['second_name']}</h3>
+                        <div style="font-size: 12px; color: #8e9bb0;">{inspected['team_name']} • {inspected['pos']} • £{ip_data['now_cost']/10:.1f}m</div>
                         <div style="display: inline-block; background: {status_color}22; color: {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 4px;">
                             {status_text}
                         </div>
@@ -512,15 +566,16 @@ with st.spinner("Analyzing live Premier League metrics..."):
                         cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= max_budget):
                         c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                         pot = calculate_potential_score(cand, c_fdr)
-                        c_t_short = teams[cand['team']]['short_name']
+                        c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
+                        c_team_code = teams[cand['team']]['code']
                         replacements.append({
                             "data": cand,
                             "score": pot,
                             "fdr": c_fdr,
                             "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                            "team_short": c_t_short,
-                            "team_name": teams[cand['team']]['name'],
-                            "is_gkp": (cand["element_type"] == 1)
+                            "photo": f"https://resources.premierleague.com/premierleague/photos/250x250/p{c_photo_code}.png",
+                            "badge": f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png",
+                            "team_name": teams[cand['team']]['name']
                         })
 
                 replacements.sort(key=lambda x: x["score"], reverse=True)
@@ -566,23 +621,23 @@ with st.spinner("Analyzing live Premier League metrics..."):
             for rank_idx, divest in enumerate(top3_divestments, start=1):
                 p_out = divest["player_item"]["data"]
                 pos_name = divest["player_item"]["pos"]
-                out_kit = generate_kit_svg(divest["player_item"]["team_short"], is_gkp=divest["player_item"]["is_gkp"], size=44)
+                out_avatar = render_player_avatar(divest["player_item"]["photo"], divest["player_item"]["badge"], size=56)
                 
                 st.markdown(clean_html(f"""
-                <div class="app-card" style="border-left: 4px solid #ff3b5c; margin-top: 14px;">
+                <div class="app-card" style="border-left: 4px solid #ff4d6d; margin-top: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <div>{out_kit}</div>
+                            {out_avatar}
                             <div>
-                                <span style="background: #ff3b5c; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
+                                <span style="background: #ff4d6d; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
                                     DIVESTMENT PRIORITY #{rank_idx}
                                 </span>
-                                <h4 style="margin: 4px 0 2px 0; color: #f0f1f5;">{p_out['web_name']} ({pos_name}) — £{divest['sell_val']:.1f}m</h4>
-                                <div style="font-size: 13px; color: #ffb4ab;">Strategic Rationale: <strong>{divest['primary_reason']}</strong></div>
+                                <h4 style="margin: 4px 0 2px 0; color: #f0f3f8;">{p_out['web_name']} ({pos_name}) — £{divest['sell_val']:.1f}m</h4>
+                                <div style="font-size: 13px; color: #ffb4c0;">Strategic Rationale: <strong>{divest['primary_reason']}</strong></div>
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 12px; color: #8e92a2;">Available Capital</div>
+                            <div style="font-size: 12px; color: #8e9bb0;">Available Capital</div>
                             <div style="font-size: 16px; font-weight: 800; color: #00e676;">£{divest['max_budget']:.1f}m</div>
                         </div>
                     </div>
@@ -596,21 +651,21 @@ with st.spinner("Analyzing live Premier League metrics..."):
                         cand_p = rep["data"]
                         c_cost = cand_p["now_cost"] / 10
                         c_delta = round(rep["score"] - divest["player_item"]["score"], 2)
-                        rep_kit = generate_kit_svg(rep["team_short"], is_gkp=rep["is_gkp"], size=42)
+                        rep_avatar = render_player_avatar(rep['photo'], rep['badge'], size=56)
                         
                         st.markdown(clean_html(f"""
-                        <div class="app-card" style="text-align: center; border-color: rgba(0, 230, 118, 0.4); padding: 12px;">
-                            <div style="font-size: 10px; font-weight: 800; color: #00e676;">TARGET #{c_idx+1}</div>
-                            <div style="margin: 6px auto;">{rep_kit}</div>
-                            <div style="font-weight: 700; font-size: 13px; color: #f0f1f5;">{cand_p['web_name']}</div>
-                            <div style="font-size: 11px; color: #8e92a2;">{rep['team_name']} • £{c_cost:.1f}m</div>
+                        <div class="app-card" style="text-align: center; border-color: rgba(0, 240, 255, 0.4); padding: 12px;">
+                            <div style="font-size: 10px; font-weight: 800; color: #00f0ff;">TARGET #{c_idx+1}</div>
+                            <div style="margin: 6px auto;">{rep_avatar}</div>
+                            <div style="font-weight: 700; font-size: 13px; color: #f0f3f8;">{cand_p['web_name']}</div>
+                            <div style="font-size: 11px; color: #8e9bb0;">{rep['team_name']} • £{c_cost:.1f}m</div>
                             <div style="margin-top: 4px;"><span class="fdr-pill fdr-{rep['fdr']}">{rep['opp']}</span></div>
                             <div style="margin-top: 6px; font-size: 13px; font-weight: 800; color: #00e676;">{c_delta:+} pts gain</div>
-                            <div style="font-size: 10px; color: #8e92a2;">Form: {cand_p['form']} • Potential: {rep['score']}</div>
+                            <div style="font-size: 10px; color: #8e9bb0;">Form: {cand_p['form']} • Potential: {rep['score']}</div>
                         </div>
                         """), unsafe_allow_html=True)
 
-        # --- TAB 3: SIMULATOR (REPLACEMENTS DIRECTLY BELOW OUTGOING PLAYER) ---
+        # --- TAB 3: SIMULATOR (REPLACEMENTS DIRECTLY BENEATH SELECTION) ---
         with tab_simulator:
             st.markdown("### Transfer Simulator & Scenario Modeling")
             st.caption("Model potential trades with instant recommended options directly beneath your selected outgoing player.")
@@ -623,13 +678,13 @@ with st.spinner("Analyzing live Premier League metrics..."):
             sim_budget = sell_price + bank
             target_pos_id = selected_sell["pos_id"]
 
-            out_kit = generate_kit_svg(selected_sell["team_short"], is_gkp=selected_sell["is_gkp"], size=48)
+            out_avatar = render_player_avatar(selected_sell['photo'], selected_sell['badge'], size=60)
             out_card = clean_html(f"""
-            <div class="app-card" style="display: flex; align-items: center; gap: 14px; border-left: 3px solid #ff3b5c; margin-top: 10px;">
-                <div>{out_kit}</div>
+            <div class="app-card" style="display: flex; align-items: center; gap: 14px; border-left: 3px solid #ff4d6d; margin-top: 10px;">
+                {out_avatar}
                 <div>
-                    <div style="font-size: 15px; font-weight: 700; color: #f0f1f5;">{sell_player['web_name']} ({selected_sell['pos']})</div>
-                    <div style="font-size: 12px; color: #8e92a2;">{selected_sell['team_name']} • Sale Value: £{sell_price:.1f}m</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #f0f3f8;">{sell_player['web_name']} ({selected_sell['pos']})</div>
+                    <div style="font-size: 12px; color: #8e9bb0;">{selected_sell['team_name']} • Sale Value: £{sell_price:.1f}m</div>
                     <div style="font-size: 12px; color: #00e676; font-weight: 700; margin-top: 2px;">Total Buy Budget Available: £{sim_budget:.1f}m</div>
                 </div>
             </div>
@@ -644,15 +699,18 @@ with st.spinner("Analyzing live Premier League metrics..."):
                     cand["id"] not in squad_ids and (cand["now_cost"] / 10) <= sim_budget):
                     c_fdr = club_matches.get(cand["team"], {}).get("fdr", 3)
                     p_score = calculate_potential_score(cand, c_fdr)
-                    c_t_short = teams[cand['team']]['short_name']
+                    c_photo_code = str(cand.get("code", "")).replace(".jpg", "").replace("p", "")
+                    c_team_code = teams[cand['team']]['code']
+                    c_badge = f"https://resources.premierleague.com/premierleague/badges/t{c_team_code}.png"
+                    c_photo = f"https://resources.premierleague.com/premierleague/photos/250x250/p{c_photo_code}.png"
                     sim_replacements.append({
                         "data": cand,
                         "score": p_score,
                         "fdr": c_fdr,
                         "opp": club_matches.get(cand["team"], {}).get("opp", "TBD"),
-                        "team_short": c_t_short,
-                        "team_name": teams[cand['team']]['name'],
-                        "is_gkp": (cand["element_type"] == 1)
+                        "photo": c_photo,
+                        "badge": c_badge,
+                        "team_name": teams[cand['team']]['name']
                     })
 
             sim_replacements.sort(key=lambda x: x["score"], reverse=True)
@@ -662,7 +720,7 @@ with st.spinner("Analyzing live Premier League metrics..."):
                 rp = r_item["data"]
                 r_cost = rp["now_cost"] / 10
                 r_delta = round(r_item["score"] - selected_sell["score"], 2)
-                r_kit = generate_kit_svg(r_item["team_short"], is_gkp=r_item["is_gkp"], size=44)
+                r_avatar = render_player_avatar(r_item['photo'], r_item['badge'], size=52)
                 
                 rationale_text = ""
                 if r_delta > 1.5:
@@ -677,15 +735,15 @@ with st.spinner("Analyzing live Premier League metrics..."):
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="font-weight: 800; font-size: 14px; color: #00e676;">#{idx}</div>
-                            <div>{r_kit}</div>
+                            {r_avatar}
                             <div>
-                                <div style="font-size: 14px; font-weight: 700; color: #f0f1f5;">{rp['web_name']} ({r_item['team_name']}) — £{r_cost:.1f}m</div>
-                                <div style="font-size: 12px; color: #8e92a2;">Form: {rp['form']} • Next: {r_item['opp']} (FDR {r_item['fdr']})</div>
+                                <div style="font-size: 14px; font-weight: 700; color: #f0f3f8;">{rp['web_name']} ({r_item['team_name']}) — £{r_cost:.1f}m</div>
+                                <div style="font-size: 12px; color: #8e9bb0;">Form: {rp['form']} • Next: {r_item['opp']} (FDR {r_item['fdr']})</div>
                             </div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 15px; font-weight: 800; color: #00e676;">{r_delta:+} pts gain</div>
-                            <div style="font-size: 11px; color: #8e92a2;">Projection: {r_item['score']} pts</div>
+                            <div style="font-size: 11px; color: #8e9bb0;">Projection: {r_item['score']} pts</div>
                         </div>
                     </div>
                     <div style="font-size: 12px; color: #c4c6d0; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
@@ -723,10 +781,10 @@ with st.spinner("Analyzing live Premier League metrics..."):
             st.caption("Mathematically optimized roadmap to maximize point returns and outperform rivals across all 38 gameweeks.")
 
             st.markdown(clean_html(f"""
-            <div class="app-card" style="border-left: 4px solid #00d2ff; background: #121824;">
-                <div style="font-size: 11px; font-weight: 800; color: #00d2ff; text-transform: uppercase;">Gameweek {next_gw} Directive</div>
-                <h3 style="margin: 4px 0 6px 0; color: #f0f1f5;">Verdict: HOLD ALL CHIPS THIS GAMEWEEK</h3>
-                <p style="margin: 0; font-size: 13px; color: #c4c6d0;">Your squad possesses adequate depth and starting coverage. Using chips in single gameweeks surrenders your greatest competitive advantage over mini-league rivals.</p>
+            <div class="app-card" style="border-left: 4px solid #00f0ff; background: #0f1622;">
+                <div style="font-size: 11px; font-weight: 800; color: #00f0ff; text-transform: uppercase;">Gameweek {next_gw} Directive</div>
+                <h3 style="margin: 4px 0 6px 0; color: #f0f3f8;">Verdict: HOLD ALL CHIPS THIS GAMEWEEK</h3>
+                <p style="margin: 0; font-size: 13px; color: #c4c6d0;">Your starting lineup maintains adequate projection strength. Using chips in standard single gameweeks forfeits your highest point-multiplying upside over mini-league rivals.</p>
             </div>
             """), unsafe_allow_html=True)
 
@@ -749,8 +807,8 @@ with st.spinner("Analyzing live Premier League metrics..."):
             st.markdown(clean_html(f"""
             <div class="app-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h4 style="margin: 0; color: #00d2ff;">Bench Boost (15 Active Scorers)</h4>
-                    <span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">TARGET: DOUBLE GAMEWEEK 34 or 37</span>
+                    <h4 style="margin: 0; color: #00f0ff;">Bench Boost (15 Active Scorers)</h4>
+                    <span style="background: rgba(0,240,255,0.15); color: #00f0ff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">TARGET: DOUBLE GAMEWEEK 34 or 37</span>
                 </div>
                 <p style="font-size: 13px; color: #c4c6d0; margin: 8px 0 0 0;">
                     <strong>Definitive Rule:</strong> Pair this chip directly with your <strong>second Wildcard</strong>. In the spring (GW 34 or 37), multiple postponed fixtures produce massive double gameweeks. Activate your Wildcard one week prior to build a squad where all 15 players have two fixtures, then trigger Bench Boost for a 30-match haul worth 35–45 extra points.
@@ -762,8 +820,9 @@ with st.spinner("Analyzing live Premier League metrics..."):
             st.markdown(clean_html("""
             <div class="app-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h4 style="margin: 0; color: #ffb300;">Free Hit (1-Week Emergency Roster)</h4>
-                    <span style="background: rgba(255,179,0,0.15); color: #ffb300; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">TARGET: MAJOR FA CUP BLANK GAMEWEEK (GW 29)</span>
+                    <h4 style="margin: 0; color: #ffd166;">Free Hit (1-Week Emergency Roster)</h4>
+                    <span style="background #ffd166;">Free Hit (1-Week Emergency Roster)</h4>
+                    <span style="background: rgba(255,209,102,0.15); color: #ffd166; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">TARGET: MAJOR FA CUP BLANK GAMEWEEK (GW 29)</span>
                 </div>
                 <p style="font-size: 13px; color: #c4c6d0; margin: 8px 0 0 0;">
                     <strong>Definitive Rule:</strong> Reserve strictly for the largest <strong>Blank Gameweek (BGW)</strong> of the season, when FA Cup quarterfinals force 6–8 Premier League matches to be postponed. Unprepared rivals will field only 5–6 players and score 20–30 points; your Free Hit will field 11 elite starters, generating a 35–50 point swing in a single weekend.
@@ -775,8 +834,8 @@ with st.spinner("Analyzing live Premier League metrics..."):
             st.markdown(clean_html("""
             <div class="app-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h4 style="margin: 0; color: #ff3b5c;">Wildcards (Squad Restructuring)</h4>
-                    <span style="background: rgba(255,59,92,0.15); color: #ff3b5c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">WC1: GW 10–14 | WC2: GW 31–33</span>
+                    <h4 style="margin: 0; color: #ff4d6d;">Wildcards (Squad Restructuring)</h4>
+                    <span style="background: rgba(255,77,109,0.15); color: #ff4d6d; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">WC1: GW 10–14 | WC2: GW 31–33</span>
                 </div>
                 <p style="font-size: 13px; color: #c4c6d0; margin: 8px 0 0 0;">
                     <strong>Definitive Rule:</strong> Use Wildcard 1 during an autumn fixture swing to load up on surging assets with easy schedules without taking transfer point hits (-4). Wildcard 2 must be preserved for spring to set up your Bench Boost assault.
