@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Architecture | 3-State Pitch Switcher | Strategic Playbooks & Rival War Room
+Production Architecture | Modern Segmented Pill Pitch Switcher | Strategic Playbooks & Rival War Room
 """
 
 import ast
@@ -916,7 +916,7 @@ if classic_leagues:
         if saved_lg_id not in lg_ids:
             saved_lg_id = lg_ids[0]
         st.session_state["target_lg_id"] = saved_lg_id
-        target_league_name = next((safe_get(lg, "name", "Mini-League") for lg in classic_leagues if safe_get(lg, "id") == saved_lg_id), "Mini-League")
+        target_league_name = next((safe_get(lg, "name", "Mini-League") for lg in classic_leagues if safe_get(lg, "id"] == saved_lg_id), "Mini-League")
 
         st_json = fetch_league_standings(saved_lg_id, sync_nonce)
         if isinstance(st_json, dict):
@@ -1103,7 +1103,6 @@ PLAYBOOKS = {
     "C": make_playbook_dict("C", "PLAYBOOK C: 2-MOVE PREMIUM PATH", "Structural Enabler + Premium Upgrade", [primary_sell, pb_c_out_2], [pb_c_target, pb_c_in_2], pb_c_lesson),
 }
 
-# Initialize default Sandbox Transfer Plan (Playbook A) if none exists
 if st.session_state.get("sandbox_transfer_plan") is None:
     st.session_state["sandbox_transfer_plan"] = PLAYBOOKS["A"]
 if st.session_state.get("sb_out_1") is None:
@@ -1111,7 +1110,6 @@ if st.session_state.get("sb_out_1") is None:
 if st.session_state.get("sb_in_1") is None:
     st.session_state["sb_in_1"] = safe_get(pb_a_target, "id", 0)
 
-# Build State 3: Non-Destructive Transfer Sandbox Squad
 active_sb_plan = st.session_state.get("sandbox_transfer_plan") or PLAYBOOKS["A"]
 sb_out_ids = safe_get(active_sb_plan, "out_ids", [])
 sb_in_ids = safe_get(active_sb_plan, "in_ids", [])
@@ -1131,7 +1129,6 @@ sandbox_starting_xi, sandbox_bench_xi, sandbox_full_squad = build_roster_from_pi
     sb_picks_source, apply_cap_overrides=True, sandbox_new_ids=set(sb_in_ids)
 )
 
-# Smart Auto-Captain in Sandbox if current captain was transferred out
 if not any(safe_get(p, "is_captain") for p in sandbox_starting_xi) and sandbox_starting_xi:
     best_sb_cap = sorted(sandbox_starting_xi, key=lambda x: float(safe_get(x, "xp_next", 0.0)), reverse=True)[0]
     best_sb_cap["is_captain"] = True
@@ -1145,77 +1142,6 @@ sandbox_hit_now = int(safe_get(active_sb_plan, "hit_cost", 0))
 sandbox_label_now = str(safe_get(active_sb_plan, "title", "Transfer Sandbox"))
 
 # ---------------------------------------------------------
-# 11. RENDER TOP HERO BANNER + SYNC / SNAPSHOT BAR
-# ---------------------------------------------------------
-pl_vector_svg = (
-    '<div class="kcfc-emblem">'
-    '<svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">'
-    '<path d="M34 25 L29 14 L38 18 L36 7 L45 14 L50 5 L55 15 L62 6 L61 17 L68 11 L64 22 Q50 18 34 25 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
-    '<path d="M36 27 Q52 21 63 24 L60 19 Q50 22 36 27 Z" fill="#070B12"/>'
-    '<path d="M38 28 C48 24 62 24 62 28 C64 25 71 29 73 36 C70 33 65 30 64 33 C59 29 48 29 45 34 C48 35 42 36 41 38 C44 38 45 43 49 44 C55 45 61 45 62 45 C58 39 50 39 47 38 C51 35 55 38 59 36 C59 40 62 43 65 44 C70 43 72 43 73 44 C70 39 66 37 68 36 C72 37 76 38 74 41 C75 42 76 40 77 41 C83 52 85 62 81 74 C79 72 78 70 77 73 C75 84 71 89 65 92 C64 90 64 87 63 89 C55 94 45 94 36 90 C38 82 37 74 36 70 C33 74 29 79 26 81 C22 76 22 67 23 59 C20 60 17 61 17 60 C19 52 22 46 25 42 C23 42 20 43 21 41 C24 35 28 31 32 29 C30 33 32 38 35 38 C33 34 34 30 39 30 C41 30 41 28 38 28 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
-    '<path d="M55 52 L64 47 L69 50 L69 55 L64 59 L58 60 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
-    '<path d="M72 51 L75 48 L76 55 L75 59 L72 55 Z" stroke="#070B12" stroke-width="3.5" stroke-linejoin="round" fill="none"/>'
-    '<path d="M60 64 L68 59 L72 59 L74 63 L72 68 L69 70 L69 65 L63 68 Z" stroke="#070B12" stroke-width="3.6" stroke-linejoin="round" fill="none"/>'
-    '</svg></div>'
-)
-
-rank_arrow = f"▲ {abs(rank_delta):,} vs LW" if rank_delta > 0 else (f"▼ {abs(rank_delta):,} vs LW" if rank_delta < 0 else "━ No Change")
-rank_cls = "delta-up" if rank_delta >= 0 else "delta-down"
-
-gw_vs_avg = gw_pts - gw_avg
-gw_cls = "delta-up" if gw_vs_avg >= 0 else "delta-down"
-gw_sign = "+" if gw_vs_avg >= 0 else ""
-gw_delta_str = f"GW{last_active_gw}: {gw_pts}p ({gw_sign}{gw_vs_avg} vs Avg)"
-
-val_cls = "delta-up" if val_delta >= 0 else "delta-down"
-val_sign = "+" if val_delta >= 0 else ""
-val_delta_str = f"{val_sign}£{val_delta:.1f}m vs LW"
-
-bank_cls = "delta-up" if use_saved_snapshot else ("delta-up" if bank_delta > 0 else ("delta-down" if bank_delta < 0 else "delta-neutral"))
-bank_sign = "+" if bank_delta > 0 else ""
-bank_delta_str = "Synced via Latest Pull" if use_saved_snapshot else f"{bank_sign}£{bank_delta:.1f}m vs LW"
-
-active_cap_obj = next((p for p in starting_xi if safe_get(p, "is_captain", False)), starting_xi[0] if starting_xi else {})
-active_vc_obj = next((p for p in starting_xi if safe_get(p, "is_vice_captain", False)), starting_xi[1] if len(starting_xi) > 1 else {})
-cap_web_name = safe_get(active_cap_obj, "web_name", "N/A")
-vc_web_name = safe_get(active_vc_obj, "web_name", "N/A")
-
-last_synced_safe = str(st.session_state.get("last_synced_str", now_ny_str()))
-team_updated_safe = str(st.session_state.get("team_updated_str", team_last_updated_display))
-
-render_html(
-    f"<div class='kcfc-hero'>"
-    f"<div class='kcfc-hero-top'>"
-    f"<div class='kcfc-hero-brand'>{pl_vector_svg}"
-    f"<div><div class='kcfc-hero-title'>KINGS COUNTY FC</div>"
-    f"<div class='kcfc-hero-sub'>TACTICAL COMMAND &bull; TARGET LEAGUE: {target_league_name}</div></div></div>"
-    f"<div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px;'>"
-    f"<span class='kpi-delta {roster_mode_cls}'>{roster_sync_mode}</span>"
-    f"<span style='font-size:10.5px; color:#CBD5E1; font-family:JetBrains Mono, monospace;'>Team Last Updated: <strong style='color:#00FF85;'>{team_updated_safe}</strong></span>"
-    f"</div></div>"
-    f"<div class='countdown-bar'><div class='countdown-left'><div class='pulse-dot'></div>"
-    f"<div class='countdown-lbl'>GAMEWEEK {upcoming_gw} DEADLINE</div></div>"
-    f"<div class='countdown-val'>{countdown_display}</div></div></div>"
-)
-
-sync_c1, sync_c2 = st.columns([3, 1])
-with sync_c1:
-    if st.button(f"⟳ Check for Newer Data (Team Last Updated: {team_updated_safe} | Feed Checked: {last_synced_safe})", use_container_width=True):
-        st.cache_data.clear()
-        st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
-        st.session_state["last_synced_str"] = now_ny_str()
-        st.rerun()
-with sync_c2:
-    if st.button("Reset Saved Snapshot to Public GW6", use_container_width=True):
-        clear_team_snapshot(team_id)
-        st.session_state["cap_override_id"] = None
-        st.session_state["vc_override_id"] = None
-        st.cache_data.clear()
-        st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
-        st.session_state["last_synced_str"] = now_ny_str()
-        st.rerun()
-
-# ---------------------------------------------------------
 # 12. NAVIGATION TABS
 # ---------------------------------------------------------
 tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
@@ -1227,83 +1153,34 @@ tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
 ])
 
 
-def build_pitch_node_html(p: dict, is_selected: bool = False, bench_slot=None) -> str:
-    pid = safe_get(p, "id", 0)
-    bg_style = build_avatar_bg_style(p)
-
-    is_c = safe_get(p, "is_captain", False)
-    is_v = safe_get(p, "is_vice_captain", False)
-    cap_badge = "<div class='badge-cap'>C</div>" if is_c else ("<div class='badge-vc'>V</div>" if is_v else "")
-
-    is_new_sb = safe_get(p, "is_sandbox_new", False)
-    new_badge = "<div class='badge-new'>NEW</div>" if is_new_sb else ""
-
-    chance = p.get("chance_of_playing_next_round")
-    flag_badge = ""
-    if chance is not None and int(chance) < 100:
-        c_int = int(chance)
-        flag_lbl = "OUT" if c_int == 0 else f"{c_int}%"
-        flag_badge = f"<div class='badge-flag'>{flag_lbl}</div>"
-    elif bench_slot is not None:
-        flag_badge = f"<div class='badge-sub'>SUB {bench_slot}</div>"
-
-    runway = safe_get(p, "runway", [])
-    nxt = runway[0] if runway else {"opp": "TBD", "venue": "H", "fdr": 3}
-    nxt_fdr = safe_get(nxt, "fdr", 3)
-    nxt_opp = safe_get(nxt, "opp", "TBD")
-    nxt_ven = safe_get(nxt, "venue", "H")
-    fdr_c = f"fdr-{nxt_fdr}"
-    sel_c = "selected" if is_selected else ("sandbox-new" if is_new_sb else "")
-    price = float(safe_get(p, "now_cost", 50)) / 10.0
-    p_web = safe_get(p, "web_name", "Player")
-    p_xp = safe_get(p, "xp_next", 0.0)
-
-    lg_param = st.session_state.get("target_lg_id", "")
-    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&pid={pid}#player-dossier"
-
-    return (
-        f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
-        f"<div class='pitch-node {sel_c}'>"
-        f"<div class='node-avatar-wrap'>"
-        f"<div class='node-avatar-circle' style=\"{bg_style}\"></div>"
-        f"{cap_badge}{flag_badge}{new_badge}"
-        f"</div>"
-        f"<div class='node-name'>{p_web}</div>"
-        f"<div class='node-meta'>£{price:.1f}m &bull; {p_xp}xP</div>"
-        f"<div class='fdr-pill {fdr_c}'>{nxt_opp} ({nxt_ven})</div>"
-        f"<div class='node-dossier-btn'>Dossier</div>"
-        f"</div></a>"
-    )
-
-
 # =========================================================
-# TAB 1: 3-STATE TACTICAL PITCH VIEW, 6-KPI DASHBOARD & DOSSIER
+# TAB 1: 3-STATE MODERN SEGMENTED PILL PITCH VIEW
 # =========================================================
 @st.fragment
 def render_pitch_and_dossier_fragment():
-    mode_options = {
-        "gw6": f"1. Completed GW{last_active_gw} Roster",
-        "current": f"2. Latest / Current Team (GW{upcoming_gw})",
-        "sandbox": f"3. Transfer Sandbox Preview ({sandbox_label_now[:26]})",
-    }
     cur_mode = st.session_state.get("pitch_view_mode", "current")
-    if cur_mode not in mode_options:
+    if cur_mode not in ["gw6", "current", "sandbox"]:
         cur_mode = "current"
 
-    mode_c1, mode_c2 = st.columns([2.2, 1.2])
-    with mode_c1:
-        chosen_mode = st.radio(
-            "Active Tactical Pitch View Mode (Non-Destructive Switcher):",
-            options=list(mode_options.keys()),
-            format_func=lambda k: mode_options.get(k, ""),
-            index=list(mode_options.keys()).index(cur_mode),
-            horizontal=True,
-        )
-        if chosen_mode != cur_mode:
-            st.session_state["pitch_view_mode"] = chosen_mode
+    # Modern Segmented Pill Bar Dock (Option A)
+    pill_c1, pill_c2, pill_c3 = st.columns(3, gap="small")
+    with pill_c1:
+        if st.button(f"GW{last_active_gw} Final", use_container_width=True, type="primary" if cur_mode == "gw6" else "secondary"):
+            st.session_state["pitch_view_mode"] = "gw6"
+            st.rerun()
+    with pill_c2:
+        if st.button(f"GW{upcoming_gw} Live Squad", use_container_width=True, type="primary" if cur_mode == "current" else "secondary"):
+            st.session_state["pitch_view_mode"] = "current"
+            st.rerun()
+    with pill_c3:
+        xp_diff_sb = round(sandbox_xp_total - team_xp_total, 1)
+        sb_sign = "+" if xp_diff_sb >= 0 else ""
+        sb_btn_label = f"Sandbox ({sb_sign}{xp_diff_sb} xP)"
+        if st.button(sb_btn_label, use_container_width=True, type="primary" if cur_mode == "sandbox" else "secondary"):
+            st.session_state["pitch_view_mode"] = "sandbox"
             st.rerun()
 
-    if chosen_mode == "gw6":
+    if cur_mode == "gw6":
         disp_xi = gw6_starting_xi
         disp_bench = gw6_bench_xi
         disp_full = gw6_full_squad
@@ -1313,8 +1190,7 @@ def render_pitch_and_dossier_fragment():
         disp_xp = gw6_xp_total
         disp_xp_delta_str = f"Historical GW{last_active_gw} Lineup"
         disp_xp_cls = "delta-neutral"
-        mode_banner_note = f"Viewing Historical Completed GW{last_active_gw} Lineup (Read-Only)."
-    elif chosen_mode == "sandbox":
+    elif cur_mode == "sandbox":
         disp_xi = sandbox_starting_xi
         disp_bench = sandbox_bench_xi
         disp_full = sandbox_full_squad
@@ -1326,9 +1202,6 @@ def render_pitch_and_dossier_fragment():
         sb_sign = "+" if xp_diff_sb >= 0 else ""
         disp_xp_delta_str = f"{sb_sign}{xp_diff_sb} xP vs Current ({sandbox_hit_now}p Hit)"
         disp_xp_cls = "delta-info"
-        out_names_sb = ", ".join(safe_get(x, "web_name", "") for x in safe_get(active_sb_plan, "out_objs", []))
-        in_names_sb = ", ".join(safe_get(x, "web_name", "") for x in safe_get(active_sb_plan, "in_objs", []))
-        mode_banner_note = f"SANDBOX PREVIEW: {out_names_sb} → {in_names_sb} (Neon Cyan 'NEW' badges mark incoming players. Your saved team is untouched)."
     else:
         disp_xi = starting_xi
         disp_bench = bench_xi
@@ -1339,13 +1212,6 @@ def render_pitch_and_dossier_fragment():
         disp_xp = team_xp_total
         disp_xp_delta_str = f"C: {cap_web_name} | V: {vc_web_name}"
         disp_xp_cls = "delta-up"
-        mode_banner_note = f"Viewing Protected Current Team ({roster_sync_mode})."
-
-    with mode_c2:
-        render_html(
-            f"<div style='background:rgba(0,255,133,0.07); border:1px solid rgba(0,255,133,0.28); border-radius:12px; padding:10px 12px; font-size:11.5px; color:#E2E8F0; margin-top:4px;'>"
-            f"<strong>Active View:</strong> {mode_banner_note}</div>"
-        )
 
     render_html(
         f"<div class='kpi-grid-6' style='margin-top:6px;'>"
@@ -1841,7 +1707,6 @@ with tab_transfers:
                 index=in_keys_2.index(cur_sb_in2) if cur_sb_in2 in in_keys_2 else 0,
             )
 
-    # Tale of the Tape Comparison Table (Outgoing #1 vs Incoming #1)
     o1_name = safe_get(out_obj_1, "web_name", "Outgoing")
     i1_name = safe_get(in_obj_1, "web_name", "Incoming")
     o1_sell = float(safe_get(out_obj_1, "selling_price", float(safe_get(out_obj_1, "now_cost", 50)) / 10.0))
@@ -1997,7 +1862,6 @@ with tab_league:
             my_diff_sum = round(sum(float(safe_get(x, "xp_next", 0.0)) for x in my_diff_objs), 1)
             rv_diff_sum = round(sum(float(safe_get(x, "xp_next", 0.0)) for x in rv_diff_objs), 1)
 
-            # Calculate Specific Block Move & Specific Attack Move against Selected Rival
             weakest_my_diff = my_diff_objs[-1] if my_diff_objs else primary_sell
             w_diff_sell = float(safe_get(weakest_my_diff, "selling_price", float(safe_get(weakest_my_diff, "now_cost", 50)) / 10.0))
             w_diff_pos = safe_get(weakest_my_diff, "element_type", 3)
