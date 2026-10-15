@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Full Tactical Pitch View | Gemini 3.8 Flash Co-Pilot
+Production Mobile-First Architecture | Persistent Local State Delta Merger | Gemini 3.8 Flash Co-Pilot
 """
 
 import streamlit as st
@@ -134,10 +134,10 @@ CSS_LINES = [
 render_html("\n".join(CSS_LINES))
 
 # ---------------------------------------------------------
-# 3. AUTHENTICATION, SYNC TIMESTAMP & CLEAN STATE MANAGEMENT
+# 3. AUTHENTICATION, SYNC TIMESTAMP & TEAM ID INITIALIZATION
 # ---------------------------------------------------------
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
-default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1153921))
+default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1575281))
 
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = (st.query_params.get("auth") == "passed")
@@ -239,7 +239,7 @@ def build_avatar_bg_style(p) -> str:
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
-# 5. UNIVERSAL FPL API ENGINE (cURL / BEARER / COOKIE)
+# 5. UNIVERSAL FPL API ENGINE (ROBUST FALLBACK + STATE PERSISTENCE)
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -267,94 +267,6 @@ def fetch_fixtures(nonce=0):
     except Exception:
         pass
     return []
-
-@st.cache_data(ttl=30)
-def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
-    diag = {
-        "attempted": False,
-        "authenticated": False,
-        "status_code": None,
-        "method_used": "None",
-        "message": "Using public FPL data & transfer roll-forward (No active session cookie required)."
-    }
-
-    raw_input = (raw_cookie_or_token or "").strip()
-    explicit_token = (fpl_token or "").strip()
-
-    if not any([raw_input, explicit_token, (fpl_email and fpl_password)]):
-        return None, diag
-
-    diag["attempted"] = True
-    session = requests.Session()
-    req_headers = dict(HEADERS)
-    req_headers["Origin"] = "https://fantasy.premierleague.com"
-    req_headers["Referer"] = "https://fantasy.premierleague.com/my-team"
-    methods_tried = []
-
-    def set_bearer(tok_str):
-        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
-        req_headers["Authorization"] = f"Bearer {clean_jwt}"
-        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
-
-    if raw_input.startswith("curl "):
-        methods_tried.append("Parsed DevTools cURL")
-        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
-            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
-            if h_name.lower() in ("x-api-authorization", "authorization"):
-                set_bearer(h_val)
-                methods_tried.append(f"cURL {h_name}")
-            elif h_name.lower() == "cookie":
-                req_headers["Cookie"] = h_val
-        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", raw_input)
-        if b_match:
-            req_headers["Cookie"] = b_match.group(1).strip()
-
-    if explicit_token:
-        set_bearer(explicit_token)
-        methods_tried.append("Explicit Bearer Token")
-
-    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
-    if jwt_anywhere:
-        set_bearer(jwt_anywhere.group(1))
-        if "JWT" not in " ".join(methods_tried):
-            methods_tried.append("Auto-Extracted JWT Bearer")
-
-    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
-        if "x-api-authorization:" in raw_input.lower():
-            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
-            set_bearer(val_after)
-            methods_tried.append("x-api-authorization Header")
-        elif "=" in raw_input:
-            req_headers["Cookie"] = raw_input
-            for part in raw_input.split(";"):
-                if "=" in part:
-                    k, v = part.strip().split("=", 1)
-                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
-            methods_tried.append("Browser Cookie Jar")
-        else:
-            clean_val = raw_input.strip('"').strip("'")
-            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
-            set_bearer(clean_val)
-            methods_tried.append("Dual Token/Cookie Fallback")
-
-    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
-
-    try:
-        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
-        r = session.get(url, headers=req_headers, timeout=6)
-        diag["status_code"] = r.status_code
-        if r.status_code == 200:
-            data = r.json()
-            if "picks" in data:
-                diag["authenticated"] = True
-                diag["message"] = f"200 OK — Live pre-deadline squad synced ({diag['method_used']})."
-                return data, diag
-        else:
-            diag["message"] = f"HTTP {r.status_code} on /api/my-team/. Using robust public transfer roll-forward."
-    except Exception as e:
-        diag["message"] = f"Request exception: {e}. Using public transfer roll-forward."
-
-    return None, diag
 
 @st.cache_data(ttl=60)
 def fetch_manager_full(tid, nonce=0):
@@ -407,24 +319,6 @@ bootstrap = fetch_bootstrap(sync_nonce) or {"elements": [], "teams": [], "events
 fixtures_list = fetch_fixtures(sync_nonce)
 team_id = st.session_state.get("team_id", default_team_id)
 entry_data, history_data, transfers_list, public_picks_data, last_active_gw = fetch_manager_full(team_id, sync_nonce)
-
-fpl_cookie_val = (
-    st.session_state.get("custom_fpl_cookie")
-    or st.secrets.get("FPL_COOKIE", "")
-    or st.secrets.get("FLP_COOKIE", "")
-)
-fpl_token_val = st.session_state.get("custom_fpl_token") or st.secrets.get("FPL_BEARER_TOKEN", "")
-fpl_email_val = st.session_state.get("custom_fpl_email") or st.secrets.get("FPL_EMAIL", "")
-fpl_pass_val = st.session_state.get("custom_fpl_password") or st.secrets.get("FPL_PASSWORD", "")
-
-private_team_data, auth_diag = fetch_private_my_team(
-    team_id,
-    raw_cookie_or_token=fpl_cookie_val,
-    fpl_token=fpl_token_val,
-    fpl_email=fpl_email_val,
-    fpl_password=fpl_pass_val,
-    nonce=sync_nonce
-)
 
 elements_map = {p["id"]: p for p in bootstrap.get("elements", [])}
 teams_map = {t["id"]: t for t in bootstrap.get("teams", [])}
@@ -535,15 +429,18 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. CURRENT ROSTER & CAPTAINCY EXTRACTION
+# 8. PERSISTENT STATE + SQUAD ROLL-FORWARD ENGINE
 # ---------------------------------------------------------
+if "persisted_squad_state" not in st.session_state:
+    st.session_state["persisted_squad_state"] = None
+
 starting_xi, bench_xi = [], []
 cap_override = st.session_state.get("cap_override_id")
 vc_override = st.session_state.get("vc_override_id")
 
-if private_team_data and "picks" in private_team_data:
-    active_picks_source = private_team_data["picks"]
-    roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw} ROSTER"
+if st.session_state["persisted_squad_state"]:
+    active_picks_source = st.session_state["persisted_squad_state"]
+    roster_sync_mode = f"CACHED & PERSISTED GW{upcoming_gw} SQUAD"
     roster_mode_cls = "delta-up"
 else:
     raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
@@ -556,7 +453,7 @@ else:
                 pk["element"] = in_el
                 break
     active_picks_source = raw_picks
-    roster_sync_mode = f"PUBLIC GW{last_active_gw} + GW{upcoming_gw} TRANSFERS"
+    roster_sync_mode = f"PUBLIC GW{last_active_gw} + ROLL-FORWARD"
     roster_mode_cls = "delta-warn"
 
 api_official_cap_name = "Unknown"
@@ -644,15 +541,6 @@ else:
     overall_rank, rank_delta = entry_data.get("summary_overall_rank", 1219150), 0
     bank_now, bank_delta = (entry_data.get("last_deadline_bank", 1) or 1) / 10.0, 0.0
     val_now, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
-
-if private_team_data and "transfers" in private_team_data:
-    tr_meta = private_team_data["transfers"]
-    if tr_meta.get("bank") is not None:
-        bank_now = tr_meta["bank"] / 10.0
-    if tr_meta.get("value") is not None:
-        val_now = tr_meta["value"] / 10.0
-    if tr_meta.get("limit") is not None:
-        ft_remaining_now = max(0, int(tr_meta["limit"]) - int(tr_meta.get("made", 0)))
 
 team_xp_total = round(sum(
     p["xp_next"] * (2 if p.get("is_captain") else 1) for p in starting_xi
@@ -750,11 +638,12 @@ render_html(
     f"<div class='countdown-val'>{countdown_display}</div></div></div>"
 )
 
-if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Reset Captaincy to Live FPL", use_container_width=True):
+if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Clear Persisted State", use_container_width=True):
     st.cache_data.clear()
     st.session_state["sync_nonce"] += 1
     st.session_state["cap_override_id"] = None
     st.session_state["vc_override_id"] = None
+    st.session_state["persisted_squad_state"] = None
     if "cap_id" in st.query_params:
         del st.query_params["cap_id"]
     if "vc_id" in st.query_params:
@@ -927,10 +816,19 @@ def render_pitch_and_dossier_fragment():
             with cap_btn_c1:
                 if st.button(f"Simulate {sp['web_name']} as Captain (C)", use_container_width=True):
                     st.session_state["cap_override_id"] = sp["id"]
+                    # Save current picks layout into session state as our persistent team state
+                    st.session_state["persisted_squad_state"] = [
+                        {"element": x["id"], "position": x["pick_pos"], "is_captain": x["id"] == sp["id"], "is_vice_captain": x.get("is_vice_captain", False)}
+                        for x in full_squad
+                    ]
                     st.rerun()
             with cap_btn_c2:
                 if st.button(f"Simulate {sp['web_name']} as Vice (V)", use_container_width=True):
                     st.session_state["vc_override_id"] = sp["id"]
+                    st.session_state["persisted_squad_state"] = [
+                        {"element": x["id"], "position": x["pick_pos"], "is_captain": x.get("is_captain", False), "is_vice_captain": x["id"] == sp["id"]}
+                        for x in full_squad
+                    ]
                     st.rerun()
 
             dossier_bg_style = build_avatar_bg_style(sp)
@@ -1221,6 +1119,30 @@ with tab_transfers:
             cart_verdict = "NEGATIVE EV — DO NOT EXECUTE"
             cart_col = "#F43F5E"
 
+        if st.button("Apply Cart Transfers & Persist Roster State", use_container_width=True):
+            new_picks_layout = []
+            replaced_ids = {o["id"] for o in out_objs}
+            for p in full_squad:
+                if p["id"] not in replaced_ids:
+                    new_picks_layout.append({
+                        "element": p["id"],
+                        "position": p["pick_pos"],
+                        "is_captain": p.get("is_captain", False),
+                        "is_vice_captain": p.get("is_vice_captain", False)
+                    })
+            for o_obj, i_obj in zip(out_objs, selected_in_objs):
+                new_picks_layout.append({
+                    "element": i_obj["id"],
+                    "position": o_obj["pick_pos"],
+                    "is_captain": o_obj.get("is_captain", False),
+                    "is_vice_captain": o_obj.get("is_vice_captain", False)
+                })
+            st.session_state["persisted_squad_state"] = new_picks_layout
+            st.cache_data.clear()
+            st.session_state["sync_nonce"] += 1
+            st.success("Transfers applied and persisted successfully! Reloading pitch...")
+            st.rerun()
+
         render_html(
             f"<div class='stat-grid-4' style='margin-top:14px;'>"
             f"<div class='stat-box'><div class='stat-box-lbl'>Moves / Point Hit Cost</div><div class='stat-box-val'>{num_moves} Move(s) ({hit_cost} pts)</div></div>"
@@ -1379,9 +1301,9 @@ with tab_ai:
                 "role": "assistant",
                 "content": (
                     f"Ready for **GW{upcoming_gw}**, Manager. I have your live **Kings County FC** starting XI, bench order, "
-                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded.\n\n"
+                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded[cite: 1, 2].\n\n"
                     f"Ask me anything in plain English—like *'Who should I start and bench this week?'*, *'Why is Semenyo projected so high?'*, "
-                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale."
+                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale[cite: 1, 2]."
                 )
             }
         ]
@@ -1657,6 +1579,7 @@ with tab_settings:
             st.session_state["team_id"] = int(new_tid)
             st.session_state["cap_override_id"] = None
             st.session_state["vc_override_id"] = None
+            st.session_state["persisted_squad_state"] = None
             st.query_params["team_id"] = str(new_tid)
             st.cache_data.clear()
             st.session_state["sync_nonce"] += 1
@@ -1665,7 +1588,7 @@ with tab_settings:
     with set_col2:
         render_html(
             "<div class='dossier-card' style='padding:16px 20px;'>"
-            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Live API Credentials (Overrides / Secrets Fallback)</h4>"
+            "<h4 style='margin:0 0 6px 0; color:#FFF;">Live API Credentials (Overrides / Secrets Fallback)</h4>"
             "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
             "Paste your `x-api-authorization` Bearer token, full `Copy as cURL` command, or Gemini API key below.</p></div>"
         )
@@ -1674,7 +1597,7 @@ with tab_settings:
                 "FPL Bearer Token / `Copy as cURL` / Cookie (`FPL_COOKIE`):",
                 value=fpl_cookie_val,
                 type="password",
-                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1153921/' in DevTools -> Copy -> Copy as cURL."
+                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1575281/' in DevTools -> Copy -> Copy as cURL."
             )
             in_gem = st.text_input(
                 "Gemini API Key (`GEMINI_API_KEY`):",
@@ -1691,6 +1614,7 @@ with tab_settings:
                 st.session_state["custom_fpl_password"] = in_pass
                 st.session_state["cap_override_id"] = None
                 st.session_state["vc_override_id"] = None
+                st.session_state["persisted_squad_state"] = None
                 st.cache_data.clear()
                 st.session_state["sync_nonce"] += 1
                 st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
