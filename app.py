@@ -867,7 +867,6 @@ for pk in current_picks_source:
         if safe_get(pk, "is_vice_captain"):
             api_official_vc_name = safe_get(bp, "web_name", "Unknown")
 
-# Global captain / vice-captain name bindings to ensure zero NameError in fragments
 active_cap_obj = next((p for p in starting_xi if safe_get(p, "is_captain", False)), starting_xi[0] if starting_xi else {})
 active_vc_obj = next((p for p in starting_xi if safe_get(p, "is_vice_captain", False)), starting_xi[1] if len(starting_xi) > 1 else {})
 cap_web_name = safe_get(active_cap_obj, "web_name", "N/A")
@@ -1167,6 +1166,23 @@ def render_pitch_and_dossier_fragment():
     cur_mode = st.session_state.get("pitch_view_mode", "current")
     if cur_mode not in ["gw6", "current", "sandbox"]:
         cur_mode = "current"
+
+    # Encapsulated Local KPI Deltas (Guarantees zero NameError in fragments)
+    gw_vs_avg_local = gw_pts - gw_avg
+    gw_cls = "delta-up" if gw_vs_avg_local >= 0 else "delta-down"
+    gw_sign = "+" if gw_vs_avg_local >= 0 else ""
+    gw_delta_str = f"GW{last_active_gw}: {gw_pts}p ({gw_sign}{gw_vs_avg_local} vs Avg)"
+
+    rank_arrow = f"▲ {abs(rank_delta):,} vs LW" if rank_delta > 0 else (f"▼ {abs(rank_delta):,} vs LW" if rank_delta < 0 else "━ No Change")
+    rank_cls = "delta-up" if rank_delta >= 0 else "delta-down"
+
+    val_cls = "delta-up" if val_delta >= 0 else "delta-down"
+    val_sign = "+" if val_delta >= 0 else ""
+    val_delta_str = f"{val_sign}£{val_delta:.1f}m vs LW"
+
+    bank_cls = "delta-up" if use_saved_snapshot else ("delta-up" if bank_delta > 0 else ("delta-down" if bank_delta < 0 else "delta-neutral"))
+    bank_sign = "+" if bank_delta > 0 else ""
+    bank_delta_str = "Synced via Latest Pull" if use_saved_snapshot else f"{bank_sign}£{bank_delta:.1f}m vs LW"
 
     # Modern Segmented Pill Bar Dock (Option A)
     pill_c1, pill_c2, pill_c3 = st.columns(3, gap="small")
