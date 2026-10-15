@@ -275,7 +275,7 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
         "authenticated": False,
         "status_code": None,
         "method_used": "None",
-        "message": "No private FPL credentials configured."
+        "message": "Using public FPL data & transfer roll-forward (No active session cookie required)."
     }
 
     raw_input = (raw_cookie_or_token or "").strip()
@@ -337,42 +337,22 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
             set_bearer(clean_val)
             methods_tried.append("Dual Token/Cookie Fallback")
 
-    if fpl_email and fpl_password and not methods_tried:
-        try:
-            login_url = "https://users.premierleague.com/accounts/login/"
-            payload = {
-                "login": fpl_email.strip(),
-                "password": fpl_password,
-                "app": "plfpl-web",
-                "redirect_uri": "https://fantasy.premierleague.com/a/login"
-            }
-            session.post(login_url, data=payload, headers=req_headers, timeout=10)
-            methods_tried.append("FPL Credentials Login")
-        except Exception as e:
-            diag["message"] = f"Login error: {e}"
-
     diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
 
     try:
         url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
-        r = session.get(url, headers=req_headers, timeout=8)
+        r = session.get(url, headers=req_headers, timeout=6)
         diag["status_code"] = r.status_code
         if r.status_code == 200:
             data = r.json()
             if "picks" in data:
                 diag["authenticated"] = True
-                diag["message"] = f"200 OK — Live pre-deadline squad & captaincy synced ({diag['method_used']})."
+                diag["message"] = f"200 OK — Live pre-deadline squad synced ({diag['method_used']})."
                 return data, diag
-        elif r.status_code in (401, 403):
-            has_jwt = "Authorization" in req_headers
-            diag["message"] = (
-                f"HTTP {r.status_code}: {'Your Bearer JWT token has expired.' if has_jwt else 'No JWT Bearer token found in your cookie string.'} "
-                f"In Chrome DevTools -> Network -> click '{tid}/' (under my-team) -> right-click -> Copy -> Copy as cURL, and paste that into Settings."
-            )
         else:
-            diag["message"] = f"HTTP {r.status_code} returned from /api/my-team/{tid}/."
+            diag["message"] = f"HTTP {r.status_code} on /api/my-team/. Using robust public transfer roll-forward."
     except Exception as e:
-        diag["message"] = f"Request exception: {e}"
+        diag["message"] = f"Request exception: {e}. Using public transfer roll-forward."
 
     return None, diag
 
