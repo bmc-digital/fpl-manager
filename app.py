@@ -41,12 +41,27 @@ def safe_get(obj, key, default=None):
 
 
 def run_startup_qa_suite():
-    """Built-in self-test that verifies AST compilation and state integrity."""
+    """Built-in self-test that verifies AST compilation and symbol table integrity."""
     try:
         src_path = os.path.abspath(__file__)
         if os.path.exists(src_path):
             with open(src_path, "r", encoding="utf-8") as f_src:
-                ast.parse(f_src.read())
+                tree = ast.parse(f_src.read())
+            defined_funcs = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
+            required_funcs = {
+                "now_ny_str",
+                "safe_get",
+                "render_html",
+                "generate_svg_kit",
+                "build_avatar_bg_style",
+                "build_roster_from_picks",
+                "make_playbook_dict",
+                "build_pitch_node_html",
+                "render_pitch_and_dossier_fragment",
+            }
+            missing = required_funcs - defined_funcs
+            if missing:
+                st.error(f"Startup QA Alert: Missing function definitions: {missing}")
     except Exception:
         pass
 
@@ -275,6 +290,7 @@ CSS_LINES = [
     ".stTabs [aria-selected='true'] { background-color: var(--bg-elevated) !important; color: #00FF85 !important; }",
     "div.stButton > button { background: var(--bg-elevated) !important; color: var(--text-primary) !important; border: 1px solid rgba(0, 255, 133, 0.28) !important; border-radius: 10px !important; font-size: 11.5px !important; font-weight: 700 !important; padding: 6px 12px !important; min-height: 34px !important; }",
     "div.stButton > button:hover { background: #00FF85 !important; color: #070B12 !important; border-color: #00FF85 !important; }",
+    "div.stButton > button[kind='primary'] { background: linear-gradient(135deg, #00FF85 0%, #10B981 100%) !important; color: #070B12 !important; font-weight: 900 !important; border: 1.5px solid #FFFFFF !important; box-shadow: 0 0 18px rgba(0, 255, 133, 0.4) !important; }",
     "</style>"
 ]
 render_html("\n".join(CSS_LINES))
@@ -1147,6 +1163,126 @@ sandbox_hit_now = int(safe_get(active_sb_plan, "hit_cost", 0))
 sandbox_label_now = str(safe_get(active_sb_plan, "title", "Transfer Sandbox"))
 
 # ---------------------------------------------------------
+# 11. RENDER TOP HERO BANNER, GLOBAL TELEMETRY & PITCH NODE BUILDER
+# ---------------------------------------------------------
+pl_vector_svg = (
+    '<div class="kcfc-emblem">'
+    '<svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M34 25 L29 14 L38 18 L36 7 L45 14 L50 5 L55 15 L62 6 L61 17 L68 11 L64 22 Q50 18 34 25 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M36 27 Q52 21 63 24 L60 19 Q50 22 36 27 Z" fill="#070B12"/>'
+    '<path d="M38 28 C48 24 62 24 62 28 C64 25 71 29 73 36 C70 33 65 30 64 33 C59 29 48 29 45 34 C48 35 42 36 41 38 C44 38 45 43 49 44 C55 45 61 45 62 45 C58 39 50 39 47 38 C51 35 55 38 59 36 C59 40 62 43 65 44 C70 43 72 43 73 44 C70 39 66 37 68 36 C72 37 76 38 74 41 C75 42 76 40 77 41 C83 52 85 62 81 74 C79 72 78 70 77 73 C75 84 71 89 65 92 C64 90 64 87 63 89 C55 94 45 94 36 90 C38 82 37 74 36 70 C33 74 29 79 26 81 C22 76 22 67 23 59 C20 60 17 61 17 60 C19 52 22 46 25 42 C23 42 20 43 21 41 C24 35 28 31 32 29 C30 33 32 38 35 38 C33 34 34 30 39 30 C41 30 41 28 38 28 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M55 52 L64 47 L69 50 L69 55 L64 59 L58 60 Z" stroke="#070B12" stroke-width="3.8" stroke-linejoin="round" fill="none"/>'
+    '<path d="M72 51 L75 48 L76 55 L75 59 L72 55 Z" stroke="#070B12" stroke-width="3.5" stroke-linejoin="round" fill="none"/>'
+    '<path d="M60 64 L68 59 L72 59 L74 63 L72 68 L69 70 L69 65 L63 68 Z" stroke="#070B12" stroke-width="3.6" stroke-linejoin="round" fill="none"/>'
+    '</svg></div>'
+)
+
+rank_arrow = f"▲ {abs(rank_delta):,} vs LW" if rank_delta > 0 else (f"▼ {abs(rank_delta):,} vs LW" if rank_delta < 0 else "━ No Change")
+rank_cls = "delta-up" if rank_delta >= 0 else "delta-down"
+
+gw_vs_avg = gw_pts - gw_avg
+gw_cls = "delta-up" if gw_vs_avg >= 0 else "delta-down"
+gw_sign = "+" if gw_vs_avg >= 0 else ""
+gw_delta_str = f"GW{last_active_gw}: {gw_pts}p ({gw_sign}{gw_vs_avg} vs Avg)"
+
+val_cls = "delta-up" if val_delta >= 0 else "delta-down"
+val_sign = "+" if val_delta >= 0 else ""
+val_delta_str = f"{val_sign}£{val_delta:.1f}m vs LW"
+
+bank_cls = "delta-up" if use_saved_snapshot else ("delta-up" if bank_delta > 0 else ("delta-down" if bank_delta < 0 else "delta-neutral"))
+bank_sign = "+" if bank_delta > 0 else ""
+bank_delta_str = "Synced via Latest Pull" if use_saved_snapshot else f"{bank_sign}£{bank_delta:.1f}m vs LW"
+
+ml_posture_val = f"Chasing (-{gap_to_leader} pts)" if gap_to_leader > 0 else "1st Place Leader"
+ml_posture_sub = f"Rank #{my_league_rank} in {target_league_name}"
+ml_posture_cls = "delta-warn" if gap_to_leader > 0 else "delta-up"
+
+last_synced_safe = str(st.session_state.get("last_synced_str", now_ny_str()))
+team_updated_safe = str(st.session_state.get("team_updated_str", team_last_updated_display))
+
+render_html(
+    f"<div class='kcfc-hero'>"
+    f"<div class='kcfc-hero-top'>"
+    f"<div class='kcfc-hero-brand'>{pl_vector_svg}"
+    f"<div><div class='kcfc-hero-title'>KINGS COUNTY FC</div>"
+    f"<div class='kcfc-hero-sub'>TACTICAL COMMAND &bull; TARGET LEAGUE: {target_league_name}</div></div></div>"
+    f"<div style='display:flex; flex-direction:column; align-items:flex-end; gap:4px;'>"
+    f"<span class='kpi-delta {roster_mode_cls}'>{roster_sync_mode}</span>"
+    f"<span style='font-size:10.5px; color:#CBD5E1; font-family:JetBrains Mono, monospace;'>Team Last Updated: <strong style='color:#00FF85;'>{team_updated_safe}</strong></span>"
+    f"</div></div>"
+    f"<div class='countdown-bar'><div class='countdown-left'><div class='pulse-dot'></div>"
+    f"<div class='countdown-lbl'>GAMEWEEK {upcoming_gw} DEADLINE</div></div>"
+    f"<div class='countdown-val'>{countdown_display}</div></div></div>"
+)
+
+sync_c1, sync_c2 = st.columns([3, 1])
+with sync_c1:
+    if st.button(f"⟳ Check for Newer Data (Team Last Updated: {team_updated_safe} | Feed Checked: {last_synced_safe})", use_container_width=True):
+        st.cache_data.clear()
+        st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
+        st.session_state["last_synced_str"] = now_ny_str()
+        st.rerun()
+with sync_c2:
+    if st.button("Reset Saved Snapshot to Public GW6", use_container_width=True):
+        clear_team_snapshot(team_id)
+        st.session_state["cap_override_id"] = None
+        st.session_state["vc_override_id"] = None
+        st.cache_data.clear()
+        st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
+        st.session_state["last_synced_str"] = now_ny_str()
+        st.rerun()
+
+
+def build_pitch_node_html(p: dict, is_selected: bool = False, bench_slot=None) -> str:
+    pid = safe_get(p, "id", 0)
+    bg_style = build_avatar_bg_style(p)
+
+    is_c = safe_get(p, "is_captain", False)
+    is_v = safe_get(p, "is_vice_captain", False)
+    cap_badge = "<div class='badge-cap'>C</div>" if is_c else ("<div class='badge-vc'>V</div>" if is_v else "")
+
+    is_new_sb = safe_get(p, "is_sandbox_new", False)
+    new_badge = "<div class='badge-new'>NEW</div>" if is_new_sb else ""
+
+    chance = p.get("chance_of_playing_next_round")
+    flag_badge = ""
+    if chance is not None and int(chance) < 100:
+        c_int = int(chance)
+        flag_lbl = "OUT" if c_int == 0 else f"{c_int}%"
+        flag_badge = f"<div class='badge-flag'>{flag_lbl}</div>"
+    elif bench_slot is not None:
+        flag_badge = f"<div class='badge-sub'>SUB {bench_slot}</div>"
+
+    runway = safe_get(p, "runway", [])
+    nxt = runway[0] if runway else {"opp": "TBD", "venue": "H", "fdr": 3}
+    nxt_fdr = safe_get(nxt, "fdr", 3)
+    nxt_opp = safe_get(nxt, "opp", "TBD")
+    nxt_ven = safe_get(nxt, "venue", "H")
+    fdr_c = f"fdr-{nxt_fdr}"
+    sel_c = "selected" if is_selected else ("sandbox-new" if is_new_sb else "")
+    price = float(safe_get(p, "now_cost", 50)) / 10.0
+    p_web = safe_get(p, "web_name", "Player")
+    p_xp = safe_get(p, "xp_next", 0.0)
+
+    lg_param = st.session_state.get("target_lg_id", "")
+    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&pid={pid}#player-dossier"
+
+    return (
+        f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
+        f"<div class='pitch-node {sel_c}'>"
+        f"<div class='node-avatar-wrap'>"
+        f"<div class='node-avatar-circle' style=\"{bg_style}\"></div>"
+        f"{cap_badge}{flag_badge}{new_badge}"
+        f"</div>"
+        f"<div class='node-name'>{p_web}</div>"
+        f"<div class='node-meta'>£{price:.1f}m &bull; {p_xp}xP</div>"
+        f"<div class='fdr-pill {fdr_c}'>{nxt_opp} ({nxt_ven})</div>"
+        f"<div class='node-dossier-btn'>Dossier</div>"
+        f"</div></a>"
+    )
+
+
+# ---------------------------------------------------------
 # 12. NAVIGATION TABS
 # ---------------------------------------------------------
 tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
@@ -1166,23 +1302,6 @@ def render_pitch_and_dossier_fragment():
     cur_mode = st.session_state.get("pitch_view_mode", "current")
     if cur_mode not in ["gw6", "current", "sandbox"]:
         cur_mode = "current"
-
-    # Encapsulated Local KPI Deltas (Guarantees zero NameError in fragments)
-    gw_vs_avg_local = gw_pts - gw_avg
-    gw_cls = "delta-up" if gw_vs_avg_local >= 0 else "delta-down"
-    gw_sign = "+" if gw_vs_avg_local >= 0 else ""
-    gw_delta_str = f"GW{last_active_gw}: {gw_pts}p ({gw_sign}{gw_vs_avg_local} vs Avg)"
-
-    rank_arrow = f"▲ {abs(rank_delta):,} vs LW" if rank_delta > 0 else (f"▼ {abs(rank_delta):,} vs LW" if rank_delta < 0 else "━ No Change")
-    rank_cls = "delta-up" if rank_delta >= 0 else "delta-down"
-
-    val_cls = "delta-up" if val_delta >= 0 else "delta-down"
-    val_sign = "+" if val_delta >= 0 else ""
-    val_delta_str = f"{val_sign}£{val_delta:.1f}m vs LW"
-
-    bank_cls = "delta-up" if use_saved_snapshot else ("delta-up" if bank_delta > 0 else ("delta-down" if bank_delta < 0 else "delta-neutral"))
-    bank_sign = "+" if bank_delta > 0 else ""
-    bank_delta_str = "Synced via Latest Pull" if use_saved_snapshot else f"{bank_sign}£{bank_delta:.1f}m vs LW"
 
     # Modern Segmented Pill Bar Dock (Option A)
     pill_c1, pill_c2, pill_c3 = st.columns(3, gap="small")
@@ -1383,1040 +1502,4 @@ def render_pitch_and_dossier_fragment():
                 f"<span style='font-size:10px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(0,255,133,0.12); color:{verdict_col}; border:1px solid {verdict_col};'>{verdict_tag}</span>"
                 f"</div>"
                 f"<div style='font-size:12px; color:var(--text-secondary); margin-top:4px;'>"
-                f"{pos_name} &bull; <strong>{sp_club}</strong> &bull; Global TSB: {sp_tsb}%"
-                f"</div>"
-                f"<div style='font-size:11px; color:#06B6D4; font-weight:700; margin-top:3px;'>{target_league_name}: {rival_tag}</div>"
-                f"</div></div>"
-                f"{news_banner}"
-                f"<div class='stat-grid-4'>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>Market / Sell Price</div><div class='stat-box-val'>£{p_price:.1f}m / <span style='color:#00FF85;'>£{sell_val:.1f}m</span></div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>GW{upcoming_gw} xP</div><div class='stat-box-val' style='color:#00FF85;'>{sp_xp_next}</div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>5-GW Projected</div><div class='stat-box-val' style='color:#06B6D4;'>{sp_xp5}p</div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>GW{last_active_gw} Actual</div><div class='stat-box-val'>{sp_last_pts} pts</div></div>"
-                f"</div>"
-                f"<div class='stat-grid-4'>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>Form Rating</div><div class='stat-box-val'>{sp_form}</div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>xG + xA (xGI)</div><div class='stat-box-val'>{sp_xgi}</div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>ICT Index</div><div class='stat-box-val'>{sp_ict}</div></div>"
-                f"<div class='stat-box'><div class='stat-box-lbl'>Value (Pts/£m)</div><div class='stat-box-val'>{pts_per_m}</div></div>"
-                f"</div>"
-                f"<div style='font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin:12px 0 8px 0;'>Upcoming 5-GW Runway (Avg FDR: {sp_avg_fdr})</div>"
-                f"<div class='runway-grid-5'>{runway_chips}</div></div>"
-            )
-
-
-with tab_pitch:
-    render_pitch_and_dossier_fragment()
-
-    starters_sorted_last = sorted(starting_xi, key=lambda x: int(safe_get(x, "last_gw_pts", 0)), reverse=True)
-    top_performers = [p for p in starters_sorted_last if int(safe_get(p, "last_gw_pts", 0)) >= 6][:3]
-    if not top_performers and starters_sorted_last:
-        top_performers = starters_sorted_last[:2]
-
-    bench_pts_left = sum(int(safe_get(p, "last_gw_pts", 0)) for p in bench_xi)
-    bench_stars = [p for p in bench_xi if int(safe_get(p, "last_gw_pts", 0)) >= 5]
-    underperformers = [p for p in starting_xi if int(safe_get(p, "last_gw_pts", 0)) <= 2 and safe_get(p, "element_type") != 1]
-
-    win_parts = [f"<strong>{safe_get(p, 'web_name')}</strong> ({safe_get(p, 'last_gw_pts')} pts)" for p in top_performers]
-    wins_str = ", ".join(win_parts) or "Steady baseline contributions."
-
-    b_names = ", ".join(safe_get(p, "web_name", "") for p in bench_stars)
-    u_names = ", ".join(safe_get(p, "web_name", "") for p in underperformers[:3])
-    imp_str = (
-        f"Left <strong>{bench_pts_left} pts</strong> on the bench"
-        + (f" (including {b_names})" if b_names else "")
-        + (f". Low starter returns from {u_names}." if u_names else ".")
-    )
-    watch_items = []
-    for p in full_squad:
-        p_w = safe_get(p, "web_name", "Player")
-        p_n = safe_get(p, "news", "")
-        if p_n:
-            watch_items.append(f"<strong>{p_w}</strong> ({p_n})")
-        elif int(safe_get(p, "next_fdr", 3)) >= 4 and p in starting_xi:
-            runway_list = safe_get(p, "runway", [])
-            nxt = runway_list[0] if runway_list else {"opp": "TBD", "fdr": 4}
-            n_opp = safe_get(nxt, "opp", "TBD")
-            n_fdr = safe_get(nxt, "fdr", 4)
-            watch_items.append(f"<strong>{p_w}</strong> faces tough GW{upcoming_gw} matchup vs {n_opp} (FDR {n_fdr})")
-    watch_str = " &bull; ".join(watch_items[:4]) or "No major injury or suspension flags across your 15-man squad."
-
-    render_html(
-        f"<div class='dossier-card' style='margin-top:20px; border-color:rgba(0, 255, 133, 0.25);'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;'>"
-        f"<span style='font-size:16px; font-weight:800; color:#FFF;'>GW{last_active_gw} EXECUTIVE DEBRIEF & FORWARD RADAR</span>"
-        f"<span style='font-size:11px; color:#00FF85; font-family:JetBrains Mono, monospace;'>{calibration_note}</span></div>"
-        f"<div class='buy-grid-3'>"
-        f"<div style='background:rgba(16,185,129,0.07); border-left:3px solid #00FF85; padding:12px; border-radius:10px;'>"
-        f"<div style='font-size:11px; font-weight:800; color:#00FF85; text-transform:uppercase;'>What Went Well (GW{last_active_gw})</div>"
-        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>Scored <strong>{gw_pts} pts</strong> ({gw_sign}{gw_vs_avg} vs GW Average). Key drivers: {wins_str}.</div></div>"
-        f"<div style='background:rgba(245,158,11,0.07); border-left:3px solid #F59E0B; padding:12px; border-radius:10px;'>"
-        f"<div style='font-size:11px; font-weight:800; color:#FBBF24; text-transform:uppercase;'>Areas for Improvement</div>"
-        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>{imp_str}</div></div>"
-        f"<div style='background:rgba(244,63,94,0.07); border-left:3px solid #F43F5E; padding:12px; border-radius:10px;'>"
-        f"<div style='font-size:11px; font-weight:800; color:#FB7185; text-transform:uppercase;'>GW{upcoming_gw} Risk & Fixture Watch</div>"
-        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>{watch_str}</div></div>"
-        f"</div></div>"
-    )
-
-# =========================================================
-# TAB 2: TRANSFER ANALYSIS & PLANNING (PLAYBOOKS, TRAJECTORY & SANDBOX)
-# =========================================================
-with tab_transfers:
-    best_1m_delta = float(safe_get(PLAYBOOKS["A"], "gw1_delta", 0.0))
-    best_5m_delta = float(safe_get(PLAYBOOKS["A"], "gw5_delta", 0.0))
-    primary_sell_name = safe_get(primary_sell, "web_name", "Player")
-    primary_sell_xp = safe_get(primary_sell, "xp_next", 0.0)
-    primary_sell_fdr5 = safe_get(primary_sell, "avg_5_fdr", 3.0)
-    pb_a_in_name = safe_get(pb_a_target, "web_name", "Target")
-
-    ml_posture_val = f"Chasing (-{gap_to_leader} pts)" if gap_to_leader > 0 else "1st Place Leader"
-    ml_posture_sub = f"Rank #{my_league_rank} in {target_league_name}"
-    ml_posture_cls = "delta-warn" if gap_to_leader > 0 else "delta-up"
-
-    sb_vs_curr_diff = round(sandbox_xp_total - team_xp_total, 1)
-    sb_vs_curr_sign = "+" if sb_vs_curr_diff >= 0 else ""
-
-    # 1. Focused 4-Tile Transfer Command Bar
-    render_html(
-        f"<div class='kpi-grid-4'>"
-        f"<div class='kpi-card'><div class='kpi-label'>Free Transfers & Bank</div><div class='kpi-value' style='color:#00FF85;'>{ft_remaining_now} FT &bull; £{bank_now:.1f}m</div><span class='kpi-delta {ft_rec_cls}'>{ft_rec_text}</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>Max 1-Move Buy Power</div><div class='kpi-value' style='color:#FBBF24;'>£{max_1move_budget:.1f}m</div><span class='kpi-delta delta-neutral'>Via {primary_sell_name} (£{primary_sell_val:.1f}m)</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>Current vs Sandbox XI</div><div class='kpi-value' style='color:#06B6D4;'>{team_xp_total} &rarr; {sandbox_xp_total} xP</div><span class='kpi-delta delta-info'>{sb_vs_curr_sign}{sb_vs_curr_diff} xP in GW{upcoming_gw}</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>Mini-League Posture</div><div class='kpi-value'>{ml_posture_val}</div><span class='kpi-delta {ml_posture_cls}'>{ml_posture_sub}</span></div>"
-        f"</div>"
-    )
-
-    # 2. Executive "Roll vs. Use" Verdict Banner
-    if ft_remaining_now >= 1 and (best_1m_delta >= 1.5 or starter_flags):
-        verdict_headline = f"EXECUTIVE VERDICT: USE 1 FREE TRANSFER (NET 5-GW CEILING: +{best_5m_delta} xP)"
-        verdict_badge_cls = "delta-up"
-        verdict_rationale = (
-            f"Your weakest outfield link (<strong>{primary_sell_name}</strong>, {primary_sell_xp} xP, Avg 5-GW FDR {primary_sell_fdr5}) "
-            f"can be upgraded directly to <strong>{pb_a_in_name}</strong> for a <strong>+{best_1m_delta} xP</strong> gain in GW{upcoming_gw} "
-            f"and <strong>+{best_5m_delta} xP</strong> over the next 5 Gameweeks without taking a point hit."
-        )
-    else:
-        verdict_headline = "EXECUTIVE VERDICT: ROLL FREE TRANSFER (BANK FLEXIBILITY FOR NEXT GW)"
-        verdict_badge_cls = "delta-warn"
-        verdict_rationale = (
-            f"Your Starting XI has strong baseline security this week ({team_xp_total} xP). "
-            f"Banking your Free Transfer gives you <strong>{min(5, ft_remaining_now + 1)} FTs</strong> next week to execute a 2-move structural swing for free."
-        )
-
-    render_html(
-        f"<div class='verdict-banner'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;'>"
-        f"<span style='font-size:15px; font-weight:900; color:#00FF85; letter-spacing:0.5px;'>{verdict_headline}</span>"
-        f"<span class='kpi-delta {verdict_badge_cls}'>NON-DESTRUCTIVE SANDBOX ENGINE</span></div>"
-        f"<div style='font-size:13px; color:#E2E8F0; line-height:1.5;'>{verdict_rationale}</div></div>"
-    )
-
-    # 3. Three Curated Strategic Playbook Cards
-    pb_cols = st.columns(3, gap="medium")
-    for idx_pb, pb_key in enumerate(["A", "B", "C"]):
-        pb = PLAYBOOKS[pb_key]
-        is_active_pb = (safe_get(active_sb_plan, "key") == pb_key)
-        card_cls = "playbook-card active-pb" if is_active_pb else "playbook-card"
-        pb_title = safe_get(pb, "title", "")
-        pb_sub = safe_get(pb, "subtitle", "")
-        out_str = " + ".join(f"{safe_get(x, 'web_name')} (£{float(safe_get(x, 'selling_price', 5.0)):.1f}m)" for x in safe_get(pb, "out_objs", []))
-        in_str = " + ".join(f"{safe_get(x, 'web_name')} (£{float(safe_get(x, 'now_cost', 50)) / 10.0:.1f}m)" for x in safe_get(pb, "in_objs", []))
-        gw1_d = safe_get(pb, "gw1_delta", 0.0)
-        gw5_d = safe_get(pb, "gw5_delta", 0.0)
-        gw1_s = "+" if gw1_d >= 0 else ""
-        gw5_s = "+" if gw5_d >= 0 else ""
-        pb_bank = safe_get(pb, "new_bank", 0.0)
-        pb_hit = safe_get(pb, "hit_cost", 0)
-        pb_run = safe_get(pb, "runway_str", "")
-        pb_less = safe_get(pb, "lesson", "")
-
-        with pb_cols[idx_pb]:
-            render_html(
-                f"<div class='{card_cls}'>"
-                f"<div>"
-                f"<div style='display:flex; justify-content:space-between; align-items:center;'>"
-                f"<span style='font-size:12.5px; font-weight:900; color:#00FF85;'>{pb_title}</span>"
-                f"<span class='kpi-delta delta-up'>{gw5_s}{gw5_d} xP (5GW)</span></div>"
-                f"<div style='font-size:11px; color:var(--text-secondary); margin:3px 0 10px 0;'>{pb_sub}</div>"
-                f"<div style='background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px; margin-bottom:10px;'>"
-                f"<div style='font-size:12px; color:#FB7185;'><strong>OUT:</strong> {out_str}</div>"
-                f"<div style='font-size:12px; color:#00FF85; margin-top:4px;'><strong>IN:</strong> {in_str}</div></div>"
-                f"<div style='font-size:11.5px; font-family:JetBrains Mono, monospace; color:#CBD5E1; line-height:1.6;'>"
-                f"&bull; GW{upcoming_gw} Net: <strong>{gw1_s}{gw1_d} xP</strong> ({pb_hit}p Hit)<br>"
-                f"&bull; 5-GW Net: <strong style='color:#00FF85;'>{gw5_s}{gw5_d} xP</strong><br>"
-                f"&bull; New Bank: <strong>£{pb_bank:.1f}m</strong> &bull; Next 3: <strong>{pb_run}</strong></div>"
-                f"<div style='background:rgba(6,182,212,0.08); border-left:3px solid #06B6D4; padding:8px 10px; border-radius:6px; font-size:11.5px; color:#E2E8F0; margin-top:10px;'>"
-                f"<strong>Why It Works:</strong> {pb_less}</div>"
-                f"</div></div>"
-            )
-            if st.button(f"Load Playbook {pb_key} into Sandbox & Pitch Mode 3", key=f"btn_load_pb_{pb_key}", use_container_width=True):
-                st.session_state["sandbox_transfer_plan"] = pb
-                st.session_state["pitch_view_mode"] = "sandbox"
-                out_ids_pb = safe_get(pb, "out_ids", [])
-                in_ids_pb = safe_get(pb, "in_ids", [])
-                st.session_state["sb_out_1"] = out_ids_pb[0] if out_ids_pb else primary_sell_id
-                st.session_state["sb_in_1"] = in_ids_pb[0] if in_ids_pb else safe_get(pb_a_target, "id", 0)
-                st.session_state["sb_out_2"] = out_ids_pb[1] if len(out_ids_pb) > 1 else 0
-                st.session_state["sb_in_2"] = in_ids_pb[1] if len(in_ids_pb) > 1 else 0
-                st.rerun()
-
-    # 4. 5-Gameweek Horizon & Breakeven Trajectory Table
-    curr_5gw_series = [0.0] * 5
-    for p in starting_xi:
-        ser = safe_get(p, "xp_series", [0.0] * 5)
-        mult = 2.0 if safe_get(p, "is_captain") else 1.0
-        for w_i in range(5):
-            curr_5gw_series[w_i] += (float(ser[w_i]) * mult if w_i < len(ser) else 0.0)
-
-    sb_5gw_series = [0.0] * 5
-    for p in sandbox_starting_xi:
-        ser = safe_get(p, "xp_series", [0.0] * 5)
-        mult = 2.0 if safe_get(p, "is_captain") else 1.0
-        for w_i in range(5):
-            sb_5gw_series[w_i] += (float(ser[w_i]) * mult if w_i < len(ser) else 0.0)
-
-    curr_5gw_series = [round(x, 1) for x in curr_5gw_series]
-    sb_5gw_series = [round(x, 1) for x in sb_5gw_series]
-    sb_5gw_series[0] = round(sb_5gw_series[0] + sandbox_hit_now, 1)
-
-    gw_headers_html = "".join(f"<th>GW{upcoming_gw + w}</th>" for w in range(5))
-    curr_cells_html = "".join(f"<td style='font-family:JetBrains Mono, monospace;'>{curr_5gw_series[w]} xP</td>" for w in range(5))
-    sb_cells_html = "".join(f"<td style='font-family:JetBrains Mono, monospace; color:#06B6D4; font-weight:700;'>{sb_5gw_series[w]} xP</td>" for w in range(5))
-
-    delta_cells = []
-    running_cum_delta = 0.0
-    breakeven_gw_str = f"GW{upcoming_gw} (Immediate Gain)"
-    for w in range(5):
-        d_w = round(sb_5gw_series[w] - curr_5gw_series[w], 1)
-        running_cum_delta = round(running_cum_delta + d_w, 1)
-        if sandbox_hit_now < 0 and running_cum_delta >= 0 and "Immediate" in breakeven_gw_str:
-            breakeven_gw_str = f"Pays Back Hit by GW{upcoming_gw + w}"
-        d_sign = "+" if d_w >= 0 else ""
-        d_col = "#00FF85" if d_w >= 0 else "#FB7185"
-        delta_cells.append(f"<td style='font-family:JetBrains Mono, monospace; color:{d_col}; font-weight:700;'>{d_sign}{d_w} xP</td>")
-
-    curr_5_tot = round(sum(curr_5gw_series), 1)
-    sb_5_tot = round(sum(sb_5gw_series), 1)
-    net_5_tot = round(sb_5_tot - curr_5_tot, 1)
-    net_5_sign = "+" if net_5_tot >= 0 else ""
-    delta_cells_html = "".join(delta_cells)
-
-    render_html(
-        f"<div class='dossier-card' style='margin-top:16px;'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;'>"
-        f"<span style='font-size:15px; font-weight:800; color:#FFF;'>5-GAMEWEEK SCORING TRAJECTORY & BREAKEVEN HORIZON ({sandbox_label_now})</span>"
-        f"<span class='kpi-delta delta-info'>{breakeven_gw_str}</span></div>"
-        f"<table class='ml-table'>"
-        f"<thead><tr><th>Squad Trajectory</th>{gw_headers_html}<th>5-GW Cumulative</th></tr></thead>"
-        f"<tbody>"
-        f"<tr><td><strong>Current Team (Baseline)</strong></td>{curr_cells_html}<td style='font-family:JetBrains Mono, monospace; font-weight:800;'>{curr_5_tot} xP</td></tr>"
-        f"<tr><td><strong style='color:#06B6D4;'>Sandbox Transfer Squad</strong></td>{sb_cells_html}<td style='font-family:JetBrains Mono, monospace; font-weight:800; color:#06B6D4;'>{sb_5_tot} xP</td></tr>"
-        f"<tr><td><strong>Net Weekly Delta (Incl. Hit)</strong></td>{delta_cells_html}<td style='font-family:JetBrains Mono, monospace; font-weight:900; color:#00FF85;'>{net_5_sign}{net_5_tot} xP</td></tr>"
-        f"</tbody></table></div>"
-    )
-
-    # 5. Head-to-Head Custom Sandbox & Tale of the Tape
-    render_html(
-        "<div class='dossier-card' style='margin-top:16px; padding:16px 20px;'>"
-        "<h4 style='margin:0; font-size:15px; font-weight:800; color:#00FF85;'>HEAD-TO-HEAD SANDBOX & TALE OF THE TAPE INSPECTOR</h4>"
-        "<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
-        "Fine-tune any 1-move or 2-move swap below. Loading a swap updates Pitch View Mode 3 without overwriting your saved team.</p></div>"
-    )
-
-    pos_lookup = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
-    out_map_1 = {}
-    for p in full_squad:
-        if "id" in p:
-            pid_o = p["id"]
-            w_o = safe_get(p, "web_name", "Player")
-            t_o = safe_get(p, "team_short", "EPL")
-            pos_o = pos_lookup.get(safe_get(p, "element_type"), "PLY")
-            sell_o = float(safe_get(p, "selling_price", float(safe_get(p, "now_cost", 50)) / 10.0))
-            xp_o = safe_get(p, "xp_next", 0.0)
-            out_map_1[pid_o] = f"{w_o} ({t_o} - {pos_o} | Sell: £{sell_o:.1f}m | {xp_o}xP)"
-
-    sb_col1, sb_col2 = st.columns(2, gap="medium")
-    out_keys_1 = list(out_map_1.keys())
-    cur_sb_out1 = st.session_state.get("sb_out_1", out_keys_1[0] if out_keys_1 else 0)
-    if cur_sb_out1 not in out_keys_1 and out_keys_1:
-        cur_sb_out1 = out_keys_1[0]
-
-    with sb_col1:
-        sel_out_1 = st.selectbox(
-            "Outgoing Player #1:",
-            options=out_keys_1,
-            format_func=lambda x: out_map_1.get(x, ""),
-            index=out_keys_1.index(cur_sb_out1) if cur_sb_out1 in out_keys_1 else 0,
-        )
-        out_obj_1 = elements_map.get(sel_out_1, primary_sell)
-        pos_1 = safe_get(out_obj_1, "element_type", 3)
-
-        out_map_2 = {0: "None (1-Move Swap Only)"}
-        for k_id, v_str in out_map_1.items():
-            if k_id != sel_out_1:
-                out_map_2[k_id] = v_str
-        out_keys_2 = list(out_map_2.keys())
-        cur_sb_out2 = st.session_state.get("sb_out_2", 0)
-        if cur_sb_out2 not in out_keys_2:
-            cur_sb_out2 = 0
-        sel_out_2 = st.selectbox(
-            "Optional Outgoing Player #2 (For 2-Move Path):",
-            options=out_keys_2,
-            format_func=lambda x: out_map_2.get(x, ""),
-            index=out_keys_2.index(cur_sb_out2),
-        )
-
-    with sb_col2:
-        in_cands_1 = [
-            c for c in elements_map.values()
-            if safe_get(c, "id") not in squad_ids
-            and safe_get(c, "element_type") == pos_1
-            and (c.get("chance_of_playing_next_round") is None or int(c.get("chance_of_playing_next_round")) >= 75)
-        ]
-        in_cands_1.sort(key=lambda x: float(safe_get(x, "xp_5gw", 0.0)), reverse=True)
-        in_map_1 = {}
-        for c in in_cands_1[:75]:
-            if "id" in c:
-                cid = c["id"]
-                cw = safe_get(c, "web_name", "Player")
-                ct = safe_get(c, "team_short", "EPL")
-                cc = float(safe_get(c, "now_cost", 50)) / 10.0
-                cx5 = safe_get(c, "xp_5gw", 0.0)
-                in_map_1[cid] = f"{cw} ({ct} | Buy: £{cc:.1f}m | {cx5} 5GW xP)"
-        in_keys_1 = list(in_map_1.keys())
-        cur_sb_in1 = st.session_state.get("sb_in_1", in_keys_1[0] if in_keys_1 else 0)
-        if cur_sb_in1 not in in_keys_1 and in_keys_1:
-            cur_sb_in1 = in_keys_1[0]
-
-        sel_in_1 = st.selectbox(
-            f"Incoming Target #1 ({pos_lookup.get(pos_1, 'PLY')}):",
-            options=in_keys_1,
-            format_func=lambda x: in_map_1.get(x, ""),
-            index=in_keys_1.index(cur_sb_in1) if cur_sb_in1 in in_keys_1 else 0,
-        )
-        in_obj_1 = elements_map.get(sel_in_1, pb_a_target)
-
-        sel_in_2 = 0
-        if sel_out_2 != 0 and sel_out_2 in elements_map:
-            out_obj_2 = elements_map[sel_out_2]
-            pos_2 = safe_get(out_obj_2, "element_type", 3)
-            in_cands_2 = [
-                c for c in elements_map.values()
-                if safe_get(c, "id") not in squad_ids
-                and safe_get(c, "id") != sel_in_1
-                and safe_get(c, "element_type") == pos_2
-                and (c.get("chance_of_playing_next_round") is None or int(c.get("chance_of_playing_next_round")) >= 75)
-            ]
-            in_cands_2.sort(key=lambda x: float(safe_get(x, "xp_5gw", 0.0)), reverse=True)
-            in_map_2 = {}
-            for c in in_cands_2[:75]:
-                if "id" in c:
-                    cid = c["id"]
-                    cw = safe_get(c, "web_name", "Player")
-                    ct = safe_get(c, "team_short", "EPL")
-                    cc = float(safe_get(c, "now_cost", 50)) / 10.0
-                    cx5 = safe_get(c, "xp_5gw", 0.0)
-                    in_map_2[cid] = f"{cw} ({ct} | Buy: £{cc:.1f}m | {cx5} 5GW xP)"
-            in_keys_2 = list(in_map_2.keys())
-            cur_sb_in2 = st.session_state.get("sb_in_2", in_keys_2[0] if in_keys_2 else 0)
-            if cur_sb_in2 not in in_keys_2 and in_keys_2:
-                cur_sb_in2 = in_keys_2[0]
-            sel_in_2 = st.selectbox(
-                f"Incoming Target #2 ({pos_lookup.get(pos_2, 'PLY')}):",
-                options=in_keys_2,
-                format_func=lambda x: in_map_2.get(x, ""),
-                index=in_keys_2.index(cur_sb_in2) if cur_sb_in2 in in_keys_2 else 0,
-            )
-
-    o1_name = safe_get(out_obj_1, "web_name", "Outgoing")
-    i1_name = safe_get(in_obj_1, "web_name", "Incoming")
-    o1_sell = float(safe_get(out_obj_1, "selling_price", float(safe_get(out_obj_1, "now_cost", 50)) / 10.0))
-    i1_buy = float(safe_get(in_obj_1, "now_cost", 50)) / 10.0
-    price_diff_1 = round(o1_sell - i1_buy, 1)
-    p_diff_sign = "+" if price_diff_1 >= 0 else ""
-
-    o1_form = float(safe_get(out_obj_1, "form", 0.0) or 0.0)
-    i1_form = float(safe_get(in_obj_1, "form", 0.0) or 0.0)
-    form_edge = round(i1_form - o1_form, 1)
-    f_edge_sign = "+" if form_edge >= 0 else ""
-
-    o1_xgi = float(safe_get(out_obj_1, "expected_goal_involvements", 0.0) or 0.0)
-    i1_xgi = float(safe_get(in_obj_1, "expected_goal_involvements", 0.0) or 0.0)
-    xgi_edge = round(i1_xgi - o1_xgi, 2)
-    x_edge_sign = "+" if xgi_edge >= 0 else ""
-
-    o1_fdr = float(safe_get(out_obj_1, "avg_5_fdr", 3.0))
-    i1_fdr = float(safe_get(in_obj_1, "avg_5_fdr", 3.0))
-    o1_xp5 = float(safe_get(out_obj_1, "xp_5gw", 0.0))
-    i1_xp5 = float(safe_get(in_obj_1, "xp_5gw", 0.0))
-    xp5_edge = round(i1_xp5 - o1_xp5, 1)
-    xp5_sign = "+" if xp5_edge >= 0 else ""
-
-    render_html(
-        f"<div class='dossier-card' style='margin-top:10px;'>"
-        f"<table class='ml-table'>"
-        f"<thead><tr><th>Tale of the Tape Metric</th><th>Outgoing: {o1_name}</th><th>Incoming: {i1_name}</th><th>Tactical Edge</th></tr></thead>"
-        f"<tbody>"
-        f"<tr><td><strong>Sell / Buy Price</strong></td><td>£{o1_sell:.1f}m</td><td>£{i1_buy:.1f}m</td><td style='font-family:JetBrains Mono, monospace;'>{p_diff_sign}£{price_diff_1:.1f}m Bank Impact</td></tr>"
-        f"<tr><td><strong>Form / Season xGI</strong></td><td>{o1_form} / {o1_xgi}</td><td>{i1_form} / {i1_xgi}</td><td style='font-family:JetBrains Mono, monospace; color:#00FF85;'>{f_edge_sign}{form_edge} Form | {x_edge_sign}{xgi_edge} xGI</td></tr>"
-        f"<tr><td><strong>Next 5 Avg FDR &amp; 5-GW xP</strong></td><td>FDR {o1_fdr} ({o1_xp5} xP)</td><td>FDR {i1_fdr} ({i1_xp5} xP)</td><td style='font-family:JetBrains Mono, monospace; color:#00FF85;'>{xp5_sign}{xp5_edge} xP over 5 GWs</td></tr>"
-        f"</tbody></table></div>"
-    )
-
-    if st.button("Load Custom Swap into Transfer Sandbox & View on Pitch (Mode 3)", use_container_width=True):
-        custom_outs = [out_obj_1] + ([elements_map[sel_out_2]] if (sel_out_2 and sel_out_2 in elements_map) else [])
-        custom_ins = [in_obj_1] + ([elements_map[sel_in_2]] if (sel_in_2 and sel_in_2 in elements_map) else [])
-        st.session_state["sb_out_1"] = sel_out_1
-        st.session_state["sb_in_1"] = sel_in_1
-        st.session_state["sb_out_2"] = sel_out_2
-        st.session_state["sb_in_2"] = sel_in_2
-        st.session_state["sandbox_transfer_plan"] = make_playbook_dict(
-            "CUSTOM",
-            "CUSTOM SANDBOX SWAP",
-            "User-Selected Sandbox Scenario",
-            custom_outs,
-            custom_ins,
-            "Custom swap loaded into Mode 3 Transfer Sandbox.",
-        )
-        st.session_state["pitch_view_mode"] = "sandbox"
-        st.rerun()
-
-# =========================================================
-# TAB 3: MINI-LEAGUE STANDINGS & HEAD-TO-HEAD RIVAL WAR ROOM
-# =========================================================
-with tab_league:
-    if target_league_standings:
-        my_row = next((r for r in target_league_standings if safe_get(r, "entry") == team_id), None)
-        my_pts = int(safe_get(my_row, "total", total_pts)) if my_row else total_pts
-        rival_candidates = [r for r in target_league_standings[:10] if safe_get(r, "entry") != team_id]
-        rival_map = {}
-        for r in rival_candidates:
-            if "entry" in r:
-                r_ent_id = r["entry"]
-                r_rk = safe_get(r, "rank")
-                r_en = safe_get(r, "entry_name")
-                r_pn = safe_get(r, "player_name")
-                r_tot = safe_get(r, "total")
-                rival_map[r_ent_id] = f"#{r_rk} {r_en} ({r_pn}) - {r_tot} pts"
-
-        r_keys = list(rival_map.keys())
-        default_rival_id = r_keys[0] if r_keys else 0
-        sel_rival_id = st.selectbox("Select Target Mini-League Rival for Head-to-Head War Room:", options=r_keys, format_func=lambda x: rival_map.get(x, "")) if r_keys else 0
-
-        rv_json = fetch_rival_picks(sel_rival_id, last_active_gw, sync_nonce) if sel_rival_id else {}
-        rv_picks_list = safe_get(rv_json, "picks", []) if isinstance(rv_json, dict) else []
-        rv_xi_ids = {safe_get(pk, "element") for pk in rv_picks_list if int(safe_get(pk, "position", 1)) <= 11 and safe_get(pk, "element") in elements_map}
-        rv_cap_id = next((safe_get(pk, "element") for pk in rv_picks_list if safe_get(pk, "is_captain")), None)
-        rv_cap_name = safe_get(safe_get(elements_map, rv_cap_id, {}), "web_name", "Unknown")
-
-        my_xi_ids = {safe_get(p, "id") for p in starting_xi if "id" in p}
-        shared_xi_ids = my_xi_ids.intersection(rv_xi_ids)
-        my_diff_objs = sorted([elements_map[i] for i in (my_xi_ids - rv_xi_ids) if i in elements_map], key=lambda x: float(safe_get(x, "xp_next", 0.0)), reverse=True)
-        rv_diff_objs = sorted([elements_map[i] for i in (rv_xi_ids - my_xi_ids) if i in elements_map], key=lambda x: float(safe_get(x, "xp_next", 0.0)), reverse=True)
-
-        rv_xp_total = round(sum(
-            float(safe_get(elements_map[i], "xp_next", 0.0)) * (2 if i == rv_cap_id else 1) for i in rv_xi_ids
-        ), 1)
-        h2h_xp_swing = round(team_xp_total - rv_xp_total, 1)
-        h2h_sign = "+" if h2h_xp_swing >= 0 else ""
-        h2h_cls = "delta-up" if h2h_xp_swing >= 0 else "delta-down"
-
-        # 1. Context-Aware 4-Tile Mini-League Ribbon
-        render_html(
-            f"<div class='kpi-grid-4'>"
-            f"<div class='kpi-card'><div class='kpi-label'>Your League Rank &amp; Gap</div><div class='kpi-value'>#{my_league_rank}</div><span class='kpi-delta {ml_posture_cls}'>{ml_posture_val}</span></div>"
-            f"<div class='kpi-card'><div class='kpi-label'>GW{upcoming_gw} Projected Swing</div><div class='kpi-value' style='color:#00FF85;'>{h2h_sign}{h2h_xp_swing} xP</div><span class='kpi-delta {h2h_cls}'>You: {team_xp_total}xP vs Rival: {rv_xp_total}xP</span></div>"
-            f"<div class='kpi-card'><div class='kpi-label'>Template Overlap</div><div class='kpi-value' style='color:#06B6D4;'>{len(shared_xi_ids)}/11 Shared</div><span class='kpi-delta delta-neutral'>{len(my_diff_objs)} Unique Starters Each</span></div>"
-            f"<div class='kpi-card'><div class='kpi-label'>Captaincy Matchup</div><div class='kpi-value' style='font-size:16px;'>{cap_web_name} vs {rv_cap_name}</div><span class='kpi-delta delta-info'>Armband Leverage</span></div>"
-            f"</div>"
-        )
-
-        col_tbl, col_spy = st.columns([1.05, 1.15], gap="medium")
-
-        with col_tbl:
-            table_rows_html = ""
-            for r in target_league_standings[:12]:
-                is_me = (safe_get(r, "entry") == team_id)
-                row_cls = "ml-row-me" if is_me else ""
-                r_tot_val = int(safe_get(r, "total", 0))
-                gap = r_tot_val - my_pts
-                gap_str = "YOU" if is_me else (f"+{gap}" if gap > 0 else f"{gap}")
-                gap_col = "#F43F5E" if gap > 0 else "#00FF85"
-                r_rk_val = int(safe_get(r, "rank", 1))
-                r_last_rk = int(safe_get(r, "last_rank", r_rk_val))
-                mv = r_last_rk - r_rk_val
-                mv_sym = "▲" if mv > 0 else ("▼" if mv < 0 else "━")
-                r_e_name = safe_get(r, "entry_name", "Team")
-                r_p_name = safe_get(r, "player_name", "Manager")
-                r_ev_tot = safe_get(r, "event_total", 0)
-
-                table_rows_html += (
-                    f"<tr class='{row_cls}'>"
-                    f"<td>{mv_sym} #{r_rk_val}</td>"
-                    f"<td><strong>{r_e_name}</strong><br><span style='font-size:11px; color:var(--text-secondary);'>{r_p_name}</span></td>"
-                    f"<td style='font-family:JetBrains Mono, monospace;'>{r_ev_tot}</td>"
-                    f"<td style='font-family:JetBrains Mono, monospace; font-weight:700;'>{r_tot_val}</td>"
-                    f"<td style='font-family:JetBrains Mono, monospace; color:{gap_col};'>{gap_str}</td>"
-                    f"</tr>"
-                )
-
-            leader_status_str = "1st Place Leader" if gap_to_leader <= 0 else f"{gap_to_leader} pts behind 1st"
-            render_html(
-                f"<div class='dossier-card'>"
-                f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;'>"
-                f"<span style='font-size:16px; font-weight:800; color:#FFF;'>{target_league_name} Standings</span>"
-                f"<span style='font-size:12px; font-weight:700; color:#00FF85;'>{leader_status_str}</span></div>"
-                f"<table class='ml-table'><thead><tr><th>Rank</th><th>Team & Manager</th><th>GW</th><th>Total</th><th>vs You</th></tr></thead>"
-                f"<tbody>{table_rows_html}</tbody></table></div>"
-            )
-
-        with col_spy:
-            max_diff_rows = max(len(my_diff_objs), len(rv_diff_objs), 1)
-            diff_table_rows = ""
-            for idx_d in range(min(max_diff_rows, 7)):
-                my_d = my_diff_objs[idx_d] if idx_d < len(my_diff_objs) else None
-                rv_d = rv_diff_objs[idx_d] if idx_d < len(rv_diff_objs) else None
-                my_d_str = f"<strong>{safe_get(my_d, 'web_name')}</strong> ({safe_get(my_d, 'team_short')}) — <span style='color:#00FF85;'>{safe_get(my_d, 'xp_next')} xP</span>" if my_d else "—"
-                rv_d_str = f"<strong>{safe_get(rv_d, 'web_name')}</strong> ({safe_get(rv_d, 'team_short')}) — <span style='color:#FB7185;'>{safe_get(rv_d, 'xp_next')} xP</span>" if rv_d else "—"
-                diff_table_rows += f"<tr><td>{my_d_str}</td><td>{rv_d_str}</td></tr>"
-
-            my_diff_sum = round(sum(float(safe_get(x, "xp_next", 0.0)) for x in my_diff_objs), 1)
-            rv_diff_sum = round(sum(float(safe_get(x, "xp_next", 0.0)) for x in rv_diff_objs), 1)
-
-            weakest_my_diff = my_diff_objs[-1] if my_diff_objs else primary_sell
-            w_diff_sell = float(safe_get(weakest_my_diff, "selling_price", float(safe_get(weakest_my_diff, "now_cost", 50)) / 10.0))
-            w_diff_pos = safe_get(weakest_my_diff, "element_type", 3)
-            w_diff_budget = round(w_diff_sell + bank_now, 1)
-
-            block_cands = [
-                p for p in rv_diff_objs
-                if safe_get(p, "element_type") == w_diff_pos
-                and (float(safe_get(p, "now_cost", 999)) / 10.0) <= w_diff_budget
-            ]
-            if not block_cands:
-                block_cands = [
-                    p for p in elements_map.values()
-                    if safe_get(p, "id") in rv_xi_ids
-                    and safe_get(p, "id") not in squad_ids
-                    and safe_get(p, "element_type") == primary_pos
-                    and (float(safe_get(p, "now_cost", 999)) / 10.0) <= max_1move_budget
-                ]
-            block_target = block_cands[0] if block_cands else pb_a_target
-            block_out_player = weakest_my_diff if safe_get(block_target, "element_type") == w_diff_pos else primary_sell
-
-            attack_cands = [
-                p for p in elements_map.values()
-                if safe_get(p, "id") not in squad_ids
-                and safe_get(p, "id") not in rv_xi_ids
-                and safe_get(p, "element_type") == w_diff_pos
-                and (float(safe_get(p, "now_cost", 999)) / 10.0) <= w_diff_budget
-                and (p.get("chance_of_playing_next_round") is None or int(p.get("chance_of_playing_next_round")) >= 75)
-            ]
-            attack_cands.sort(key=lambda x: float(safe_get(x, "xp_5gw", 0.0)), reverse=True)
-            attack_target = attack_cands[0] if attack_cands else pb_b_target
-
-            blk_out_n = safe_get(block_out_player, "web_name", "Player")
-            blk_in_n = safe_get(block_target, "web_name", "Target")
-            blk_in_c = float(safe_get(block_target, "now_cost", 50)) / 10.0
-            blk_in_xp = safe_get(block_target, "xp_next", 0.0)
-
-            atk_out_n = safe_get(weakest_my_diff, "web_name", "Player")
-            atk_out_xp = float(safe_get(weakest_my_diff, "xp_next", 0.0))
-            atk_in_n = safe_get(attack_target, "web_name", "Target")
-            atk_in_c = float(safe_get(attack_target, "now_cost", 50)) / 10.0
-            atk_in_xp = float(safe_get(attack_target, "xp_next", 0.0))
-            atk_swing_1 = round(atk_in_xp - atk_out_xp, 1)
-            atk_swing_5 = round(float(safe_get(attack_target, "xp_5gw", 0.0)) - float(safe_get(weakest_my_diff, "xp_5gw", 0.0)), 1)
-
-            render_html(
-                f"<div class='dossier-card'>"
-                f"<h4 style='margin:0 0 8px 0; color:#FFF;'>HEAD-TO-HEAD RIVAL WAR ROOM (ISOLATED DIFFERENTIALS)</h4>"
-                f"<p style='margin:0 0 10px 0; font-size:11.5px; color:var(--text-secondary);'>"
-                f"Ignores the <strong>{len(shared_xi_ids)} shared starters</strong> that score identical points. This matchup will be decided entirely by the unique players below:</p>"
-                f"<table class='ml-table'>"
-                f"<thead><tr><th>Your Unique Starters ({my_diff_sum} xP)</th><th>Rival's Unique Starters ({rv_diff_sum} xP)</th></tr></thead>"
-                f"<tbody>{diff_table_rows}</tbody></table>"
-                f"<div style='background:rgba(0,255,133,0.08); border:1px solid rgba(0,255,133,0.3); border-radius:12px; padding:12px; margin-top:14px;'>"
-                f"<div style='font-size:11px; font-weight:800; color:#00FF85; text-transform:uppercase;'>Actionable Counter-Moves to Defeat This Rival</div>"
-                f"<div style='font-size:12px; color:#E2E8F0; margin-top:6px; line-height:1.55;'>"
-                f"&bull; <strong>1. Attack Move (Gain Ground: +{atk_swing_1} xP in GW{upcoming_gw} | +{atk_swing_5} xP over 5GW):</strong> Swap your lowest-projected differential <strong>{atk_out_n} ({atk_out_xp} xP) &rarr; {atk_in_n} (£{atk_in_c:.1f}m, {atk_in_xp} xP)</strong>, whom this rival does not own.<br>"
-                f"&bull; <strong>2. Block Move (Neutralize Rival Threat):</strong> Swap <strong>{blk_out_n} &rarr; {blk_in_n} (£{blk_in_c:.1f}m, {blk_in_xp} xP)</strong> to directly block their dangerous differential.<br>"
-                f"&bull; <strong>3. Captaincy Leverage:</strong> Rival last captained <strong>{rv_cap_name}</strong>. Locking your armband on <strong>{cap_web_name}</strong> creates direct captaincy separation."
-                f"</div></div></div>"
-            )
-
-            war_b1, war_b2 = st.columns(2)
-            with war_b1:
-                if st.button(f"Preview Attack Move ({atk_out_n} → {atk_in_n}) on Pitch", use_container_width=True):
-                    st.session_state["sandbox_transfer_plan"] = make_playbook_dict(
-                        "RIVAL_ATK",
-                        f"RIVAL ATTACK: {atk_out_n} → {atk_in_n}",
-                        "Head-to-Head Differential Upgrade",
-                        [weakest_my_diff],
-                        [attack_target],
-                        "Targeted differential upgrade to beat selected mini-league rival.",
-                    )
-                    st.session_state["pitch_view_mode"] = "sandbox"
-                    st.rerun()
-            with war_b2:
-                if st.button(f"Preview Block Move ({blk_out_n} → {blk_in_n}) on Pitch", use_container_width=True):
-                    st.session_state["sandbox_transfer_plan"] = make_playbook_dict(
-                        "RIVAL_BLK",
-                        f"RIVAL BLOCK: {blk_out_n} → {blk_in_n}",
-                        "Head-to-Head Defensive Shield",
-                        [block_out_player],
-                        [block_target],
-                        "Blocks rival's top unique threat.",
-                    )
-                    st.session_state["pitch_view_mode"] = "sandbox"
-                    st.rerun()
-    else:
-        st.info("No classic mini-leagues found for this Team ID.")
-
-# =========================================================
-# TAB 4: MULTI-TURN GEMINI CONVERSATIONAL AI + CONTEXT RIBBON
-# =========================================================
-@st.cache_data(ttl=3600)
-def discover_available_gemini_models(api_key: str):
-    preferred = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
-    try:
-        r = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=8)
-        if r.status_code == 200:
-            models_data = safe_get(r.json(), "models", [])
-            supported = [
-                str(safe_get(m, "name", "")).replace("models/", "")
-                for m in models_data
-                if "generateContent" in safe_get(m, "supportedGenerationMethods", [])
-                and "gemini" in str(safe_get(m, "name", ""))
-                and "vision" not in str(safe_get(m, "name", ""))
-                and "embedding" not in str(safe_get(m, "name", ""))
-            ]
-            flash_first = [m for m in supported if "flash" in m] + [m for m in supported if "pro" in m]
-            if flash_first:
-                return flash_first[:4]
-    except Exception:
-        pass
-    return preferred
-
-
-with tab_ai:
-    # Context-Aware 4-Tile Ribbon for AI Tab
-    render_html(
-        f"<div class='kpi-grid-4'>"
-        f"<div class='kpi-card'><div class='kpi-label'>Active Roster Context</div><div class='kpi-value' style='font-size:15px; color:#00FF85;'>{roster_sync_mode}</div><span class='kpi-delta delta-up'>Updated: {team_updated_safe}</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>Budget &amp; Transfers</div><div class='kpi-value' style='color:#FBBF24;'>{ft_remaining_now} FT &bull; £{bank_now:.1f}m</div><span class='kpi-delta delta-neutral'>Squad Value: £{val_now:.1f}m</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>GW{upcoming_gw} Projected XI</div><div class='kpi-value' style='color:#06B6D4;'>{team_xp_total} xP</div><span class='kpi-delta delta-info'>C: {cap_web_name} | Sandbox: {sandbox_xp_total}xP</span></div>"
-        f"<div class='kpi-card'><div class='kpi-label'>Mini-League Target</div><div class='kpi-value' style='font-size:16px;'>{ml_posture_val}</div><span class='kpi-delta {ml_posture_cls}'>{target_league_name}</span></div>"
-        f"</div>"
-    )
-
-    active_gemini_key = str(
-        st.session_state.get("custom_gemini_key")
-        or st.secrets.get("GEMINI_API_KEY", "")
-        or st.secrets.get("GOOGLE_API_KEY", "")
-    ).strip()
-
-    key_status_badge = (
-        "<span class='kpi-delta delta-up'>GEMINI LIVE SEARCH ENGINE ONLINE</span>"
-        if active_gemini_key else
-        "<span class='kpi-delta delta-down'>API KEY REQUIRED IN SETTINGS TAB</span>"
-    )
-
-    render_html(
-        f"<div class='dossier-card' style='padding:16px 20px;'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;'>"
-        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#00FF85;'>GEMINI FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>"
-        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
-        f"Multi-turn conversational AI with live Google Search grounding, full squad telemetry, fixture runways, and rationale-driven coaching.</p></div>"
-        f"{key_status_badge}</div></div>"
-    )
-
-    if "ai_messages" not in st.session_state:
-        st.session_state["ai_messages"] = [
-            {
-                "role": "assistant",
-                "content": (
-                    f"Ready for **GW{upcoming_gw}**, Manager. I have your live **Kings County FC** starting XI, bench order, "
-                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded.\n\n"
-                    f"Ask me anything in plain English—like *'Who should I start and bench this week?'*, *'Compare Playbook A vs Playbook B'*, "
-                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale."
-                )
-            }
-        ]
-
-    def build_rich_tactical_system_prompt() -> str:
-        pos_lbl_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
-        xi_lines = []
-        for p in starting_xi:
-            p_runway = safe_get(p, "runway", [])
-            nxt = p_runway[0] if p_runway else {"opp": "TBD", "venue": "H", "fdr": 3}
-            nxt_opp_s = safe_get(nxt, "opp", "TBD")
-            nxt_ven_s = safe_get(nxt, "venue", "H")
-            nxt_fdr_s = safe_get(nxt, "fdr", 3)
-
-            run_5_parts = []
-            for r in p_runway[:4]:
-                rgw = safe_get(r, "gw")
-                ropp = safe_get(r, "opp")
-                rven = safe_get(r, "venue")
-                rfdr = safe_get(r, "fdr")
-                run_5_parts.append(f"GW{rgw}:{ropp}({rven},FDR{rfdr})")
-            run_5 = ", ".join(run_5_parts)
-
-            role_tag = " [CAPTAIN]" if safe_get(p, "is_captain") else (" [VICE-CAPTAIN]" if safe_get(p, "is_vice_captain") else "")
-            p_news_s = safe_get(p, "news", "")
-            flag_str = f" | ALERT: {p_news_s}" if p_news_s else ""
-
-            p_name_s = safe_get(p, "web_name", "Player")
-            p_short_s = safe_get(p, "team_short", "EPL")
-            p_pos_s = pos_lbl_map.get(safe_get(p, "element_type"), "PLY")
-            p_sell_s = float(safe_get(p, "selling_price", float(safe_get(p, "now_cost", 50)) / 10.0))
-            p_xp1_s = safe_get(p, "xp_next", 0.0)
-            p_xp5_s = safe_get(p, "xp_5gw", 0.0)
-            p_form_s = safe_get(p, "form", "0.0")
-            p_xgi_s = safe_get(p, "expected_goal_involvements", "0.00")
-            p_mins_s = safe_get(p, "minutes", 0)
-
-            xi_lines.append(
-                f"- {p_name_s} ({p_short_s}, {p_pos_s}{role_tag}): "
-                f"Sell £{p_sell_s:.1f}m | GW{upcoming_gw} vs {nxt_opp_s}({nxt_ven_s}, FDR {nxt_fdr_s}) -> {p_xp1_s} xP | "
-                f"5-GW xP: {p_xp5_s} | Form: {p_form_s} | xGI: {p_xgi_s} | Mins: {p_mins_s} | Runway: [{run_5}]{flag_str}"
-            )
-
-        bench_lines = []
-        for idx_b, p in enumerate(sorted(bench_xi, key=lambda x: int(safe_get(x, "pick_pos", 12)))):
-            p_runway = safe_get(p, "runway", [])
-            nxt = p_runway[0] if p_runway else {"opp": "TBD", "venue": "H", "fdr": 3}
-            nxt_opp_b = safe_get(nxt, "opp", "TBD")
-            nxt_ven_b = safe_get(nxt, "venue", "H")
-            nxt_fdr_b = safe_get(nxt, "fdr", 3)
-
-            p_news_b = safe_get(p, "news", "")
-            flag_str = f" | ALERT: {p_news_b}" if p_news_b else ""
-
-            p_name_b = safe_get(p, "web_name", "Player")
-            p_short_b = safe_get(p, "team_short", "EPL")
-            p_pos_b = pos_lbl_map.get(safe_get(p, "element_type"), "PLY")
-            p_sell_b = float(safe_get(p, "selling_price", float(safe_get(p, "now_cost", 50)) / 10.0))
-            p_xp1_b = safe_get(p, "xp_next", 0.0)
-            p_xp5_b = safe_get(p, "xp_5gw", 0.0)
-            p_form_b = safe_get(p, "form", "0.0")
-            p_xgi_b = safe_get(p, "expected_goal_involvements", "0.00")
-
-            bench_lines.append(
-                f"- Bench #{idx_b + 1}: {p_name_b} ({p_short_b}, {p_pos_b}): "
-                f"Sell £{p_sell_b:.1f}m | GW{upcoming_gw} vs {nxt_opp_b}({nxt_ven_b}, FDR {nxt_fdr_b}) -> {p_xp1_b} xP | "
-                f"5-GW xP: {p_xp5_b} | Form: {p_form_b} | xGI: {p_xgi_b}{flag_str}"
-            )
-
-        top_unowned = sorted(
-            [p for p in elements_map.values() if safe_get(p, "id") not in squad_ids and safe_get(p, "element_type") != 1],
-            key=lambda x: float(safe_get(x, "xp_5gw", 0.0)),
-            reverse=True
-        )[:30]
-        market_lines = []
-        for p in top_unowned:
-            p_runway = safe_get(p, "runway", [])
-            nxt_m = p_runway[0] if p_runway else {"opp": "TBD", "venue": "H"}
-            m_opp = safe_get(nxt_m, "opp", "TBD")
-            m_ven = safe_get(nxt_m, "venue", "H")
-            m_name = safe_get(p, "web_name", "Player")
-            m_short = safe_get(p, "team_short", "EPL")
-            m_pos = pos_lbl_map.get(safe_get(p, "element_type"), "PLY")
-            m_cost = float(safe_get(p, "now_cost", 50)) / 10.0
-            m_xp1 = safe_get(p, "xp_next", 0.0)
-            m_xp5 = safe_get(p, "xp_5gw", 0.0)
-            m_form = safe_get(p, "form", "0.0")
-            m_xgi = safe_get(p, "expected_goal_involvements", "0.00")
-
-            market_lines.append(
-                f"- {m_name} ({m_short}, {m_pos}, £{m_cost:.1f}m): "
-                f"GW{upcoming_gw} xP {m_xp1} | 5-GW xP {m_xp5} | Form {m_form} | xGI {m_xgi} | "
-                f"Next: {m_opp}({m_ven})"
-            )
-
-        danger_rivals = [
-            safe_get(elements_map[pid], "web_name", "")
-            for pid, cnt in rival_threat_players.items()
-            if cnt >= 2 and pid not in squad_ids and pid in elements_map
-        ]
-        danger_rivals_str = ", ".join(danger_rivals) if danger_rivals else "None"
-
-        prompt_lines = [
-            "You are Gemini, the Elite FPL Tactical Co-Pilot and Coach for Barney's team, Kings County FC.",
-            "Your goal is to have a natural, insightful, analytical conversation that directly answers whatever the user asks AND teaches them the underlying FPL strategy and rationale so they become a sharper manager.",
-            "",
-            "CRITICAL OPERATING RULES:",
-            "1. NEVER output a generic canned template. Always answer the user's exact question directly in sentence 1.",
-            f"2. Explain the 'WHY' (the rationale): break down underlying numbers (xGI, Form, minutes security, home/away fixture swings, clean sheet odds, and Effective Ownership/differential leverage in {target_league_name}).",
-            "3. Use Google Search when helpful to verify the latest Premier League press conference quotes, injury updates, tactical role changes, or penalty/set-piece duties.",
-            f"4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK, at least 3 DEF, at least 2 MID, at least 1 FWD) and exact 1-2-3 outfield auto-sub bench order, and explain any tough 50/50 calls between their starters and bench players.",
-            "5. Never recommend Goalkeeper transfers unless their starting GK is injured/suspended.",
-            f"6. When discussing transfers, always check exact affordability (Sell Price + £{bank_now:.1f}m Bank) and show 2-move downgrade+upgrade paths if a premium target costs more than a 1-move swap.",
-            "",
-            f"LIVE KINGS COUNTY FC TELEMETRY (UPCOMING GAMEWEEK: GW{upcoming_gw} | TEAM LAST UPDATED: {team_updated_safe}):",
-            f"- Free Transfers Available: {ft_remaining_now} FT",
-            f"- Money In The Bank: £{bank_now:.1f}m (Total Squad Value: £{val_now:.1f}m)",
-            f"- Target Mini-League: {target_league_name} (Rank #{my_league_rank}, Gap to 1st place: {gap_to_leader} pts)",
-            f"- High-Owned Rival Danger Players (Owned by 2+ top mini-league rivals, NOT in user's squad): {danger_rivals_str}",
-            "",
-            "CURRENT STARTING XI:",
-            "\n".join(xi_lines),
-            "",
-            "CURRENT BENCH (IN ORDER):",
-            "\n".join(bench_lines),
-            "",
-            "TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):",
-            "\n".join(market_lines),
-        ]
-        return "\n".join(prompt_lines)
-
-    def call_gemini_conversational_advisor(user_prompt: str) -> str:
-        active_key = str(
-            st.session_state.get("custom_gemini_key")
-            or st.secrets.get("GEMINI_API_KEY", "")
-            or st.secrets.get("GOOGLE_API_KEY", "")
-        ).strip()
-
-        if not active_key:
-            return (
-                "⚠️ **Gemini API Key Not Detected:** To get live web-researched, natural-language coaching from Gemini, "
-                "add `GEMINI_API_KEY = \"AIza...\"` in your Streamlit Cloud Secrets (or paste it into the **Settings** tab)."
-            )
-
-        sys_instruction = build_rich_tactical_system_prompt()
-
-        contents_history = []
-        recent_msgs = st.session_state.get("ai_messages", [])[-10:]
-        for m in recent_msgs:
-            role_gemini = "user" if safe_get(m, "role") == "user" else "model"
-            text_val = str(safe_get(m, "content", "")).strip()
-            if not text_val:
-                continue
-            if not contents_history and role_gemini == "model":
-                continue
-            if contents_history and contents_history[-1]["role"] == role_gemini:
-                contents_history[-1]["parts"][0]["text"] += "\n\n" + text_val
-            else:
-                contents_history.append({
-                    "role": role_gemini,
-                    "parts": [{"text": text_val}]
-                })
-
-        if not contents_history or contents_history[-1]["role"] != "user":
-            contents_history.append({"role": "user", "parts": [{"text": user_prompt}]})
-
-        candidate_models = discover_available_gemini_models(active_key)
-        attempts = []
-        for m_name in candidate_models:
-            attempts.append((m_name, True))
-            attempts.append((m_name, False))
-
-        error_log = []
-        for model_name, use_search in attempts:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}"
-            payload = {
-                "system_instruction": {"parts": [{"text": sys_instruction}]},
-                "contents": contents_history,
-                "generationConfig": {
-                    "temperature": 0.4,
-                    "maxOutputTokens": 2048
-                }
-            }
-            if use_search:
-                payload["tools"] = [{"google_search": {}}]
-
-            try:
-                r = requests.post(url, json=payload, timeout=25)
-                if r.status_code == 200:
-                    resp_json = r.json()
-                    cands = safe_get(resp_json, "candidates", [])
-                    if cands:
-                        first_cand = cands[0]
-                        parts = safe_get(safe_get(first_cand, "content", {}), "parts", [])
-                        text_chunks = [str(safe_get(pt, "text", "")) for pt in parts if "text" in pt]
-                        answer_text = "\n".join(text_chunks).strip()
-
-                        grounding = safe_get(first_cand, "groundingMetadata", {})
-                        chunks = safe_get(grounding, "groundingChunks", [])
-                        web_links = []
-                        for ch in chunks:
-                            web_obj = safe_get(ch, "web", {})
-                            uri = safe_get(web_obj, "uri")
-                            title = safe_get(web_obj, "title")
-                            if uri and title:
-                                web_links.append(f"[{title}]({uri})")
-                        if web_links:
-                            unique_links = list(dict.fromkeys(web_links))[:4]
-                            answer_text += "\n\n---\n**Live Web Sources Checked:** " + " &bull; ".join(unique_links)
-
-                        if answer_text:
-                            return answer_text
-                else:
-                    err_obj = safe_get(r.json(), "error", {}) if r.text else {}
-                    err_msg = safe_get(err_obj, "message", r.text[:200])
-                    error_log.append(f"HTTP {r.status_code} ({model_name}, search={use_search}): {err_msg}")
-            except Exception as e:
-                error_log.append(f"{model_name} exception: {e}")
-                continue
-
-        err_bullets = "\n".join(f"- `{err}`" for err in error_log[:3])
-        return f"⚠️ **Gemini API Connection Error:**\n{err_bullets}"
-
-    qa1, qa2, qa3, qa4 = st.columns(4)
-    if qa1.button("Who Should I Start & Bench?", use_container_width=True):
-        q_txt = f"Who should I start in my XI and how should I order my bench for GW{upcoming_gw}? Explain the rationale and any close 50/50 calls."
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Gemini is analyzing your 15-man squad, fixtures, and latest team news..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa2.button("Saka / Palmer Upgrade Path", use_container_width=True):
-        q_txt = "What is the smartest 1- or 2-transfer path to get Bukayo Saka or Cole Palmer into my squad, and is it worth doing this week?"
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Calculating budget math and 5-GW expected point swings..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa3.button("Captaincy Deep Dive", use_container_width=True):
-        q_txt = f"Break down my best captain and vice-captain choices for GW{upcoming_gw}. Compare safe template shields vs differential upside."
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Researching matchup data and captaincy expected value..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa4.button("Beat My Mini-League Rivals", use_container_width=True):
-        q_txt = f"Based on my {gap_to_leader} pt gap in {target_league_name} and the rival danger players, what tactical posture and moves will help me gain ground?"
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Evaluating mini-league rival overlap and differential leverage..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    for msg in st.session_state.get("ai_messages", []):
-        with st.chat_message(safe_get(msg, "role", "assistant")):
-            st.markdown(safe_get(msg, "content", ""))
-
-    user_q = st.chat_input("Ask Gemini anything (e.g., 'Why is Semenyo projected so high?', 'Should I roll my transfer?')...")
-    if user_q:
-        st.session_state["ai_messages"].append({"role": "user", "content": user_q})
-        with st.chat_message("user"):
-            st.markdown(user_q)
-        with st.chat_message("assistant"):
-            with st.spinner("Gemini is researching Premier League data and analyzing your squad..."):
-                reply = call_gemini_conversational_advisor(user_q)
-                st.markdown(reply)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-# =========================================================
-# TAB 5: DEDICATED SETTINGS & LIVE CONNECTION VALIDATOR
-# =========================================================
-with tab_settings:
-    auth_ok = safe_get(auth_diag, "authenticated", False)
-    diag_status_code = safe_get(auth_diag, "status_code", "N/A")
-    diag_msg = safe_get(auth_diag, "message", "")
-    status_badge_html = (
-        "<span class='kpi-delta delta-up'>AUTHENTICATED (/api/my-team/ 200 OK)</span>"
-        if auth_ok else
-        (
-            "<span class='kpi-delta delta-up'>USING PERSISTED LATEST SNAPSHOT</span>"
-            if use_saved_snapshot else
-            f"<span class='kpi-delta delta-down'>PUBLIC FALLBACK (HTTP {diag_status_code})</span>"
-        )
-    )
-
-    render_html(
-        f"<div class='dossier-card'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;'>"
-        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#FFF;'>LIVE CONNECTION & PERSISTENT SNAPSHOT VALIDATOR</h3>"
-        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
-        f"Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays your saved snapshot status so your team never reverts to GW6.</p></div>"
-        f"{status_badge_html}</div>"
-        f"<div class='stat-grid-4'>"
-        f"<div class='stat-box'><div class='stat-box-lbl'>Active Data Source</div><div class='stat-box-val' style='font-size:13px; color:#00FF85;'>{roster_sync_mode}</div></div>"
-        f"<div class='stat-box'><div class='stat-box-lbl'>Team Last Updated</div><div class='stat-box-val' style='font-size:13px; color:#06B6D4;'>{team_updated_safe}</div></div>"
-        f"<div class='stat-box'><div class='stat-box-lbl'>Active Captain / Vice</div><div class='stat-box-val' style='font-size:13px;'>{cap_web_name} (C) / {vc_web_name} (V)</div></div>"
-        f"<div class='stat-box'><div class='stat-box-lbl'>Synced Bank / FTs</div><div class='stat-box-val' style='font-size:13px; color:#FBBF24;'>£{bank_now:.1f}m | {ft_remaining_now} FT</div></div>"
-        f"</div>"
-        f"<div style='background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; font-size:12px; color:#E2E8F0; margin-top:8px;'>"
-        f"<strong>Diagnostic Status:</strong> {diag_msg}</div></div>"
-    )
-
-    set_col1, set_col2 = st.columns(2, gap="medium")
-
-    with set_col1:
-        render_html(
-            "<div class='dossier-card' style='padding:16px 20px;'>"
-            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Target Mini-League & Team ID</h4>"
-            "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
-            "Select the primary mini-league that drives all rival block/differential badges and AI strategy.</p></div>"
-        )
-        if classic_leagues:
-            lg_options = {}
-            for lg in classic_leagues:
-                if isinstance(lg, dict) and "id" in lg:
-                    lid = lg["id"]
-                    lname = safe_get(lg, "name", "League")
-                    lrank = safe_get(lg, "entry_rank", "?")
-                    lg_options[lid] = f"{lname} (Current Rank: #{lrank})"
-            opt_lg_keys = list(lg_options.keys())
-            cur_lg = st.session_state.get("target_lg_id", opt_lg_keys[0] if opt_lg_keys else 0)
-            new_lg = st.selectbox(
-                "Default Target Mini-League:",
-                options=opt_lg_keys,
-                format_func=lambda x: lg_options.get(x, ""),
-                index=opt_lg_keys.index(cur_lg) if cur_lg in opt_lg_keys else 0
-            )
-            if new_lg != cur_lg:
-                st.session_state["target_lg_id"] = new_lg
-                st.query_params["lg_id"] = str(new_lg)
-                st.rerun()
-
-        new_tid = st.number_input("FPL Entry / Team ID:", value=int(team_id), step=1)
-        if st.button("Update Team ID", use_container_width=True):
-            st.session_state["team_id"] = int(new_tid)
-            st.session_state["cap_override_id"] = None
-            st.session_state["vc_override_id"] = None
-            st.query_params["team_id"] = str(new_tid)
-            st.cache_data.clear()
-            st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
-            st.rerun()
-
-    with set_col2:
-        render_html(
-            "<div class='dossier-card' style='padding:16px 20px;'>"
-            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Live API Credentials (Saves Persistent Snapshot)</h4>"
-            "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
-            "Paste your `x-api-authorization` Bearer token or `Copy as cURL` command. Once synced, your squad, bank, and FTs are saved to disk so they stay active even after your token expires.</p></div>"
-        )
-        with st.form("settings_creds_form"):
-            in_cookie = st.text_input(
-                "FPL Bearer Token / `Copy as cURL` / Cookie (`FPL_COOKIE`):",
-                value=fpl_cookie_val,
-                type="password",
-                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1575281/' in DevTools -> Copy -> Copy as cURL."
-            )
-            in_gem = st.text_input(
-                "Gemini API Key (`GEMINI_API_KEY`):",
-                value=st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", ""),
-                type="password"
-            )
-            in_email = st.text_input("FPL Email (Optional fallback):", value=fpl_email_val)
-            in_pass = st.text_input("FPL Password (Optional fallback):", value=fpl_pass_val, type="password")
-
-            if st.form_submit_button("Sync Live Team & Lock Persistent Snapshot", use_container_width=True):
-                st.session_state["custom_fpl_cookie"] = in_cookie.strip()
-                st.session_state["custom_gemini_key"] = in_gem.strip()
-                st.session_state["custom_fpl_email"] = in_email.strip()
-                st.session_state["custom_fpl_password"] = in_pass
-                st.session_state["cap_override_id"] = None
-                st.session_state["vc_override_id"] = None
-                st.cache_data.clear()
-                st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
-                st.session_state["last_synced_str"] = now_ny_str()
-                st.rerun()
+                f"{pos_name} &bull; <strong>{sp_club}</strong> &bull; Global TSB: {sp_ts
