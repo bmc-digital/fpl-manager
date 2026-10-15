@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Smart Multi-Auth /my-team/ Sync | Dedicated Settings & Validator Tab
+Production Mobile-First Architecture | True Multi-Turn Gemini Search-Grounded Advisor
 """
 
 import streamlit as st
@@ -705,7 +705,6 @@ if "sync_nonce" not in st.session_state:
 if "last_synced_str" not in st.session_state:
     st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
 
-# Captain overrides live ONLY in session_state (never polluted by URL query params)
 if "cap_override_id" not in st.session_state:
     st.session_state["cap_override_id"] = None
 
@@ -786,7 +785,7 @@ def generate_svg_kit(team_short, is_gk=False):
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
 
 # ---------------------------------------------------------
-# 5. SMART MULTI-PROTOCOL FPL API ENGINE + DIAGNOSTIC VALIDATOR
+# 5. UNIVERSAL FPL API ENGINE (cURL / BEARER / COOKIE)
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -818,13 +817,12 @@ def fetch_fixtures(nonce=0):
 @st.cache_data(ttl=30)
 def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
     """
-    Smart Multi-Protocol Authenticator for `/api/my-team/{team_id}/`.
-    Automatically detects whether the user provided:
-      - A raw JWT Bearer token (`eyJ...` or `Bearer eyJ...`)
-      - A full browser Cookie header (`pl_profile=...; access_token=...`)
-      - A single `pl_profile` value
-      - Direct FPL Email + Password credentials
-    Returns `(data_dict_or_None, diagnostic_dict)`.
+    Universal FPL Authenticator for `/api/my-team/{team_id}/`.
+    Accepts:
+      1. Full 'Copy as cURL' command from Chrome/Edge/Safari DevTools
+      2. Raw JWT token ('eyJ...') or 'Bearer eyJ...' from x-api-authorization
+      3. Browser Cookie string
+      4. Direct FPL Email + Password credentials
     """
     diag = {
         "attempted": False,
@@ -834,59 +832,66 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
         "message": "No private FPL credentials configured."
     }
 
-    combined_secret = (raw_cookie_or_token or "").strip()
+    raw_input = (raw_cookie_or_token or "").strip()
     explicit_token = (fpl_token or "").strip()
 
-    if not any([combined_secret, explicit_token, (fpl_email and fpl_password)]):
+    if not any([raw_input, explicit_token, (fpl_email and fpl_password)]):
         return None, diag
 
     diag["attempted"] = True
     session = requests.Session()
     req_headers = dict(HEADERS)
+    req_headers["Origin"] = "https://fantasy.premierleague.com"
+    req_headers["Referer"] = "https://fantasy.premierleague.com/my-team"
     methods_tried = []
 
-    # Helper to attach JWT Bearer headers in both formats FPL uses
-    def attach_jwt_headers(jwt_str):
-        clean_jwt = jwt_str.replace("Bearer ", "").strip().strip('"').strip("'")
+    def set_bearer(tok_str):
+        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
         req_headers["Authorization"] = f"Bearer {clean_jwt}"
         req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
 
-    # 1. Check explicit token
+    if raw_input.startswith("curl "):
+        methods_tried.append("Parsed DevTools cURL")
+        for h_match in re.finditer(r"(?:-H|--header)\s+['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
+            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
+            if h_name.lower() in ("x-api-authorization", "authorization"):
+                set_bearer(h_val)
+                methods_tried.append(f"cURL {h_name}")
+            elif h_name.lower() == "cookie":
+                req_headers["Cookie"] = h_val
+        b_match = re.search(r"(?:-b|--cookie)\s+['\"]([^'\"]+)['\"]", raw_input)
+        if b_match:
+            req_headers["Cookie"] = b_match.group(1).strip()
+
     if explicit_token:
-        attach_jwt_headers(explicit_token)
-        methods_tried.append("Bearer Token")
+        set_bearer(explicit_token)
+        methods_tried.append("Explicit Bearer Token")
 
-    # 2. Smart-parse `FPL_COOKIE` (handles JWT, full Cookie string, or raw pl_profile value)
-    if combined_secret:
-        # Case A: User pasted a Bearer token or raw JWT (`eyJ...`) into FPL_COOKIE
-        if combined_secret.startswith("Bearer ") or combined_secret.startswith("eyJ"):
-            attach_jwt_headers(combined_secret)
-            session.cookies.set("access_token", combined_secret.replace("Bearer ", "").strip(), domain=".premierleague.com")
-            session.cookies.set("pl_profile", combined_secret.replace("Bearer ", "").strip(), domain=".premierleague.com")
-            methods_tried.append("Auto-Detected JWT in FPL_COOKIE")
+    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
+    if jwt_anywhere:
+        set_bearer(jwt_anywhere.group(1))
+        if "JWT" not in " ".join(methods_tried):
+            methods_tried.append("Auto-Extracted JWT Bearer")
+
+    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
+        if "x-api-authorization:" in raw_input.lower():
+            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
+            set_bearer(val_after)
+            methods_tried.append("x-api-authorization Header")
+        elif "=" in raw_input:
+            req_headers["Cookie"] = raw_input
+            for part in raw_input.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
+            methods_tried.append("Browser Cookie Jar")
         else:
-            # Case B: Look for embedded JWT inside a full cookie string (e.g. access_token=eyJ...)
-            jwt_match = re.search(r"(?:access_token|pl_profile|token)=([A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+)", combined_secret)
-            if jwt_match:
-                attach_jwt_headers(jwt_match.group(1))
-                methods_tried.append("Extracted JWT from Cookie String")
+            clean_val = raw_input.strip('"').strip("'")
+            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
+            set_bearer(clean_val)
+            methods_tried.append("Dual Token/Cookie Fallback")
 
-            # Also attach full cookie header and populate session cookie jar
-            if "=" in combined_secret:
-                req_headers["Cookie"] = combined_secret
-                for part in combined_secret.split(";"):
-                    if "=" in part:
-                        k, v = part.strip().split("=", 1)
-                        session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
-                methods_tried.append("Full Browser Cookie Header")
-            else:
-                clean_val = combined_secret.strip('"').strip("'")
-                req_headers["Cookie"] = f'pl_profile="{clean_val}"'
-                session.cookies.set("pl_profile", clean_val, domain=".premierleague.com")
-                methods_tried.append("pl_profile Cookie")
-
-    # 3. Direct FPL Email & Password Login Session fallback
-    if fpl_email and fpl_password and not combined_secret and not explicit_token:
+    if fpl_email and fpl_password and not methods_tried:
         try:
             login_url = "https://users.premierleague.com/accounts/login/"
             payload = {
@@ -895,15 +900,12 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
                 "app": "plfpl-web",
                 "redirect_uri": "https://fantasy.premierleague.com/a/login"
             }
-            login_headers = dict(HEADERS)
-            login_headers["Origin"] = "https://fantasy.premierleague.com"
-            login_headers["Referer"] = "https://fantasy.premierleague.com/"
-            session.post(login_url, data=payload, headers=login_headers, timeout=10)
-            methods_tried.append("FPL Email/Password Login")
+            session.post(login_url, data=payload, headers=req_headers, timeout=10)
+            methods_tried.append("FPL Credentials Login")
         except Exception as e:
-            diag["message"] = f"Login POST error: {e}"
+            diag["message"] = f"Login error: {e}"
 
-    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "Custom"
+    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
 
     try:
         url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
@@ -913,14 +915,13 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
             data = r.json()
             if "picks" in data:
                 diag["authenticated"] = True
-                diag["message"] = f"200 OK — Live pre-deadline squad & captaincy synced via {diag['method_used']}."
+                diag["message"] = f"200 OK — Live pre-deadline squad & captaincy synced ({diag['method_used']})."
                 return data, diag
-            else:
-                diag["message"] = "200 OK returned, but 'picks' key missing from response."
         elif r.status_code in (401, 403):
+            has_jwt = "Authorization" in req_headers
             diag["message"] = (
-                f"HTTP {r.status_code} (Unauthorized/Expired). FPL now uses the 'x-api-authorization' Bearer token "
-                f"(or full Cookie header) on /api/my-team/. Copy the 'x-api-authorization' header from DevTools -> Network -> my-team."
+                f"HTTP {r.status_code}: {'Your Bearer JWT token has expired.' if has_jwt else 'No JWT Bearer token found in your cookie string.'} "
+                f"In Chrome DevTools -> Network -> click '{tid}/' (under my-team) -> right-click -> Copy -> Copy as cURL, and paste that into Settings."
             )
         else:
             diag["message"] = f"HTTP {r.status_code} returned from /api/my-team/{tid}/."
@@ -981,8 +982,6 @@ fixtures_list = fetch_fixtures(sync_nonce)
 team_id = st.session_state.get("team_id", default_team_id)
 entry_data, history_data, transfers_list, public_picks_data, last_active_gw = fetch_manager_full(team_id, sync_nonce)
 
-# Check for Private FPL Auth Credentials (Secrets or Session State)
-# Also checks `FLP_COOKIE` in case of a typo in Streamlit Secrets
 fpl_cookie_val = (
     st.session_state.get("custom_fpl_cookie")
     or st.secrets.get("FPL_COOKIE", "")
@@ -1112,7 +1111,7 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. CURRENT ROSTER & CAPTAINCY EXTRACTION (PRIVATE + ROLL-FORWARD)
+# 8. CURRENT ROSTER & CAPTAINCY EXTRACTION
 # ---------------------------------------------------------
 starting_xi, bench_xi = [], []
 cap_override = st.session_state.get("cap_override_id")
@@ -1244,7 +1243,6 @@ else:
     ft_rec_text = "HOLD / ROLL FT"
     ft_rec_cls = "delta-warn"
 
-# Load Target Mini-League Data Silently in Background (Configured in Settings Tab)
 classic_leagues = [
     lg for lg in entry_data.get("leagues", {}).get("classic", [])
     if lg.get("league_type") == "x" or lg.get("id", 0) > 350
@@ -1338,7 +1336,6 @@ render_html(f"""
 </div>
 """)
 
-# 1-Line Sync & Reset Bar (Clears Cache AND Resets Captain/Vice-Captain Overrides)
 if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Reset Captaincy to Live FPL", use_container_width=True):
     st.cache_data.clear()
     st.session_state["sync_nonce"] += 1
@@ -1542,7 +1539,6 @@ def render_pitch_and_dossier_fragment():
 
         sp = next((x for x in full_squad if x["id"] == st.session_state.get("selected_pid")), full_squad[0] if full_squad else None)
         if sp:
-            # Manual What-If Captain Simulation Buttons (Resets automatically when top Sync bar is clicked)
             cap_btn_c1, cap_btn_c2 = st.columns(2)
             with cap_btn_c1:
                 if st.button(f"Simulate {sp['web_name']} as Captain (C)", use_container_width=True):
@@ -2033,23 +2029,28 @@ with tab_league:
         st.info("No classic mini-leagues found for this Team ID.")
 
 # =========================================================
-# TAB 4: LIVE GEMINI 2.5 FLASH + GOOGLE SEARCH GROUNDED AI ADVISOR
+# TAB 4: TRUE MULTI-TURN GEMINI CONVERSATIONAL AI + GOOGLE SEARCH GROUNDING
 # =========================================================
 with tab_ai:
-    active_gemini_key = st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", "")
+    active_gemini_key = (
+        st.session_state.get("custom_gemini_key")
+        or st.secrets.get("GEMINI_API_KEY", "")
+        or st.secrets.get("GOOGLE_API_KEY", "")
+    ).strip()
+
     key_status_badge = (
-        "<span class='kpi-delta delta-up'>GEMINI 2.5 FLASH CONNECTED</span>"
+        "<span class='kpi-delta delta-up'>GEMINI LIVE SEARCH ENGINE ONLINE</span>"
         if active_gemini_key else
-        "<span class='kpi-delta delta-warn'>LOCAL ENGINE (CONFIGURE KEY IN SETTINGS TAB)</span>"
+        "<span class='kpi-delta delta-down'>API KEY REQUIRED IN SETTINGS TAB</span>"
     )
 
     render_html(f"""
     <div class="dossier-card" style="padding:16px 20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#00FF85;">LIVE AI TACTICAL & NATURAL-LANGUAGE ADVISOR</h3>
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#00FF85;">GEMINI FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>
           <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-            Powered by Gemini 2.5 Flash + Full Squad/Mini-League Telemetry. Ask any specific comparison, injury, or strategy question.
+            Multi-turn conversational AI with live Google Search grounding, full squad telemetry, fixture runways, and rationale-driven coaching.
           </p>
         </div>
         {key_status_badge}
@@ -2062,175 +2063,220 @@ with tab_ai:
             {
                 "role": "assistant",
                 "content": (
-                    f"Tactical telemetry online for **GW{upcoming_gw}**. Current Captain: **{active_cap_obj.get('web_name', 'N/A')} (C)**. "
-                    f"You have **{ft_remaining_now} Free Transfer(s)** and **£{bank_now:.1f}m** in the bank "
-                    f"(focused on **{target_league_name}**). Ask me anything—for example: *'How can I get Saka into my squad?'*, "
-                    f"*'Compare my midfielders over the next 5 Gameweeks'*, or *'Who is the best differential captain to gain points on 1st place?'*"
+                    f"Ready for **GW{upcoming_gw}**, Manager. I have your live **Kings County FC** starting XI, bench order, "
+                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded.\n\n"
+                    f"Ask me anything in plain English—like *'Who should I start and bench this week?'*, *'Why is Semenyo projected so high?'*, "
+                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale."
                 )
             }
         ]
 
-    def answer_natural_language_query(query_str: str) -> str:
-        active_key = (st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", "")).strip()
-        squad_summary = ", ".join(
-            f"{p['web_name']}{' [CAPTAIN]' if p.get('is_captain') else ''} ({p['team_short']}, Pos:{ {1:'GK',2:'DEF',3:'MID',4:'FWD'}.get(p['element_type'],'PLY') }, Sell:£{p.get('selling_price', p['now_cost']/10):.1f}m, GW{upcoming_gw} xP:{p['xp_next']}, 5GW xP:{p['xp_5gw']}, AvgFDR:{p['avg_5_fdr']})"
-            for p in full_squad
-        )
-        top_market = sorted(
+    def build_rich_tactical_system_prompt() -> str:
+        pos_lbl_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+        xi_lines = []
+        for p in starting_xi:
+            nxt = p["runway"][0] if p.get("runway") else {"opp": "TBD", "venue": "H", "fdr": 3}
+            run_5 = ", ".join(f"GW{r['gw']}:{r['opp']}({r['venue']},FDR{r['fdr']})" for r in p.get("runway", [])[:4])
+            role_tag = " [CAPTAIN]" if p.get("is_captain") else (" [VICE-CAPTAIN]" if p.get("is_vice_captain") else "")
+            flag_str = f" | ALERT: {p['news']}" if p.get("news") else ""
+            xi_lines.append(
+                f"- {p['web_name']} ({p['team_short']}, {pos_lbl_map.get(p['element_type'])}{role_tag}): "
+                f"Sell £{p.get('selling_price', p['now_cost']/10):.1f}m | GW{upcoming_gw} vs {nxt['opp']}({nxt['venue']}, FDR {nxt['fdr']}) -> {p['xp_next']} xP | "
+                f"5-GW xP: {p['xp_5gw']} | Form: {p['form']} | xGI: {p.get('expected_goal_involvements')} | Mins: {p.get('minutes')} | Runway: [{run_5}]{flag_str}"
+            )
+
+        bench_lines = []
+        for idx_b, p in enumerate(sorted(bench_xi, key=lambda x: x.get("pick_pos", 12))):
+            nxt = p["runway"][0] if p.get("runway") else {"opp": "TBD", "venue": "H", "fdr": 3}
+            flag_str = f" | ALERT: {p['news']}" if p.get("news") else ""
+            bench_lines.append(
+                f"- Bench #{idx_b+1}: {p['web_name']} ({p['team_short']}, {pos_lbl_map.get(p['element_type'])}): "
+                f"Sell £{p.get('selling_price', p['now_cost']/10):.1f}m | GW{upcoming_gw} vs {nxt['opp']}({nxt['venue']}, FDR {nxt['fdr']}) -> {p['xp_next']} xP | "
+                f"5-GW xP: {p['xp_5gw']} | Form: {p['form']} | xGI: {p.get('expected_goal_involvements')}{flag_str}"
+            )
+
+        top_unowned = sorted(
             [p for p in elements_map.values() if p["id"] not in squad_ids and p.get("element_type") != 1],
             key=lambda x: x.get("xp_5gw", 0),
             reverse=True
-        )[:25]
-        market_summary = ", ".join(
-            f"{p['web_name']} ({p['team_short']}, Pos:{ {1:'GK',2:'DEF',3:'MID',4:'FWD'}.get(p['element_type'],'PLY') }, Cost:£{p['now_cost']/10:.1f}m, GW{upcoming_gw} xP:{p['xp_next']}, 5GW xP:{p['xp_5gw']})"
-            for p in top_market
-        )
+        )[:30]
+        market_lines = [
+            f"- {p['web_name']} ({p['team_short']}, {pos_lbl_map.get(p['element_type'])}, £{p['now_cost']/10:.1f}m): "
+            f"GW{upcoming_gw} xP {p['xp_next']} | 5-GW xP {p['xp_5gw']} | Form {p['form']} | xGI {p.get('expected_goal_involvements')} | "
+            f"Next: {p['runway'][0]['opp']}({p['runway'][0]['venue']}) if p.get('runway') else 'TBD'"
+            for p in top_unowned
+        ]
 
-        if active_key:
-            sys_prompt = (
-                f"You are the Elite FPL Tactical Director for Kings County FC. Current Date: October 2026 (2026/27 Premier League Season). "
-                f"Upcoming Gameweek: GW{upcoming_gw}. Current Captain: {active_cap_obj.get('web_name', 'N/A')}. Free Transfers: {ft_remaining_now}. Bank: £{bank_now:.1f}m. "
-                f"Target Mini-League: {target_league_name} (Gap to 1st: {gap_to_leader} pts). "
-                f"Current 15-Man Squad: {squad_summary}. Top Unowned Market Targets: {market_summary}. "
-                f"Never suggest Goalkeeper transfers unless their GK is injured. Always provide exact £m math, 2-move upgrade paths when a target exceeds single-move budget, and concrete xP comparisons."
+        danger_rivals = [elements_map[pid]["web_name"] for pid, cnt in rival_threat_players.items() if cnt >= 2 and pid not in squad_ids and pid in elements_map]
+
+        return f"""You are Gemini, the Elite FPL Tactical Co-Pilot and Coach for Barney's team, Kings County FC.
+Your goal is to have a natural, insightful, analytical conversation that directly answers whatever the user asks AND teaches them the underlying FPL strategy and rationale so they become a sharper manager.
+
+CRITICAL OPERATING RULES:
+1. NEVER output a generic canned template. Always answer the user's exact question directly in sentence 1.
+2. Explain the 'WHY' (the rationale): break down underlying numbers (xGI, Form, minutes security, home/away fixture swings, clean sheet odds, and Effective Ownership/differential leverage in {target_league_name}).
+3. Use Google Search when helpful to verify the latest Premier League press conference quotes, injury updates, tactical role changes, or penalty/set-piece duties.
+4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK, at least 3 DEF, at least 2 MID, at least 1 FWD) and exact 1-2-3 outfield auto-sub bench order, and explain any tough 50/50 calls between their starters and bench players.
+5. Never recommend Goalkeeper transfers unless their starting GK is injured/suspended.
+6. When discussing transfers, always check exact affordability (Sell Price + £{bank_now:.1f}m Bank) and show 2-move downgrade+upgrade paths if a premium target costs more than a 1-move swap.
+
+LIVE KINGS COUNTY FC TELEMETRY (UPCOMING GAMEWEEK: GW{upcoming_gw}):
+- Free Transfers Available: {ft_remaining_now} FT
+- Money In The Bank: £{bank_now:.1f}m (Total Squad Value: £{val_now:.1f}m)
+- Target Mini-League: {target_league_name} (Gap to 1st place: {gap_to_leader} pts)
+- High-Owned Rival Danger Players (Owned by 2+ top mini-league rivals, NOT in user's squad): {', '.join(danger_rivals) if danger_rivals else 'None'}
+
+CURRENT STARTING XI:
+{chr(10).join(xi_lines)}
+
+CURRENT BENCH (IN ORDER):
+{chr(10).join(bench_lines)}
+
+TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
+{chr(10).join(market_lines)}
+"""
+
+    def call_gemini_conversational_advisor(user_prompt: str) -> str:
+        active_key = (
+            st.session_state.get("custom_gemini_key")
+            or st.secrets.get("GEMINI_API_KEY", "")
+            or st.secrets.get("GOOGLE_API_KEY", "")
+        ).strip()
+
+        if not active_key:
+            return (
+                "⚠️ **Gemini API Key Not Detected:** To get live web-researched, natural-language coaching from Gemini, "
+                "add `GEMINI_API_KEY = \"AIza...\"` in your Streamlit Cloud Secrets (or paste it into the **Settings** tab)."
             )
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={active_key}"
 
-            for payload in [
-                {
-                    "system_instruction": {"parts": [{"text": sys_prompt}]},
-                    "contents": [{"parts": [{"text": query_str}]}],
-                    "tools": [{"google_search": {}}]
-                },
-                {
-                    "system_instruction": {"parts": [{"text": sys_prompt}]},
-                    "contents": [{"parts": [{"text": query_str}]}]
+        sys_instruction = build_rich_tactical_system_prompt()
+
+        # Build multi-turn conversation history for Gemini
+        contents_history = []
+        recent_msgs = st.session_state.get("ai_messages", [])[-8:]
+        for m in recent_msgs:
+            role_gemini = "user" if m["role"] == "user" else "model"
+            contents_history.append({
+                "role": role_gemini,
+                "parts": [{"text": m["content"]}]
+            })
+
+        if not contents_history or contents_history[-1]["role"] != "user":
+            contents_history.append({"role": "user", "parts": [{"text": user_prompt}]})
+
+        # Try Gemini 2.5 Flash (with Google Search Grounding -> then standard) and fallback models
+        attempts = [
+            ("gemini-2.5-flash", True),
+            ("gemini-2.5-flash", False),
+            ("gemini-2.0-flash", True),
+            ("gemini-2.0-flash", False),
+        ]
+
+        last_err_detail = ""
+        for model_name, use_search in attempts:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}"
+            payload = {
+                "system_instruction": {"parts": [{"text": sys_instruction}]},
+                "contents": contents_history,
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "maxOutputTokens": 2048
                 }
-            ]:
-                try:
-                    r = requests.post(url, json=payload, timeout=18)
-                    if r.status_code == 200:
-                        cands = r.json().get("candidates", [])
-                        if cands:
-                            parts = cands[0].get("content", {}).get("parts", [])
-                            text_out = "\n".join(pt.get("text", "") for pt in parts if "text" in pt)
-                            if text_out.strip():
-                                return text_out
-                except Exception:
-                    continue
+            }
+            if use_search:
+                payload["tools"] = [{"google_search": {}}]
 
-        q_low = query_str.lower()
-        mentioned_players = []
-        for p in elements_map.values():
-            w_name = p.get("web_name", "").strip()
-            s_name = p.get("second_name", "").strip()
-            if len(w_name) >= 3 and re.search(rf"\b{re.escape(w_name.lower())}\b", q_low):
-                mentioned_players.append(p)
-            elif len(s_name) >= 4 and re.search(rf"\b{re.escape(s_name.lower())}\b", q_low):
-                mentioned_players.append(p)
+            try:
+                r = requests.post(url, json=payload, timeout=25)
+                if r.status_code == 200:
+                    resp_json = r.json()
+                    cands = resp_json.get("candidates", [])
+                    if cands:
+                        parts = cands[0].get("content", {}).get("parts", [])
+                        text_chunks = [pt.get("text", "") for pt in parts if "text" in pt]
+                        answer_text = "\n".join(text_chunks).strip()
 
-        seen_pids = set()
-        unique_mentions = []
-        for mp in sorted(mentioned_players, key=lambda x: x.get("xp_5gw", 0), reverse=True):
-            if mp["id"] not in seen_pids:
-                seen_pids.add(mp["id"])
-                unique_mentions.append(mp)
+                        # Extract any Google Search Grounding web sources if returned
+                        grounding = cands[0].get("groundingMetadata", {})
+                        chunks = grounding.get("groundingChunks", [])
+                        web_links = []
+                        for ch in chunks:
+                            web_obj = ch.get("web", {})
+                            uri = web_obj.get("uri")
+                            title = web_obj.get("title")
+                            if uri and title:
+                                web_links.append(f"[{title}]({uri})")
+                        if web_links:
+                            unique_links = list(dict.fromkeys(web_links))[:4]
+                            answer_text += "\n\n---\n**Live Web Sources Checked:** " + " &bull; ".join(unique_links)
 
-        if unique_mentions:
-            lines = [f"### Tactical Player Breakdown (GW{upcoming_gw}–GW{upcoming_gw+4})"]
-            owned_mentions = [p for p in unique_mentions if p["id"] in squad_ids]
-            unowned_mentions = [p for p in unique_mentions if p["id"] not in squad_ids]
-
-            for mp in unique_mentions[:4]:
-                status_str = "IN YOUR SQUAD" if mp["id"] in squad_ids else "TRANSFER TARGET"
-                r_str = ", ".join(f"GW{r['gw']} {r['opp']}({r['venue']})" for r in mp.get("runway", [])[:4])
-                lines.append(
-                    f"* **{mp['web_name']} ({mp['team_short']} — £{mp['now_cost']/10:.1f}m | {status_str}):** "
-                    f"GW{upcoming_gw} Projection: **`{mp['xp_next']} xP`** | 5-GW Projection: **`{mp['xp_5gw']} xP`** | "
-                    f"Form: `{mp['form']}` | xGI: `{mp['expected_goal_involvements']}` | Next 4: {r_str}."
-                )
-
-            if unowned_mentions:
-                target_p = unowned_mentions[0]
-                t_cost = target_p.get("now_cost", 50) / 10.0
-                same_pos_squad = [
-                    sp for sp in full_squad if sp.get("element_type") == target_p.get("element_type")
-                ]
-                same_pos_squad.sort(key=lambda x: x.get("xp_5gw", 0))
-                sell_cand = owned_mentions[0] if owned_mentions else (same_pos_squad[0] if same_pos_squad else full_squad[0])
-                sell_price_val = sell_cand.get("selling_price", sell_cand.get("now_cost", 50) / 10.0)
-                max_1_move = round(sell_price_val + bank_now, 1)
-
-                if t_cost <= max_1_move:
-                    net_5 = round(target_p.get("xp_5gw", 0) - sell_cand.get("xp_5gw", 0), 1)
-                    lines.append(
-                        f"\n**Direct Execution Path:** Sell **{sell_cand['web_name']}** (£{sell_price_val:.1f}m) &rarr; "
-                        f"Buy **{target_p['web_name']}** (£{t_cost:.1f}m). Leaves **£{max_1_move - t_cost:.1f}m** in the bank and nets **`+{net_5} xP`** over 5 GWs."
-                    )
-                elif funding_pairs:
-                    shortfall = round(t_cost - max_1_move, 1)
-                    vp = next((fp for fp in funding_pairs if fp[1]["id"] != sell_cand["id"] and fp[0] >= shortfall), funding_pairs[0])
-                    freed_m, donor_p, enabler_p = vp
-                    donor_sell_val = donor_p.get("selling_price", donor_p.get("now_cost", 50) / 10.0)
-                    lines.append(
-                        f"\n**2-Transfer Upgrade Path Required (£{shortfall:.1f}m Shortfall):**\n"
-                        f"1. Downgrade **{donor_p['web_name']}** (£{donor_sell_val:.1f}m) &rarr; **{enabler_p['web_name']}** (£{enabler_p['now_cost']/10:.1f}m) to free up **£{freed_m:.1f}m**.\n"
-                        f"2. Upgrade **{sell_cand['web_name']}** &rarr; **{target_p['web_name']}** (£{t_cost:.1f}m)."
-                    )
-            return "\n".join(lines)
-
-        outfield_starters = sorted([p for p in starting_xi if p.get("element_type") != 1], key=lambda x: x.get("xp_next", 0), reverse=True)
-        cap_1, cap_2 = outfield_starters[0], outfield_starters[1]
-        weakest_2 = outfield_starters[-2:]
-        best_unowned = top_market[0] if top_market else {}
+                        if answer_text:
+                            return answer_text
+                else:
+                    err_msg = r.json().get("error", {}).get("message", r.text[:200])
+                    last_err_detail = f"HTTP {r.status_code} ({model_name}): {err_msg}"
+            except Exception as e:
+                last_err_detail = f"{model_name} request error: {e}"
+                continue
 
         return (
-            f"### Custom Tactical Analysis for '{query_str}' (GW{upcoming_gw})\n"
-            f"* **Current Active Captain:** **{active_cap_obj.get('web_name', 'N/A')}** (`{active_cap_obj.get('xp_next', 0)} xP`). Highest projected alternatives: **{cap_1['web_name']}** (`{cap_1['xp_next']} xP`) and **{cap_2['web_name']}** (`{cap_2['xp_next']} xP`).\n"
-            f"* **Outfield Weak Links to Address:** **{weakest_2[0]['web_name']}** (`{weakest_2[0]['xp_next']} xP`) and **{weakest_2[1]['web_name']}** (`{weakest_2[1]['xp_next']} xP`) carry your lowest projections.\n"
-            f"* **Highest-Upside Market Target:** **{best_unowned.get('web_name')} ({best_unowned.get('team_short')}, £{best_unowned.get('now_cost',50)/10:.1f}m)** projects for **`{best_unowned.get('xp_5gw')} xP`** over the next 5 Gameweeks.\n"
-            f"* *Tip:* Name any specific player in the chat (e.g., *'How do I afford Saka?'* or *'Compare Cherki and Palmer'*) for an exact budget and 2-move upgrade path calculation."
+            f"⚠️ **Gemini API Connection Error:** `{last_err_detail}`\n\n"
+            f"Please verify that your `GEMINI_API_KEY` in Streamlit Secrets (or the **Settings** tab) is valid and active."
         )
 
     qa1, qa2, qa3, qa4 = st.columns(4)
-    if qa1.button("Saka / Palmer Upgrade Path", use_container_width=True):
-        q_txt = "Show me the exact 2-transfer upgrade path to get Bukayo Saka or Cole Palmer into my squad."
+    if qa1.button("Who Should I Start & Bench?", use_container_width=True):
+        q_txt = f"Who should I start in my XI and how should I order my bench for GW{upcoming_gw}? Explain the rationale and any close 50/50 calls."
         st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(q_txt)})
+        with st.spinner("Gemini is analyzing your 15-man squad, fixtures, and latest team news..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
-    if qa2.button("Mini-League Attack Plan", use_container_width=True):
-        q_txt = f"How do I close the {gap_to_leader} pt gap in {target_league_name}?"
+
+    if qa2.button("Saka / Palmer Upgrade Path", use_container_width=True):
+        q_txt = "What is the smartest 1- or 2-transfer path to get Bukayo Saka or Cole Palmer into my squad, and is it worth doing this week?"
         st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(q_txt)})
+        with st.spinner("Calculating budget math and 5-GW expected point swings..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
-    if qa3.button("Captaincy EV Comparison", use_container_width=True):
-        top2_names = " and ".join(p["web_name"] for p in sorted(starting_xi, key=lambda x: x["xp_next"], reverse=True)[:2])
-        q_txt = f"Compare captaincy upside between {top2_names} for GW{upcoming_gw}."
+
+    if qa3.button("Captaincy Deep Dive", use_container_width=True):
+        q_txt = f"Break down my best captain and vice-captain choices for GW{upcoming_gw}. Compare safe template shields vs differential upside."
         st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(q_txt)})
+        with st.spinner("Researching matchup data and captaincy expected value..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
-    if qa4.button("Audit Weakest Starters", use_container_width=True):
-        weak_names = " and ".join(p["web_name"] for p in sorted([x for x in starting_xi if x["element_type"] != 1], key=lambda x: x["xp_5gw"])[:2])
-        q_txt = f"Evaluate my lowest projected outfield starters ({weak_names}) and suggest replacements."
+
+    if qa4.button("Beat My Mini-League Rivals", use_container_width=True):
+        q_txt = f"Based on my {gap_to_leader} pt gap in {target_league_name} and the rival danger players, what tactical posture and moves will help me gain ground?"
         st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(q_txt)})
+        with st.spinner("Evaluating mini-league rival overlap and differential leverage..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
 
     for msg in st.session_state["ai_messages"]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    user_q = st.chat_input("Ask about any player swap (e.g., 'How do I afford Saka?'), -4pt hit math, or rival strategy...")
+    user_q = st.chat_input("Ask Gemini anything (e.g., 'Who should I start?', 'Why is Semenyo projected so high?', 'Should I roll my transfer?')...")
     if user_q:
         st.session_state["ai_messages"].append({"role": "user", "content": user_q})
-        st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(user_q)})
+        with st.chat_message("user"):
+            st.markdown(user_q)
+        with st.chat_message("assistant"):
+            with st.spinner("Gemini is researching Premier League data and analyzing your squad..."):
+                reply = call_gemini_conversational_advisor(user_q)
+                st.markdown(reply)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
 
 # =========================================================
 # TAB 5: DEDICATED SETTINGS & LIVE CONNECTION VALIDATOR
 # =========================================================
 with tab_settings:
-    # 1. LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR CARD
     auth_ok = auth_diag.get("authenticated", False)
     status_badge_html = (
         "<span class='kpi-delta delta-up'>AUTHENTICATED (/api/my-team/ 200 OK)</span>"
@@ -2244,7 +2290,7 @@ with tab_settings:
         <div>
           <h3 style="margin:0; font-size:16px; font-weight:800; color:#FFF;">LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>
           <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-            Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN`) and displays the exact Captaincy & Bank returned by FPL's server.
+            Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays the exact Captaincy & Bank returned by FPL's server.
           </p>
         </div>
         {status_badge_html}
@@ -2275,7 +2321,6 @@ with tab_settings:
     </div>
     """)
 
-    # 2. TARGET MINI-LEAGUE & TEAM ID CONFIGURATION
     set_col1, set_col2 = st.columns(2, gap="medium")
 
     with set_col1:
@@ -2311,22 +2356,21 @@ with tab_settings:
             st.session_state["sync_nonce"] += 1
             st.rerun()
 
-    # 3. RUNTIME CREDENTIALS OVERRIDE (IF NOT IN STREAMLIT SECRETS)
     with set_col2:
         render_html("""
         <div class="dossier-card" style="padding:16px 20px;">
           <h4 style="margin:0 0 6px 0; color:#FFF;">Live API Credentials (Overrides / Secrets Fallback)</h4>
           <p style="margin:0; font-size:12px; color:var(--text-secondary);">
-            If not already stored in Streamlit Secrets, paste your `x-api-authorization` Bearer token, full Cookie header, or Gemini API key below.
+            Paste your `x-api-authorization` Bearer token, full `Copy as cURL` command, or Gemini API key below.
           </p>
         </div>
         """)
         with st.form("settings_creds_form"):
             in_cookie = st.text_input(
-                "FPL Cookie or Bearer Token (`FPL_COOKIE` / `x-api-authorization`):",
+                "FPL Bearer Token / `Copy as cURL` / Cookie (`FPL_COOKIE`):",
                 value=fpl_cookie_val,
                 type="password",
-                help="Paste either the 'Bearer eyJ...' token from x-api-authorization or the full Cookie string from DevTools -> Network -> my-team."
+                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1153921/' in DevTools -> Copy -> Copy as cURL."
             )
             in_gem = st.text_input(
                 "Gemini API Key (`GEMINI_API_KEY`):",
