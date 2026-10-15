@@ -916,7 +916,7 @@ if classic_leagues:
         if saved_lg_id not in lg_ids:
             saved_lg_id = lg_ids[0]
         st.session_state["target_lg_id"] = saved_lg_id
-        target_league_name = next((safe_get(lg, "name", "Mini-League") for lg in classic_leagues if safe_get(lg, "id"] == saved_lg_id), "Mini-League")
+        target_league_name = next((safe_get(lg, "name", "Mini-League") for lg in classic_leagues if safe_get(lg, "id") == saved_lg_id), "Mini-League")
 
         st_json = fetch_league_standings(saved_lg_id, sync_nonce)
         if isinstance(st_json, dict):
