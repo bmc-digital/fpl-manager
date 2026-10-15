@@ -871,7 +871,7 @@ def render_pitch_and_dossier_fragment():
     sel_pid = st.session_state.get("selected_pid")
 
     with col_left:
-        gks = [p for p in starting_xi if p.get("element_type"] == 1]
+        gks = [p for p in starting_xi if p.get("element_type") == 1]
         defs = [p for p in starting_xi if p.get("element_type") == 2]
         mids = [p for p in starting_xi if p.get("element_type") == 3]
         fwds = [p for p in starting_xi if p.get("element_type") == 4]
@@ -1335,7 +1335,7 @@ with tab_league:
                 their_only.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
 
                 best_my_cap = sorted(starting_xi, key=lambda x: x.get("xp_next", 0), reverse=True)[0]
-                weakest_my_starter = sorted([p for p in starting_xi if p.get("element_type") != 1], key=lambda x: x.get("xp_next", 0))[0]
+                weakest_my_starter = sorted([p for p in starting_xi if p.get("element_type"] != 1], key=lambda x: x.get("xp_next", 0))[0]
                 top_block_target = their_only[0] if their_only else None
 
                 render_html(
