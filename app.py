@@ -235,7 +235,7 @@ def build_avatar_bg_style(p) -> str:
     raw_code = str(p.get("code") or p.get("photo", "").split(".")[0]).lstrip("p").strip()
     url_25 = f"https://resources.premierleague.com/premierleague25/photos/players/110x140/{raw_code}.png"
     url_legacy = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{raw_code}.png"
-    fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type"] == 1))
+    fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type") == 1))
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
@@ -1254,7 +1254,7 @@ with tab_league:
                 their_only.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
 
                 best_my_cap = sorted(starting_xi, key=lambda x: x.get("xp_next", 0), reverse=True)[0]
-                weakest_my_starter = sorted([p for p in starting_xi if p["element_type"] != 1], key=lambda x: x.get("xp_next", 0))[0]
+                weakest_my_starter = sorted([p for p in starting_xi if p.get("element_type") != 1], key=lambda x: x.get("xp_next", 0))[0]
                 top_block_target = their_only[0] if their_only else None
 
                 render_html(
