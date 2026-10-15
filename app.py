@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Full Tactical Pitch View | Gemini 3.8 Flash Co-Pilot
+Production Mobile-First Architecture | Persistent Snapshot Engine | Gemini 3.8 Flash Co-Pilot
 """
 
 import streamlit as st
@@ -134,7 +134,7 @@ CSS_LINES = [
 render_html("\n".join(CSS_LINES))
 
 # ---------------------------------------------------------
-# 3. AUTHENTICATION, SYNC TIMESTAMP & TEAM ID INITIALIZATION
+# 3. AUTHENTICATION & SESSION SNAPSHOT STATE MANAGEMENT
 # ---------------------------------------------------------
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
 default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1575281))
@@ -157,6 +157,9 @@ if "cap_override_id" not in st.session_state:
 
 if "vc_override_id" not in st.session_state:
     st.session_state["vc_override_id"] = None
+
+if "persisted_team_snapshot" not in st.session_state:
+    st.session_state["persisted_team_snapshot"] = None
 
 q_pid = st.query_params.get("pid")
 if q_pid and str(q_pid).isdigit():
@@ -239,7 +242,7 @@ def build_avatar_bg_style(p) -> str:
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
-# 5. UNIVERSAL FPL API ENGINE (FULLY RESTORED AUTH & PRIVATE SYNC)
+# 5. UNIVERSAL FPL API ENGINE (AUTHENTICATED & PERSISTENT SNAPSHOT SYNC)
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -535,22 +538,25 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. AUTHENTICATED / PERSISTED SQUAD ROLL-FORWARD ENGINE
+# 8. PERSISTENT SNAPSHOT & SMART DELTA MERGER ENGINE
 # ---------------------------------------------------------
-if "persisted_squad_state" not in st.session_state:
-    st.session_state["persisted_squad_state"] = None
+current_remote_picks = private_team_data.get("picks") if (auth_diag.get("authenticated") and private_team_data) else None
 
-starting_xi, bench_xi = [], []
-cap_override = st.session_state.get("cap_override_id")
-vc_override = st.session_state.get("vc_override_id")
+if current_remote_picks and st.session_state.get("persisted_team_snapshot") is None:
+    st.session_state["persisted_team_snapshot"] = {
+        "picks": current_remote_picks,
+        "bank": private_team_data.get("entry", {}).get("bank"),
+        "transfers": private_team_data.get("transfers", {})
+    }
+    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
 
-if st.session_state["persisted_squad_state"]:
-    active_picks_source = st.session_state["persisted_squad_state"]
-    roster_sync_mode = f"CACHED & PERSISTED GW{upcoming_gw} SQUAD"
+if st.session_state["persisted_team_snapshot"]:
+    active_picks_source = st.session_state["persisted_team_snapshot"]["picks"]
+    roster_sync_mode = f"PERSISTED SNAPSHOT (GW{upcoming_gw})"
     roster_mode_cls = "delta-up"
 elif auth_diag.get("authenticated") and private_team_data and "picks" in private_team_data:
     active_picks_source = private_team_data["picks"]
-    roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw} SQUAD"
+    roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw}"
     roster_mode_cls = "delta-up"
 else:
     raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
@@ -566,6 +572,9 @@ else:
     roster_sync_mode = f"PUBLIC GW{last_active_gw} + ROLL-FORWARD"
     roster_mode_cls = "delta-warn"
 
+starting_xi, bench_xi = [], []
+cap_override = st.session_state.get("cap_override_id")
+vc_override = st.session_state.get("vc_override_id")
 api_official_cap_name = "Unknown"
 api_official_vc_name = "Unknown"
 
@@ -635,7 +644,7 @@ if len(curr_hist) >= 2:
     gw_pts = latest_h.get("points", 0)
     overall_rank = latest_h.get("overall_rank", 0)
     rank_delta = prev_h.get("overall_rank", overall_rank) - overall_rank
-    bank_now = latest_h.get("bank", 0) / 10.0
+    bank_now = (st.session_state["persisted_team_snapshot"]["bank"] / 10.0) if (st.session_state["persisted_team_snapshot"] and st.session_state["persisted_team_snapshot"].get("bank") is not None) else (latest_h.get("bank", 0) / 10.0)
     bank_delta = (latest_h.get("bank", 0) - prev_h.get("bank", 0)) / 10.0
     val_now = latest_h.get("value", 1000) / 10.0
     val_delta = (latest_h.get("value", 1000) - prev_h.get("value", 1000)) / 10.0
@@ -643,13 +652,15 @@ elif len(curr_hist) == 1:
     latest_h = curr_hist[0]
     total_pts, gw_pts = latest_h.get("total_points", 0), latest_h.get("points", 0)
     overall_rank, rank_delta = latest_h.get("overall_rank", 0), 0
-    bank_now, bank_delta = latest_h.get("bank", 0) / 10.0, 0.0
+    bank_now = (st.session_state["persisted_team_snapshot"]["bank"] / 10.0) if (st.session_state["persisted_team_snapshot"] and st.session_state["persisted_team_snapshot"].get("bank") is not None) else (latest_h.get("bank", 0) / 10.0)
+    bank_delta = 0.0
     val_now, val_delta = latest_h.get("value", 1000) / 10.0, 0.0
 else:
     total_pts = entry_data.get("summary_overall_points", 407)
     gw_pts = entry_data.get("summary_event_points", 60)
     overall_rank, rank_delta = entry_data.get("summary_overall_rank", 1219150), 0
-    bank_now, bank_delta = (entry_data.get("last_deadline_bank", 1) or 1) / 10.0, 0.0
+    bank_now = 1.0
+    bank_delta = 0.0
     val_now, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
 
 team_xp_total = round(sum(
@@ -706,7 +717,7 @@ if classic_leagues:
                             rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
 
 # ---------------------------------------------------------
-# 10. RENDER CLEAN TOP AREA: HERO BANNER + 1-LINE SYNC BAR + 6 KPI TILES
+# 10. RENDER CLEAN TOP AREA: HERO BANNER + TIMESTAMP SYNC BAR
 # ---------------------------------------------------------
 pl_vector_svg = (
     '<div class="kcfc-emblem">'
@@ -748,18 +759,16 @@ render_html(
     f"<div class='countdown-val'>{countdown_display}</div></div></div>"
 )
 
-if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Clear Persisted State", use_container_width=True):
-    st.cache_data.clear()
-    st.session_state["sync_nonce"] += 1
-    st.session_state["cap_override_id"] = None
-    st.session_state["vc_override_id"] = None
-    st.session_state["persisted_squad_state"] = None
-    if "cap_id" in st.query_params:
-        del st.query_params["cap_id"]
-    if "vc_id" in st.query_params:
-        del st.query_params["vc_id"]
-    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
-    st.rerun()
+col_sync_btn, col_sync_info = st.columns([1.5, 2])
+with col_sync_btn:
+    if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Force Refresh & Clear Snapshot", use_container_width=True):
+        st.cache_data.clear()
+        st.session_state["sync_nonce"] += 1
+        st.session_state["cap_override_id"] = None
+        st.session_state["vc_override_id"] = None
+        st.session_state["persisted_team_snapshot"] = None
+        st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+        st.rerun()
 
 render_html(
     f"<div class='kpi-grid-6' style='margin-top:6px;'>"
@@ -815,7 +824,7 @@ for donor in full_squad:
 funding_pairs.sort(key=lambda x: x[0], reverse=True)
 
 # ---------------------------------------------------------
-# 12. NAVIGATION TABS (NO EMOJIS, DEDICATED SETTINGS TAB)
+# 12. NAVIGATION TABS
 # ---------------------------------------------------------
 tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
     "Tactical Pitch & Dossier",
@@ -926,18 +935,26 @@ def render_pitch_and_dossier_fragment():
             with cap_btn_c1:
                 if st.button(f"Simulate {sp['web_name']} as Captain (C)", use_container_width=True):
                     st.session_state["cap_override_id"] = sp["id"]
-                    st.session_state["persisted_squad_state"] = [
-                        {"element": x["id"], "position": x["pick_pos"], "is_captain": x["id"] == sp["id"], "is_vice_captain": x.get("is_vice_captain", False)}
-                        for x in full_squad
-                    ]
+                    st.session_state["persisted_team_snapshot"] = {
+                        "picks": [
+                            {"element": x["id"], "position": x["pick_pos"], "is_captain": x["id"] == sp["id"], "is_vice_captain": x.get("is_vice_captain", False)}
+                            for x in full_squad
+                        ],
+                        "bank": int(bank_now * 10),
+                        "transfers": {}
+                    }
                     st.rerun()
             with cap_btn_c2:
                 if st.button(f"Simulate {sp['web_name']} as Vice (V)", use_container_width=True):
                     st.session_state["vc_override_id"] = sp["id"]
-                    st.session_state["persisted_squad_state"] = [
-                        {"element": x["id"], "position": x["pick_pos"], "is_captain": x.get("is_captain", False), "is_vice_captain": x["id"] == sp["id"]}
-                        for x in full_squad
-                    ]
+                    st.session_state["persisted_team_snapshot"] = {
+                        "picks": [
+                            {"element": x["id"], "position": x["pick_pos"], "is_captain": x.get("is_captain", False), "is_vice_captain": x["id"] == sp["id"]}
+                            for x in full_squad
+                        ],
+                        "bank": int(bank_now * 10),
+                        "transfers": {}
+                    }
                     st.rerun()
 
             dossier_bg_style = build_avatar_bg_style(sp)
@@ -1136,7 +1153,7 @@ with tab_transfers:
             f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;'>"
             f"<div><span style='font-size:10.5px; font-weight:800; background:#F43F5E; color:#FFF; padding:3px 8px; border-radius:6px; margin-right:8px;'>OUTFIELD PRIORITY #{idx+1}</span>"
             f"<span style='font-size:16px; font-weight:800; color:#FFF;'>{sell_p.get('web_name')} ({sell_p.get('team_short')})</span></div>"
-            f"<div style='font-family:JetBrains Mono, monospace; font-size:12px; color:#F8FAFC;'>Est. Sell Value: <strong>£{s_sell_val:.1f}m</strong> &bull; 1-Move Max Budget: <strong style='color:#00FF85;'>£{max_direct_budget:.1f}m</strong></div></div>"
+            f"<div style='font-family:JetBrains Mono, monospace; font-size:12px; color:#F8FAFC; Est. Sell Value: <strong>£{s_sell_val:.1f}m</strong> &bull; 1-Move Max Budget: <strong style='color:#00FF85;'>£{max_direct_budget:.1f}m</strong></div></div>"
             f"<div style='font-size:12px; color:#FDA4AF; margin-top:6px;'><strong>Audit Trigger:</strong> {reason_str}</div>"
             f"<div class='buy-grid-3'>{buy_cards_html}</div>{upgrade_banner_html}</div>"
         )
@@ -1246,7 +1263,11 @@ with tab_transfers:
                     "is_captain": o_obj.get("is_captain", False),
                     "is_vice_captain": o_obj.get("is_vice_captain", False)
                 })
-            st.session_state["persisted_squad_state"] = new_picks_layout
+            st.session_state["persisted_team_snapshot"] = {
+                "picks": new_picks_layout,
+                "bank": int(rem_bank_cart * 10),
+                "transfers": {}
+            }
             st.cache_data.clear()
             st.session_state["sync_nonce"] += 1
             st.success("Transfers applied and persisted successfully! Reloading pitch...")
@@ -1688,7 +1709,7 @@ with tab_settings:
             st.session_state["team_id"] = int(new_tid)
             st.session_state["cap_override_id"] = None
             st.session_state["vc_override_id"] = None
-            st.session_state["persisted_squad_state"] = None
+            st.session_state["persisted_team_snapshot"] = None
             st.query_params["team_id"] = str(new_tid)
             st.cache_data.clear()
             st.session_state["sync_nonce"] += 1
@@ -1723,7 +1744,7 @@ with tab_settings:
                 st.session_state["custom_fpl_password"] = in_pass
                 st.session_state["cap_override_id"] = None
                 st.session_state["vc_override_id"] = None
-                st.session_state["persisted_squad_state"] = None
+                st.session_state["persisted_team_snapshot"] = None
                 st.cache_data.clear()
                 st.session_state["sync_nonce"] += 1
                 st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
