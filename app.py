@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | True Multi-Turn Gemini Search-Grounded Advisor
+Production Mobile-First Architecture | Gemini 3.8 Flash Search-Grounded Co-Pilot
 """
 
 import streamlit as st
@@ -2029,7 +2029,7 @@ with tab_league:
         st.info("No classic mini-leagues found for this Team ID.")
 
 # =========================================================
-# TAB 4: TRUE MULTI-TURN GEMINI CONVERSATIONAL AI + GOOGLE SEARCH GROUNDING
+# TAB 4: TRUE MULTI-TURN GEMINI 3.8 FLASH + GOOGLE SEARCH GROUNDED CO-PILOT
 # =========================================================
 with tab_ai:
     active_gemini_key = (
@@ -2039,7 +2039,7 @@ with tab_ai:
     ).strip()
 
     key_status_badge = (
-        "<span class='kpi-delta delta-up'>GEMINI LIVE SEARCH ENGINE ONLINE</span>"
+        "<span class='kpi-delta delta-up'>GEMINI 3.8 FLASH + SEARCH ONLINE</span>"
         if active_gemini_key else
         "<span class='kpi-delta delta-down'>API KEY REQUIRED IN SETTINGS TAB</span>"
     )
@@ -2048,7 +2048,7 @@ with tab_ai:
     <div class="dossier-card" style="padding:16px 20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#00FF85;">GEMINI FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#00FF85;">GEMINI 3.8 FLASH FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>
           <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
             Multi-turn conversational AI with live Google Search grounding, full squad telemetry, fixture runways, and rationale-driven coaching.
           </p>
@@ -2151,28 +2151,37 @@ TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
 
         sys_instruction = build_rich_tactical_system_prompt()
 
-        # Build multi-turn conversation history for Gemini
+        # Build strictly alternating user/model conversation history starting with "user"
         contents_history = []
-        recent_msgs = st.session_state.get("ai_messages", [])[-8:]
+        recent_msgs = st.session_state.get("ai_messages", [])[-10:]
         for m in recent_msgs:
             role_gemini = "user" if m["role"] == "user" else "model"
-            contents_history.append({
-                "role": role_gemini,
-                "parts": [{"text": m["content"]}]
-            })
+            text_val = (m.get("content") or "").strip()
+            if not text_val:
+                continue
+            if not contents_history and role_gemini == "model":
+                continue
+            if contents_history and contents_history[-1]["role"] == role_gemini:
+                contents_history[-1]["parts"][0]["text"] += "\n\n" + text_val
+            else:
+                contents_history.append({
+                    "role": role_gemini,
+                    "parts": [{"text": text_val}]
+                })
 
         if not contents_history or contents_history[-1]["role"] != "user":
             contents_history.append({"role": "user", "parts": [{"text": user_prompt}]})
 
-        # Try Gemini 2.5 Flash (with Google Search Grounding -> then standard) and fallback models
+        # Primary 2026 production model: gemini-3.8-flash (with Google Search grounding -> standard fallback)
         attempts = [
-            ("gemini-2.5-flash", True),
-            ("gemini-2.5-flash", False),
-            ("gemini-2.0-flash", True),
-            ("gemini-2.0-flash", False),
+            ("gemini-3.8-flash", True),
+            ("gemini-3.8-flash", False),
+            ("gemini-3.6-flash", True),
+            ("gemini-3.6-flash", False),
+            ("gemini-3.5-flash-lite", False),
         ]
 
-        last_err_detail = ""
+        error_log = []
         for model_name, use_search in attempts:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}"
             payload = {
@@ -2196,7 +2205,6 @@ TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
                         text_chunks = [pt.get("text", "") for pt in parts if "text" in pt]
                         answer_text = "\n".join(text_chunks).strip()
 
-                        # Extract any Google Search Grounding web sources if returned
                         grounding = cands[0].get("groundingMetadata", {})
                         chunks = grounding.get("groundingChunks", [])
                         web_links = []
@@ -2214,21 +2222,21 @@ TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
                             return answer_text
                 else:
                     err_msg = r.json().get("error", {}).get("message", r.text[:200])
-                    last_err_detail = f"HTTP {r.status_code} ({model_name}): {err_msg}"
+                    error_log.append(f"HTTP {r.status_code} ({model_name}, search={use_search}): {err_msg}")
             except Exception as e:
-                last_err_detail = f"{model_name} request error: {e}"
+                error_log.append(f"{model_name} exception: {e}")
                 continue
 
         return (
-            f"⚠️ **Gemini API Connection Error:** `{last_err_detail}`\n\n"
-            f"Please verify that your `GEMINI_API_KEY` in Streamlit Secrets (or the **Settings** tab) is valid and active."
+            f"⚠️ **Gemini API Connection Error:**\n"
+            + "\n".join(f"- `{err}`" for err in error_log[:3])
         )
 
     qa1, qa2, qa3, qa4 = st.columns(4)
     if qa1.button("Who Should I Start & Bench?", use_container_width=True):
         q_txt = f"Who should I start in my XI and how should I order my bench for GW{upcoming_gw}? Explain the rationale and any close 50/50 calls."
         st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Gemini is analyzing your 15-man squad, fixtures, and latest team news..."):
+        with st.spinner("Gemini 3.8 Flash is analyzing your 15-man squad, fixtures, and latest team news..."):
             reply = call_gemini_conversational_advisor(q_txt)
         st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
         st.rerun()
@@ -2267,7 +2275,7 @@ TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
         with st.chat_message("user"):
             st.markdown(user_q)
         with st.chat_message("assistant"):
-            with st.spinner("Gemini is researching Premier League data and analyzing your squad..."):
+            with st.spinner("Gemini 3.8 Flash is researching Premier League data and analyzing your squad..."):
                 reply = call_gemini_conversational_advisor(user_q)
                 st.markdown(reply)
         st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
