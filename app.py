@@ -156,6 +156,9 @@ if "cap_override_id" not in st.session_state:
 if "vc_override_id" not in st.session_state:
     st.session_state["vc_override_id"] = None
 
+if "persisted_team_snapshot" not in st.session_state:
+    st.session_state["persisted_team_snapshot"] = None
+
 q_pid = st.query_params.get("pid")
 if q_pid and str(q_pid).isdigit():
     st.session_state["selected_pid"] = int(q_pid)
@@ -533,55 +536,29 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. BROWSER LOCALSTORAGE PERSISTENT SNAPSHOT ENGINE
+# 8. PERSISTENT SNAPSHOT & SMART DELTA MERGER ENGINE
 # ---------------------------------------------------------
-storage_key = f"kcfc_team_snapshot_{team_id}"
+current_remote_picks = private_team_data.get("picks") if (auth_diag.get("authenticated") and private_team_data) else None
 
-# Inject JavaScript to read/write localStorage across browser reloads
-ls_component_html = f"""
-<script>
-    const storageKey = "{storageKey}";
-    function getLocalStorage() {{
-        try {{
-            const data = localStorage.getItem(storageKey);
-            return data ? JSON.parse(data) : null;
-        }} catch(e) {{ return null; }}
-    }}
-    function setLocalStorage(snapshot) {{
-        try {{
-            localStorage.setItem(storageKey, JSON.stringify(snapshot));
-        }} catch(e) {{}}
-    }}
-    
-    // Check if Python has a fresh server pull
-    const serverSnapshot = {json.dumps({
-        "picks": private_team_data.get("picks") if (auth_diag.get("authenticated") and private_team_data) else None,
-        "bank": private_team_data.get("entry", {}).get("bank") if (auth_diag.get("authenticated") and private_team_data) else None,
-        "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
-    })};
-    
-    let activeSnap = getLocalStorage();
-    if (serverSnapshot.picks && serverSnapshot.picks.length > 0) {{
-        // Server pull is active, overwrite local storage with latest
-        setLocalStorage(serverSnapshot);
-        activeSnap = serverSnapshot;
-    }}
-    
-    // Communicate back to Streamlit if needed via hidden input or query
-</script>
-"""
-components.html(ls_component_html, height=0)
+if current_remote_picks and st.session_state.get("persisted_team_snapshot") is None:
+    st.session_state["persisted_team_snapshot"] = {
+        "picks": current_remote_picks,
+        "bank": private_team_data.get("entry", {}).get("bank"),
+        "transfers": private_team_data.get("transfers", {})
+    }
+    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
 
-# Python fallback & state merging
-if auth_diag.get("authenticated") and private_team_data and "picks" in private_team_data:
+if st.session_state["persisted_team_snapshot"]:
+    active_picks_source = st.session_state["persisted_team_snapshot"]["picks"]
+    roster_sync_mode = f"PERSISTED SNAPSHOT (GW{upcoming_gw})"
+    roster_mode_cls = "delta-up"
+elif auth_diag.get("authenticated") and private_team_data and "picks" in private_team_data:
     active_picks_source = private_team_data["picks"]
-    persisted_bank = private_team_data.get("entry", {}).get("bank")
     roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw}"
     roster_mode_cls = "delta-up"
-    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
 else:
     raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
-    gw_transfers = [t for t in reversed(transfers_list) if t.get("event"] == upcoming_gw]
+    gw_transfers = [t for t in reversed(transfers_list) if t.get("event") == upcoming_gw]
     for tr in gw_transfers:
         out_el = tr.get("element_out")
         in_el = tr.get("element_in")
@@ -590,7 +567,6 @@ else:
                 pk["element"] = in_el
                 break
     active_picks_source = raw_picks
-    persisted_bank = None
     roster_sync_mode = f"PUBLIC GW{last_active_gw} + ROLL-FORWARD"
     roster_mode_cls = "delta-warn"
 
@@ -666,7 +642,7 @@ if len(curr_hist) >= 2:
     gw_pts = latest_h.get("points", 0)
     overall_rank = latest_h.get("overall_rank", 0)
     rank_delta = prev_h.get("overall_rank", overall_rank) - overall_rank
-    bank_now = (persisted_bank / 10.0) if persisted_bank is not None else (latest_h.get("bank", 0) / 10.0)
+    bank_now = (st.session_state["persisted_team_snapshot"]["bank"] / 10.0) if (st.session_state["persisted_team_snapshot"] and st.session_state["persisted_team_snapshot"].get("bank") is not None) else (latest_h.get("bank", 0) / 10.0)
     bank_delta = (latest_h.get("bank", 0) - prev_h.get("bank", 0)) / 10.0
     val_now = latest_h.get("value", 1000) / 10.0
     val_delta = (latest_h.get("value", 1000) - prev_h.get("value", 1000)) / 10.0
@@ -674,14 +650,14 @@ elif len(curr_hist) == 1:
     latest_h = curr_hist[0]
     total_pts, gw_pts = latest_h.get("total_points", 0), latest_h.get("points", 0)
     overall_rank, rank_delta = latest_h.get("overall_rank", 0), 0
-    bank_now = (persisted_bank / 10.0) if persisted_bank is not None else (latest_h.get("bank", 0) / 10.0)
+    bank_now = (st.session_state["persisted_team_snapshot"]["bank"] / 10.0) if (st.session_state["persisted_team_snapshot"] and st.session_state["persisted_team_snapshot"].get("bank") is not None) else (latest_h.get("bank", 0) / 10.0)
     bank_delta = 0.0
     val_now, val_delta = latest_h.get("value", 1000) / 10.0, 0.0
 else:
     total_pts = entry_data.get("summary_overall_points", 407)
     gw_pts = entry_data.get("summary_event_points", 60)
     overall_rank, rank_delta = entry_data.get("summary_overall_rank", 1219150), 0
-    bank_now = (persisted_bank / 10.0) if persisted_bank is not None else 1.0
+    bank_now = 1.0
     bank_delta = 0.0
     val_now, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
 
@@ -969,7 +945,7 @@ def render_pitch_and_dossier_fragment():
                     st.session_state["vc_override_id"] = sp["id"]
                     st.session_state["persisted_team_snapshot"] = {
                         "picks": [
-                            {"element": x["id"], "position": x["pick_pos"], "is_captain": x.get("is_captain", False), "is_vice_captain": x["id"] == sp["id"]}
+                            {"element": x["id"], "position": x["pick_pos"], "is_captain": x["id"] == sp["id"], "is_vice_captain": x["id"] == sp["id"]}
                             for x in full_squad
                         ],
                         "bank": int(bank_now * 10),
@@ -1769,5 +1745,3 @@ with tab_settings:
                 st.session_state["sync_nonce"] += 1
                 st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
                 st.rerun()
-
-```
