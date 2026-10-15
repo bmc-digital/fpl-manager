@@ -867,6 +867,12 @@ for pk in current_picks_source:
         if safe_get(pk, "is_vice_captain"):
             api_official_vc_name = safe_get(bp, "web_name", "Unknown")
 
+# Global captain / vice-captain name bindings to ensure zero NameError in fragments
+active_cap_obj = next((p for p in starting_xi if safe_get(p, "is_captain", False)), starting_xi[0] if starting_xi else {})
+active_vc_obj = next((p for p in starting_xi if safe_get(p, "is_vice_captain", False)), starting_xi[1] if len(starting_xi) > 1 else {})
+cap_web_name = safe_get(active_cap_obj, "web_name", "N/A")
+vc_web_name = safe_get(active_vc_obj, "web_name", "N/A")
+
 if st.session_state.get("selected_pid") is None and full_squad:
     cap_p = next((x for x in starting_xi if safe_get(x, "is_captain", False)), starting_xi[0])
     st.session_state["selected_pid"] = cap_p["id"]
