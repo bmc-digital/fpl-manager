@@ -1,5 +1,7 @@
-# KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-# Production Mobile-First Architecture | Copy-Paste Safe Single-Line Strings
+"""
+KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
+Production Mobile-First Architecture | Full Tactical Pitch View | Gemini 3.8 Flash Co-Pilot
+"""
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -268,9 +270,6 @@ def fetch_fixtures(nonce=0):
 
 @st.cache_data(ttl=30)
 def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
-    import base64
-    import json
-
     diag = {
         "attempted": False,
         "authenticated": False,
@@ -286,137 +285,95 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
         return None, diag
 
     diag["attempted"] = True
-
-    # Normalize multi-line cURL commands (strip backslash line continuations)
-    normalized_input = re.sub(r"\\\s*\r?\n\s*", " ", raw_input)
-
-    extracted_jwt = ""
-    extracted_cookie = ""
+    session = requests.Session()
+    req_headers = dict(HEADERS)
+    req_headers["Origin"] = "https://fantasy.premierleague.com"
+    req_headers["Referer"] = "https://fantasy.premierleague.com/my-team"
     methods_tried = []
 
-    # 1. Extract from cURL if pasted
-    if normalized_input.startswith("curl "):
-        methods_tried.append("DevTools cURL")
-        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", normalized_input):
-            h_name, h_val = h_match.group(1).strip().lower(), h_match.group(2).strip()
-            if h_name in ("x-api-authorization", "authorization"):
-                extracted_jwt = re.sub(r"^[Bb]earer\s+", "", h_val).strip()
-            elif h_name == "cookie":
-                extracted_cookie = h_val
-        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", normalized_input)
+    def set_bearer(tok_str):
+        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
+        req_headers["Authorization"] = f"Bearer {clean_jwt}"
+        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
+
+    if raw_input.startswith("curl "):
+        methods_tried.append("Parsed DevTools cURL")
+        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
+            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
+            if h_name.lower() in ("x-api-authorization", "authorization"):
+                set_bearer(h_val)
+                methods_tried.append(f"cURL {h_name}")
+            elif h_name.lower() == "cookie":
+                req_headers["Cookie"] = h_val
+        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", raw_input)
         if b_match:
-            extracted_cookie = b_match.group(1).strip()
+            req_headers["Cookie"] = b_match.group(1).strip()
 
-    # 2. Extract any 3-part JWT (eyJ...eyJ...sig) from explicit_token or raw_input
-    for candidate_str in [explicit_token, normalized_input]:
-        if not extracted_jwt and candidate_str:
-            jwt_m = re.search(r"(eyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+)", candidate_str)
-            if jwt_m:
-                extracted_jwt = jwt_m.group(1).strip()
-                methods_tried.append("JWT Bearer Token")
+    if explicit_token:
+        set_bearer(explicit_token)
+        methods_tried.append("Explicit Bearer Token")
 
-    # 3. Extract Cookie string if not a pure JWT
-    if not extracted_cookie and normalized_input and not normalized_input.startswith("curl "):
-        if not normalized_input.startswith("eyJ") and not normalized_input.lower().startswith("bearer "):
-            if "=" in normalized_input:
-                extracted_cookie = normalized_input
-                methods_tried.append("Cookie Header")
-            else:
-                extracted_cookie = f"pl_profile={normalized_input}; access_token={normalized_input}"
-                methods_tried.append("pl_profile Cookie")
+    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
+    if jwt_anywhere:
+        set_bearer(jwt_anywhere.group(1))
+        if "JWT" not in " ".join(methods_tried):
+            methods_tried.append("Auto-Extracted JWT Bearer")
 
-    # Check JWT expiration timestamp (exp claim) before calling API
-    jwt_expiry_note = ""
-    if extracted_jwt:
+    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
+        if "x-api-authorization:" in raw_input.lower():
+            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
+            set_bearer(val_after)
+            methods_tried.append("x-api-authorization Header")
+        elif "=" in raw_input:
+            req_headers["Cookie"] = raw_input
+            for part in raw_input.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
+            methods_tried.append("Browser Cookie Jar")
+        else:
+            clean_val = raw_input.strip('"').strip("'")
+            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
+            set_bearer(clean_val)
+            methods_tried.append("Dual Token/Cookie Fallback")
+
+    if fpl_email and fpl_password and not methods_tried:
         try:
-            payload_b64 = extracted_jwt.split(".")[1]
-            payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
-            jwt_payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
-            exp_ts = jwt_payload.get("exp")
-            if exp_ts:
-                now_ts = datetime.now(timezone.utc).timestamp()
-                if now_ts > exp_ts:
-                    mins_ago = int((now_ts - exp_ts) // 60)
-                    jwt_expiry_note = f" (Token expired {mins_ago} mins ago — grab a fresh token from an active FPL tab)."
-                else:
-                    mins_left = int((exp_ts - now_ts) // 60)
-                    jwt_expiry_note = f" (Token valid for {mins_left} more mins — verify Team ID {tid} belongs to this FPL account)."
-        except Exception:
-            pass
-
-    url = f"https://fantasy.premierleague.com/api/my-team/{tid}/"
-    base_headers = {
-        "User-Agent": HEADERS["User-Agent"],
-        "Accept": "application/json, text/plain, */*",
-        "Origin": "https://fantasy.premierleague.com",
-        "Referer": "https://fantasy.premierleague.com/my-team",
-    }
-
-    # Build ordered header attempts so conflicting headers never cause a false 401
-    header_attempts = []
-    if extracted_jwt:
-        h1 = dict(base_headers)
-        h1["x-api-authorization"] = f"Bearer {extracted_jwt}"
-        if extracted_cookie:
-            h1["Cookie"] = extracted_cookie
-        header_attempts.append(("x-api-authorization Bearer", h1))
-
-        h2 = dict(base_headers)
-        h2["Authorization"] = f"Bearer {extracted_jwt}"
-        if extracted_cookie:
-            h2["Cookie"] = extracted_cookie
-        header_attempts.append(("Authorization Bearer", h2))
-
-    if extracted_cookie:
-        h3 = dict(base_headers)
-        h3["Cookie"] = extracted_cookie
-        header_attempts.append(("Browser Cookie", h3))
-
-    last_status = None
-    for label, hdrs in header_attempts:
-        try:
-            r = requests.get(url, headers=hdrs, timeout=8)
-            last_status = r.status_code
-            if r.status_code == 200:
-                data = r.json()
-                if "picks" in data:
-                    diag["status_code"] = 200
-                    diag["authenticated"] = True
-                    diag["method_used"] = label
-                    diag["message"] = f"200 OK — Live GW squad & captaincy synced via {label}.{jwt_expiry_note}"
-                    return data, diag
-        except Exception as e:
-            diag["message"] = f"Request error: {e}"
-
-    # 4. Fallback: Direct FPL Email & Password Login Session
-    if fpl_email and fpl_password:
-        try:
-            s = requests.Session()
-            login_hdrs = dict(base_headers)
-            login_payload = {
+            login_url = "https://users.premierleague.com/accounts/login/"
+            payload = {
                 "login": fpl_email.strip(),
                 "password": fpl_password,
                 "app": "plfpl-web",
                 "redirect_uri": "https://fantasy.premierleague.com/a/login"
             }
-            s.post("https://users.premierleague.com/accounts/login/", data=login_payload, headers=login_hdrs, timeout=10)
-            r = s.get(url, headers=base_headers, timeout=8)
-            last_status = r.status_code
-            if r.status_code == 200 and "picks" in r.json():
-                diag["status_code"] = 200
-                diag["authenticated"] = True
-                diag["method_used"] = "FPL Email/Password Session"
-                diag["message"] = "200 OK — Live squad & captaincy synced via FPL Email/Password."
-                return r.json(), diag
-        except Exception:
-            pass
+            session.post(login_url, data=payload, headers=req_headers, timeout=10)
+            methods_tried.append("FPL Credentials Login")
+        except Exception as e:
+            diag["message"] = f"Login error: {e}"
 
-    diag["status_code"] = last_status
     diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
-    diag["message"] = (
-        f"HTTP {last_status or 401}{jwt_expiry_note} "
-        f"Make sure Team ID ({tid}) matches the logged-in FPL account, or refresh fantasy.premierleague.com/my-team in Chrome and copy the latest 'x-api-authorization' header."
-    )
+
+    try:
+        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
+        r = session.get(url, headers=req_headers, timeout=8)
+        diag["status_code"] = r.status_code
+        if r.status_code == 200:
+            data = r.json()
+            if "picks" in data:
+                diag["authenticated"] = True
+                diag["message"] = f"200 OK — Live pre-deadline squad & captaincy synced ({diag['method_used']})."
+                return data, diag
+        elif r.status_code in (401, 403):
+            has_jwt = "Authorization" in req_headers
+            diag["message"] = (
+                f"HTTP {r.status_code}: {'Your Bearer JWT token has expired.' if has_jwt else 'No JWT Bearer token found in your cookie string.'} "
+                f"In Chrome DevTools -> Network -> click '{tid}/' (under my-team) -> right-click -> Copy -> Copy as cURL, and paste that into Settings."
+            )
+        else:
+            diag["message"] = f"HTTP {r.status_code} returned from /api/my-team/{tid}/."
+    except Exception as e:
+        diag["message"] = f"Request exception: {e}"
+
     return None, diag
 
 @st.cache_data(ttl=60)
@@ -982,7 +939,7 @@ def render_pitch_and_dossier_fragment():
             )
             if chosen_pid != sel_pid:
                 st.session_state["selected_pid"] = chosen_pid
-                st.rerun(scope="fragment")
+                st.rerun()
 
         sp = next((x for x in full_squad if x["id"] == st.session_state.get("selected_pid")), full_squad[0] if full_squad else None)
         if sp:
@@ -1394,7 +1351,6 @@ with tab_league:
 # =========================================================
 @st.cache_data(ttl=3600)
 def discover_available_gemini_models(api_key: str):
-    """Queries the key's enabled models so we never hit a 404 model name mismatch."""
     preferred = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
     try:
         r = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=8)
@@ -1408,7 +1364,6 @@ def discover_available_gemini_models(api_key: str):
                 and "vision" not in m.get("name", "")
                 and "embedding" not in m.get("name", "")
             ]
-            # Sort so flash/pro models come first
             flash_first = [m for m in supported if "flash" in m] + [m for m in supported if "pro" in m]
             if flash_first:
                 return flash_first[:4]
@@ -1495,7 +1450,7 @@ with tab_ai:
             if cnt >= 2 and pid not in squad_ids and pid in elements_map
         ]
 
-        prompt_parts = [
+        prompt_lines = [
             "You are Gemini, the Elite FPL Tactical Co-Pilot and Coach for Barney's team, Kings County FC.",
             "Your goal is to have a natural, insightful, analytical conversation that directly answers whatever the user asks AND teaches them the underlying FPL strategy and rationale so they become a sharper manager.",
             "",
@@ -1522,7 +1477,7 @@ with tab_ai:
             "TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):",
             "\n".join(market_lines),
         ]
-        return "\n".join(prompt_parts)
+        return "\n".join(prompt_lines)
 
     def call_gemini_conversational_advisor(user_prompt: str) -> str:
         active_key = (
