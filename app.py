@@ -26,8 +26,10 @@ st.set_page_config(
 
 NY_TZ = ZoneInfo("America/New_York")
 
+
 def now_ny_str() -> str:
     return datetime.now(NY_TZ).strftime("%b %d, %I:%M:%S %p EDT")
+
 
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
 default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1575281))
@@ -61,9 +63,11 @@ q_pid = st.query_params.get("pid")
 if q_pid and str(q_pid).isdigit():
     st.session_state["selected_pid"] = int(q_pid)
 
+
 def render_html(html_str: str):
     cleaned = "\n".join(line.lstrip() for line in html_str.splitlines() if line.strip())
     st.markdown(cleaned, unsafe_allow_html=True)
+
 
 # ---------------------------------------------------------
 # 2. SERVER-SIDE PERSISTENT SNAPSHOT VAULT (SURVIVES TAB CLOSURES)
@@ -73,8 +77,10 @@ def get_server_snapshot_vault() -> dict:
     """In-memory cross-session vault that persists across browser tabs and reconnects."""
     return {}
 
+
 def get_snapshot_filepath(tid: int) -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), f".kcfc_snapshot_{tid}.json")
+
 
 def save_team_snapshot(tid: int, snapshot_dict: dict):
     """Saves the latest team pull to Session State, Server Memory, and Local Disk."""
@@ -89,6 +95,7 @@ def save_team_snapshot(tid: int, snapshot_dict: dict):
             json.dump(snapshot_dict, f, indent=2)
     except Exception:
         pass
+
 
 def load_team_snapshot(tid: int):
     """Loads the latest saved team snapshot from Session State, Server Memory, or Disk."""
@@ -114,6 +121,7 @@ def load_team_snapshot(tid: int):
             pass
     return None
 
+
 def clear_team_snapshot(tid: int):
     """Explicitly wipes the saved snapshot only when the user requests a full reset."""
     st.session_state["persisted_team_snapshot"] = None
@@ -125,6 +133,7 @@ def clear_team_snapshot(tid: int):
             os.remove(fpath)
         except Exception:
             pass
+
 
 # ---------------------------------------------------------
 # 3. PARENT-DOM CROWN REMOVER + MOBILE-FIRST CSS DESIGN SYSTEM
@@ -290,6 +299,7 @@ CLUB_PALETTES = {
     "DEFAULT": {"p": "#1E293B", "s": "#00FF85"}
 }
 
+
 def generate_svg_kit(team_short: str, is_gk: bool = False) -> str:
     colors = CLUB_PALETTES.get(str(team_short).upper(), CLUB_PALETTES["DEFAULT"])
     p_col = "#10B981" if is_gk else colors["p"]
@@ -303,12 +313,14 @@ def generate_svg_kit(team_short: str, is_gk: bool = False) -> str:
     )
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
 
+
 def build_avatar_bg_style(p: dict) -> str:
     raw_code = str(p.get("code") or str(p.get("photo", "")).split(".")[0]).lstrip("p").strip()
     url_25 = f"https://resources.premierleague.com/premierleague25/photos/players/110x140/{raw_code}.png"
     url_legacy = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{raw_code}.png"
     fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type") == 1))
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
+
 
 # ---------------------------------------------------------
 # 5. UNIVERSAL FPL API ENGINE
@@ -320,6 +332,7 @@ HEADERS = {
     "Pragma": "no-cache"
 }
 
+
 @st.cache_data(ttl=180)
 def fetch_bootstrap(nonce: int = 0):
     try:
@@ -330,6 +343,7 @@ def fetch_bootstrap(nonce: int = 0):
         pass
     return None
 
+
 @st.cache_data(ttl=180)
 def fetch_fixtures(nonce: int = 0):
     try:
@@ -339,6 +353,7 @@ def fetch_fixtures(nonce: int = 0):
     except Exception:
         pass
     return []
+
 
 @st.cache_data(ttl=30)
 def fetch_private_my_team(tid: int, raw_cookie_or_token: str = "", fpl_token: str = "", fpl_email: str = "", fpl_password: str = "", nonce: int = 0):
@@ -427,6 +442,7 @@ def fetch_private_my_team(tid: int, raw_cookie_or_token: str = "", fpl_token: st
 
     return None, diag
 
+
 @st.cache_data(ttl=60)
 def fetch_manager_full(tid: int, nonce: int = 0):
     try:
@@ -443,6 +459,7 @@ def fetch_manager_full(tid: int, nonce: int = 0):
     except Exception:
         return {}, {}, [], {}, 6
 
+
 @st.cache_data(ttl=300)
 def fetch_event_live(gw: int, nonce: int = 0):
     try:
@@ -452,6 +469,7 @@ def fetch_event_live(gw: int, nonce: int = 0):
     except Exception:
         pass
     return None
+
 
 @st.cache_data(ttl=120)
 def fetch_league_standings(league_id: int, nonce: int = 0):
@@ -463,6 +481,7 @@ def fetch_league_standings(league_id: int, nonce: int = 0):
         pass
     return None
 
+
 @st.cache_data(ttl=120)
 def fetch_rival_picks(rival_tid: int, gw: int, nonce: int = 0):
     try:
@@ -472,6 +491,7 @@ def fetch_rival_picks(rival_tid: int, gw: int, nonce: int = 0):
     except Exception:
         pass
     return None
+
 
 sync_nonce = int(st.session_state.get("sync_nonce", 0))
 bootstrap = fetch_bootstrap(sync_nonce) or {"elements": [], "teams": [], "events": []}
@@ -567,6 +587,7 @@ for tr in transfers_list:
     if el_in and cost_in:
         purchase_price_map[el_in] = cost_in
 
+
 def estimate_selling_price(p: dict) -> float:
     pid = p.get("id")
     now_c = p.get("now_cost", 50)
@@ -578,6 +599,7 @@ def estimate_selling_price(p: dict) -> float:
         profit = (now_c - buy_c) // 2
         return (buy_c + profit) / 10.0
     return now_c / 10.0
+
 
 def compute_player_xp(p: dict):
     form = float(p.get("form") or 0.0)
@@ -593,6 +615,7 @@ def compute_player_xp(p: dict):
     xp_next = round(((form * w_form) + (xgi_per_90 * w_xgi) + 1.8) * fdr_mult * chance, 1)
     xp_5gw = round(xp_next * 4.6 * (3.0 / max(avg_5_fdr, 1.5)), 1)
     return xp_next, xp_5gw, next_fdr, round(avg_5_fdr, 2)
+
 
 for pid, p_obj in elements_map.items():
     xp_1, xp_5, nfdr, afdr = compute_player_xp(p_obj)
@@ -655,12 +678,10 @@ else:
     val_public, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
 
 # ---------------------------------------------------------
-# 9. PERSISTENT SNAPSHOT & SMART GW DELTA MERGER ENGINE (US-01 to US-04)
+# 9. PERSISTENT SNAPSHOT & SMART GW DELTA MERGER ENGINE
 # ---------------------------------------------------------
-# 1. If we just got a fresh authenticated pull from /api/my-team/{tid}/, extract exact picks, bank, and FTs & persist!
 if auth_diag.get("authenticated") and isinstance(private_team_data, dict) and private_team_data.get("picks"):
     tr_meta = private_team_data.get("transfers", {}) or {}
-    # FPL /api/my-team/ stores bank (in tenths) and transfer limit/made inside "transfers"
     raw_priv_bank = tr_meta.get("bank")
     priv_bank_m = (raw_priv_bank / 10.0) if (raw_priv_bank is not None) else bank_public
 
@@ -671,7 +692,7 @@ if auth_diag.get("authenticated") and isinstance(private_team_data, dict) and pr
     else:
         priv_ft_rem = ft_remaining_public
 
-     raw_priv_val = tr_meta.get("value")
+    raw_priv_val = tr_meta.get("value")
     priv_val_m = (raw_priv_val / 10.0) if (raw_priv_val is not None and raw_priv_val > 0) else val_public
 
     fresh_snapshot = {
@@ -687,12 +708,8 @@ if auth_diag.get("authenticated") and isinstance(private_team_data, dict) and pr
     }
     save_team_snapshot(team_id, fresh_snapshot)
 
-# 2. Load the most recent persisted snapshot (from Session, Server Memory, or Disk)
 saved_snapshot = load_team_snapshot(team_id)
 
-# 3. Compare Saved Snapshot vs Public GW6 Data:
-#    If public API is still on GW6 (last_active_gw < upcoming_gw) and we have a saved snapshot for GW7+,
-#    use the saved snapshot so the app NEVER reverts to stale GW6 data!
 use_saved_snapshot = False
 if isinstance(saved_snapshot, dict) and saved_snapshot.get("picks"):
     snap_gw = int(saved_snapshot.get("target_gw", upcoming_gw))
@@ -801,31 +818,32 @@ target_league_name = "Global Overall"
 
 if classic_leagues:
     lg_ids = [lg["id"] for lg in classic_leagues if "id" in lg]
-    q_lg = st.query_params.get("lg_id")
-    saved_lg_id = st.session_state.get("target_lg_id") or (int(q_lg) if (q_lg and str(q_lg).isdigit()) else lg_ids[0])
-    if saved_lg_id not in lg_ids:
-        saved_lg_id = lg_ids[0]
-    st.session_state["target_lg_id"] = saved_lg_id
-    target_league_name = next((lg.get("name", "Mini-League") for lg in classic_leagues if lg.get("id") == saved_lg_id), "Mini-League")
+    if lg_ids:
+        q_lg = st.query_params.get("lg_id")
+        saved_lg_id = st.session_state.get("target_lg_id") or (int(q_lg) if (q_lg and str(q_lg).isdigit()) else lg_ids[0])
+        if saved_lg_id not in lg_ids:
+            saved_lg_id = lg_ids[0]
+        st.session_state["target_lg_id"] = saved_lg_id
+        target_league_name = next((lg.get("name", "Mini-League") for lg in classic_leagues if lg.get("id") == saved_lg_id), "Mini-League")
 
-    st_json = fetch_league_standings(saved_lg_id, sync_nonce)
-    if st_json:
-        target_league_standings = st_json.get("standings", {}).get("results", [])
-        if target_league_standings:
-            leader_total = target_league_standings[0].get("total", 0)
-            my_entry_row = next((r for r in target_league_standings if r.get("entry") == team_id), None)
-            my_league_pts = my_entry_row.get("total", total_pts) if my_entry_row else total_pts
-            gap_to_leader = leader_total - my_league_pts
+        st_json = fetch_league_standings(saved_lg_id, sync_nonce)
+        if st_json:
+            target_league_standings = st_json.get("standings", {}).get("results", [])
+            if target_league_standings:
+                leader_total = target_league_standings[0].get("total", 0)
+                my_entry_row = next((r for r in target_league_standings if r.get("entry") == team_id), None)
+                my_league_pts = my_entry_row.get("total", total_pts) if my_entry_row else total_pts
+                gap_to_leader = leader_total - my_league_pts
 
-            top_rivals = [r for r in target_league_standings[:4] if r.get("entry") != team_id][:3]
-            for rv in top_rivals:
-                rv_picks = fetch_rival_picks(rv.get("entry"), last_active_gw, sync_nonce)
-                if rv_picks and "picks" in rv_picks:
-                    for pk in rv_picks["picks"]:
-                        if pk.get("position", 1) <= 11:
-                            el_id = pk.get("element")
-                            rival_ownership_set.add(el_id)
-                            rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
+                top_rivals = [r for r in target_league_standings[:4] if r.get("entry") != team_id][:3]
+                for rv in top_rivals:
+                    rv_picks = fetch_rival_picks(rv.get("entry"), last_active_gw, sync_nonce)
+                    if rv_picks and "picks" in rv_picks:
+                        for pk in rv_picks["picks"]:
+                            if pk.get("position", 1) <= 11:
+                                el_id = pk.get("element")
+                                rival_ownership_set.add(el_id)
+                                rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
 
 # ---------------------------------------------------------
 # 10. RENDER CLEAN TOP AREA: HERO BANNER + TEAM LAST UPDATED BAR + 6 KPI TILES
@@ -957,12 +975,14 @@ tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
     "Settings"
 ])
 
+
 def build_pitch_node_html(p: dict, is_selected: bool = False, bench_slot=None) -> str:
     pid = p.get("id")
     bg_style = build_avatar_bg_style(p)
 
     cap_badge = "<div class='badge-cap'>C</div>" if p.get("is_captain") else (
-                "<div class='badge-vc'>V</div>" if p.get("is_vice_captain") else "")
+        "<div class='badge-vc'>V</div>" if p.get("is_vice_captain") else ""
+    )
 
     chance = p.get("chance_of_playing_next_round")
     flag_badge = ""
@@ -994,6 +1014,7 @@ def build_pitch_node_html(p: dict, is_selected: bool = False, bench_slot=None) -
         f"</div></a>"
     )
 
+
 # =========================================================
 # TAB 1: FULL TACTICAL PITCH VIEW, DOSSIER & GW DEBRIEF
 # =========================================================
@@ -1024,7 +1045,7 @@ def render_pitch_and_dossier_fragment():
         )
 
         bench_html = "".join(
-            build_pitch_node_html(p, p.get("id") == sel_pid, bench_slot=i+1)
+            build_pitch_node_html(p, p.get("id") == sel_pid, bench_slot=i + 1)
             for i, p in enumerate(bench_sorted)
         )
         render_html(
@@ -1043,7 +1064,7 @@ def render_pitch_and_dossier_fragment():
         }
         if squad_options:
             opt_keys = list(squad_options.keys())
-             chosen_pid = st.selectbox(
+            chosen_pid = st.selectbox(
                 "Quick-Switch Player Dossier (Instant Zero-Refresh):",
                 options=opt_keys,
                 format_func=lambda x: squad_options.get(x, ""),
@@ -1169,6 +1190,7 @@ def render_pitch_and_dossier_fragment():
                 f"<div style='font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin:12px 0 8px 0;'>Upcoming 5-GW Runway (Avg FDR: {sp.get('avg_5_fdr')})</div>"
                 f"<div class='runway-grid-5'>{runway_chips}</div></div>"
             )
+
 
 with tab_pitch:
     render_pitch_and_dossier_fragment()
@@ -1564,6 +1586,7 @@ def discover_available_gemini_models(api_key: str):
         pass
     return preferred
 
+
 with tab_ai:
     active_gemini_key = (
         st.session_state.get("custom_gemini_key")
@@ -1633,7 +1656,7 @@ with tab_ai:
             nxt_m = p["runway"][0] if p.get("runway") else {"opp": "TBD", "venue": "H"}
             market_lines.append(
                 f"- {p.get('web_name')} ({p.get('team_short')}, {pos_lbl_map.get(p.get('element_type'))}, £{p.get('now_cost', 50)/10:.1f}m): "
-                f"GW{upcoming_gw} xP {p.get('xp_next')} | 5-GW xP {p.get('xp_5gw')} | Form {p.get('form')} | xGI {p.get('expected_goal_involvements')} | "
+                f"GW{upcoming_gw} xP {p.get('xp_next')} | 5-GW xP {p.get('xp_5gw']} | Form {p.get('form')} | xGI {p.get('expected_goal_involvements')} | "
                 f"Next: {nxt_m.get('opp')}({nxt_m.get('venue')})"
             )
 
