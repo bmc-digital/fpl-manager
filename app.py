@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Private /my-team/ Live Sync + Transfer Roll-Forward
+Production Mobile-First Architecture | Smart Multi-Auth /my-team/ Sync | Dedicated Settings & Validator Tab
 """
 
 import streamlit as st
@@ -140,7 +140,7 @@ iframe[height="0"] {
   border: 1px solid rgba(0, 255, 133, 0.35);
   border-radius: 22px;
   padding: 20px 22px 16px 22px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -687,7 +687,7 @@ div.stButton > button:hover {
 """)
 
 # ---------------------------------------------------------
-# 3. AUTHENTICATION, SYNC TIMESTAMP & URL PARAM MANAGEMENT
+# 3. AUTHENTICATION, SYNC TIMESTAMP & CLEAN STATE MANAGEMENT
 # ---------------------------------------------------------
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
 default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1153921))
@@ -705,13 +705,12 @@ if "sync_nonce" not in st.session_state:
 if "last_synced_str" not in st.session_state:
     st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
 
+# Captain overrides live ONLY in session_state (never polluted by URL query params)
 if "cap_override_id" not in st.session_state:
-    q_cap = st.query_params.get("cap_id")
-    st.session_state["cap_override_id"] = int(q_cap) if q_cap and str(q_cap).isdigit() else None
+    st.session_state["cap_override_id"] = None
 
 if "vc_override_id" not in st.session_state:
-    q_vc = st.query_params.get("vc_id")
-    st.session_state["vc_override_id"] = int(q_vc) if q_vc and str(q_vc).isdigit() else None
+    st.session_state["vc_override_id"] = None
 
 q_pid = st.query_params.get("pid")
 if q_pid and str(q_pid).isdigit():
@@ -787,10 +786,11 @@ def generate_svg_kit(team_short, is_gk=False):
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
 
 # ---------------------------------------------------------
-# 5. DUAL-MODE FPL API ENGINE (AUTHENTICATED /my-team/ + PUBLIC ROLL-FORWARD)
+# 5. SMART MULTI-PROTOCOL FPL API ENGINE + DIAGNOSTIC VALIDATOR
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
     "Cache-Control": "no-cache, no-store, must-revalidate",
     "Pragma": "no-cache"
 }
@@ -816,31 +816,77 @@ def fetch_fixtures(nonce=0):
     return []
 
 @st.cache_data(ttl=30)
-def fetch_private_my_team(tid, fpl_cookie="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
+def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
     """
-    Queries the private authenticated endpoint `/api/my-team/{team_id}/`
-    which returns the REAL-TIME pre-deadline roster, current captaincy,
-    exact selling prices, bank balance, and remaining free transfers.
+    Smart Multi-Protocol Authenticator for `/api/my-team/{team_id}/`.
+    Automatically detects whether the user provided:
+      - A raw JWT Bearer token (`eyJ...` or `Bearer eyJ...`)
+      - A full browser Cookie header (`pl_profile=...; access_token=...`)
+      - A single `pl_profile` value
+      - Direct FPL Email + Password credentials
+    Returns `(data_dict_or_None, diagnostic_dict)`.
     """
+    diag = {
+        "attempted": False,
+        "authenticated": False,
+        "status_code": None,
+        "method_used": "None",
+        "message": "No private FPL credentials configured."
+    }
+
+    combined_secret = (raw_cookie_or_token or "").strip()
+    explicit_token = (fpl_token or "").strip()
+
+    if not any([combined_secret, explicit_token, (fpl_email and fpl_password)]):
+        return None, diag
+
+    diag["attempted"] = True
     session = requests.Session()
     req_headers = dict(HEADERS)
+    methods_tried = []
 
-    # 1. Bearer Token / x-api-authorization support
-    if fpl_token:
-        clean_tok = fpl_token.replace("Bearer ", "").strip()
-        req_headers["Authorization"] = f"Bearer {clean_tok}"
-        req_headers["x-api-authorization"] = f"Bearer {clean_tok}"
+    # Helper to attach JWT Bearer headers in both formats FPL uses
+    def attach_jwt_headers(jwt_str):
+        clean_jwt = jwt_str.replace("Bearer ", "").strip().strip('"').strip("'")
+        req_headers["Authorization"] = f"Bearer {clean_jwt}"
+        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
 
-    # 2. Raw Cookie string or pl_profile value support
-    if fpl_cookie:
-        clean_cookie = fpl_cookie.strip()
-        if "=" in clean_cookie:
-            req_headers["Cookie"] = clean_cookie
+    # 1. Check explicit token
+    if explicit_token:
+        attach_jwt_headers(explicit_token)
+        methods_tried.append("Bearer Token")
+
+    # 2. Smart-parse `FPL_COOKIE` (handles JWT, full Cookie string, or raw pl_profile value)
+    if combined_secret:
+        # Case A: User pasted a Bearer token or raw JWT (`eyJ...`) into FPL_COOKIE
+        if combined_secret.startswith("Bearer ") or combined_secret.startswith("eyJ"):
+            attach_jwt_headers(combined_secret)
+            session.cookies.set("access_token", combined_secret.replace("Bearer ", "").strip(), domain=".premierleague.com")
+            session.cookies.set("pl_profile", combined_secret.replace("Bearer ", "").strip(), domain=".premierleague.com")
+            methods_tried.append("Auto-Detected JWT in FPL_COOKIE")
         else:
-            req_headers["Cookie"] = f"pl_profile={clean_cookie}"
+            # Case B: Look for embedded JWT inside a full cookie string (e.g. access_token=eyJ...)
+            jwt_match = re.search(r"(?:access_token|pl_profile|token)=([A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+)", combined_secret)
+            if jwt_match:
+                attach_jwt_headers(jwt_match.group(1))
+                methods_tried.append("Extracted JWT from Cookie String")
 
-    # 3. Direct FPL Email & Password Login Session
-    if not fpl_cookie and not fpl_token and fpl_email and fpl_password:
+            # Also attach full cookie header and populate session cookie jar
+            if "=" in combined_secret:
+                req_headers["Cookie"] = combined_secret
+                for part in combined_secret.split(";"):
+                    if "=" in part:
+                        k, v = part.strip().split("=", 1)
+                        session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
+                methods_tried.append("Full Browser Cookie Header")
+            else:
+                clean_val = combined_secret.strip('"').strip("'")
+                req_headers["Cookie"] = f'pl_profile="{clean_val}"'
+                session.cookies.set("pl_profile", clean_val, domain=".premierleague.com")
+                methods_tried.append("pl_profile Cookie")
+
+    # 3. Direct FPL Email & Password Login Session fallback
+    if fpl_email and fpl_password and not combined_secret and not explicit_token:
         try:
             login_url = "https://users.premierleague.com/accounts/login/"
             payload = {
@@ -853,18 +899,35 @@ def fetch_private_my_team(tid, fpl_cookie="", fpl_token="", fpl_email="", fpl_pa
             login_headers["Origin"] = "https://fantasy.premierleague.com"
             login_headers["Referer"] = "https://fantasy.premierleague.com/"
             session.post(login_url, data=payload, headers=login_headers, timeout=10)
-        except Exception:
-            pass
+            methods_tried.append("FPL Email/Password Login")
+        except Exception as e:
+            diag["message"] = f"Login POST error: {e}"
+
+    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "Custom"
 
     try:
-        r = session.get(f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}", headers=req_headers, timeout=8)
+        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
+        r = session.get(url, headers=req_headers, timeout=8)
+        diag["status_code"] = r.status_code
         if r.status_code == 200:
             data = r.json()
             if "picks" in data:
-                return data
-    except Exception:
-        pass
-    return None
+                diag["authenticated"] = True
+                diag["message"] = f"200 OK — Live pre-deadline squad & captaincy synced via {diag['method_used']}."
+                return data, diag
+            else:
+                diag["message"] = "200 OK returned, but 'picks' key missing from response."
+        elif r.status_code in (401, 403):
+            diag["message"] = (
+                f"HTTP {r.status_code} (Unauthorized/Expired). FPL now uses the 'x-api-authorization' Bearer token "
+                f"(or full Cookie header) on /api/my-team/. Copy the 'x-api-authorization' header from DevTools -> Network -> my-team."
+            )
+        else:
+            diag["message"] = f"HTTP {r.status_code} returned from /api/my-team/{tid}/."
+    except Exception as e:
+        diag["message"] = f"Request exception: {e}"
+
+    return None, diag
 
 @st.cache_data(ttl=60)
 def fetch_manager_full(tid, nonce=0):
@@ -919,21 +982,24 @@ team_id = st.session_state.get("team_id", default_team_id)
 entry_data, history_data, transfers_list, public_picks_data, last_active_gw = fetch_manager_full(team_id, sync_nonce)
 
 # Check for Private FPL Auth Credentials (Secrets or Session State)
-fpl_cookie_val = st.session_state.get("custom_fpl_cookie") or st.secrets.get("FPL_COOKIE", "")
+# Also checks `FLP_COOKIE` in case of a typo in Streamlit Secrets
+fpl_cookie_val = (
+    st.session_state.get("custom_fpl_cookie")
+    or st.secrets.get("FPL_COOKIE", "")
+    or st.secrets.get("FLP_COOKIE", "")
+)
 fpl_token_val = st.session_state.get("custom_fpl_token") or st.secrets.get("FPL_BEARER_TOKEN", "")
 fpl_email_val = st.session_state.get("custom_fpl_email") or st.secrets.get("FPL_EMAIL", "")
 fpl_pass_val = st.session_state.get("custom_fpl_password") or st.secrets.get("FPL_PASSWORD", "")
 
-private_team_data = None
-if any([fpl_cookie_val, fpl_token_val, (fpl_email_val and fpl_pass_val)]):
-    private_team_data = fetch_private_my_team(
-        team_id,
-        fpl_cookie=fpl_cookie_val,
-        fpl_token=fpl_token_val,
-        fpl_email=fpl_email_val,
-        fpl_password=fpl_pass_val,
-        nonce=sync_nonce
-    )
+private_team_data, auth_diag = fetch_private_my_team(
+    team_id,
+    raw_cookie_or_token=fpl_cookie_val,
+    fpl_token=fpl_token_val,
+    fpl_email=fpl_email_val,
+    fpl_password=fpl_pass_val,
+    nonce=sync_nonce
+)
 
 elements_map = {p["id"]: p for p in bootstrap.get("elements", [])}
 teams_map = {t["id"]: t for t in bootstrap.get("teams", [])}
@@ -1052,13 +1118,11 @@ starting_xi, bench_xi = [], []
 cap_override = st.session_state.get("cap_override_id")
 vc_override = st.session_state.get("vc_override_id")
 
-# Determine whether we have live private `/my-team/` picks or public picks + transfer roll-forward
 if private_team_data and "picks" in private_team_data:
     active_picks_source = private_team_data["picks"]
     roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw} ROSTER"
     roster_mode_cls = "delta-up"
 else:
-    # Roll forward any public transfers made for upcoming_gw onto the last locked squad
     raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
     gw_transfers = [t for t in reversed(transfers_list) if t.get("event") == upcoming_gw]
     for tr in gw_transfers:
@@ -1072,13 +1136,20 @@ else:
     roster_sync_mode = f"PUBLIC GW{last_active_gw} + GW{upcoming_gw} TRANSFERS"
     roster_mode_cls = "delta-warn"
 
+api_official_cap_name = "Unknown"
+api_official_vc_name = "Unknown"
+
 for pk in active_picks_source:
     base_p = elements_map.get(pk["element"])
     if base_p:
         p_copy = dict(base_p)
         pid = p_copy["id"]
 
-        # Exact selling price straight from private endpoint if available
+        if pk.get("is_captain"):
+            api_official_cap_name = p_copy.get("web_name", "Unknown")
+        if pk.get("is_vice_captain"):
+            api_official_vc_name = p_copy.get("web_name", "Unknown")
+
         if "selling_price" in pk:
             p_copy["selling_price"] = pk["selling_price"] / 10.0
             elements_map[pid]["selling_price"] = p_copy["selling_price"]
@@ -1105,7 +1176,7 @@ if "selected_pid" not in st.session_state and full_squad:
     st.session_state["selected_pid"] = cap_p["id"]
 
 # ---------------------------------------------------------
-# 9. CALCULATE FREE TRANSFERS, BANK & HISTORICAL KPI DELTAS
+# 9. CALCULATE FREE TRANSFERS, BANK & MINI-LEAGUE TELEMETRY
 # ---------------------------------------------------------
 curr_hist = history_data.get("current", [])
 chips_used = {c.get("event"): c.get("name") for c in history_data.get("chips", [])}
@@ -1151,7 +1222,6 @@ else:
     bank_now, bank_delta = (entry_data.get("last_deadline_bank", 1) or 1) / 10.0, 0.0
     val_now, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
 
-# Override Bank, Squad Value & Free Transfers with exact live `/my-team/` data if authenticated
 if private_team_data and "transfers" in private_team_data:
     tr_meta = private_team_data["transfers"]
     if tr_meta.get("bank") is not None:
@@ -1174,8 +1244,49 @@ else:
     ft_rec_text = "HOLD / ROLL FT"
     ft_rec_cls = "delta-warn"
 
+# Load Target Mini-League Data Silently in Background (Configured in Settings Tab)
+classic_leagues = [
+    lg for lg in entry_data.get("leagues", {}).get("classic", [])
+    if lg.get("league_type") == "x" or lg.get("id", 0) > 350
+]
+if not classic_leagues:
+    classic_leagues = entry_data.get("leagues", {}).get("classic", [])
+
+target_league_standings = []
+rival_threat_players = {}
+rival_ownership_set = set()
+gap_to_leader = 0
+target_league_name = "Global Overall"
+
+if classic_leagues:
+    lg_ids = [lg["id"] for lg in classic_leagues]
+    saved_lg_id = st.session_state.get("target_lg_id") or int(st.query_params.get("lg_id", lg_ids[0]))
+    if saved_lg_id not in lg_ids:
+        saved_lg_id = lg_ids[0]
+    st.session_state["target_lg_id"] = saved_lg_id
+    target_league_name = next((lg["name"] for lg in classic_leagues if lg["id"] == saved_lg_id), "Mini-League")
+
+    st_json = fetch_league_standings(saved_lg_id, sync_nonce)
+    if st_json:
+        target_league_standings = st_json.get("standings", {}).get("results", [])
+        if target_league_standings:
+            leader_total = target_league_standings[0]["total"]
+            my_entry_row = next((r for r in target_league_standings if r["entry"] == team_id), None)
+            my_league_pts = my_entry_row["total"] if my_entry_row else total_pts
+            gap_to_leader = leader_total - my_league_pts
+
+            top_rivals = [r for r in target_league_standings[:4] if r["entry"] != team_id][:3]
+            for rv in top_rivals:
+                rv_picks = fetch_rival_picks(rv["entry"], last_active_gw, sync_nonce)
+                if rv_picks and "picks" in rv_picks:
+                    for pk in rv_picks["picks"]:
+                        if pk.get("position", 1) <= 11:
+                            el_id = pk["element"]
+                            rival_ownership_set.add(el_id)
+                            rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
+
 # ---------------------------------------------------------
-# 10. RENDER BALANCED HERO HEADER + CLICKABLE SYNC REFRESH BAR
+# 10. RENDER CLEAN TOP AREA: HERO BANNER + 1-LINE SYNC BAR + 6 KPI TILES
 # ---------------------------------------------------------
 pl_vector_svg = (
     '<div class="kcfc-emblem">'
@@ -1212,7 +1323,7 @@ render_html(f"""
       {pl_vector_svg}
       <div>
         <div class="kcfc-hero-title">KINGS COUNTY FC</div>
-        <div class="kcfc-hero-sub">TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE</div>
+        <div class="kcfc-hero-sub">TACTICAL COMMAND &bull; TARGET LEAGUE: {target_league_name}</div>
       </div>
     </div>
     <span class="kpi-delta {roster_mode_cls}">{roster_sync_mode}</span>
@@ -1227,87 +1338,18 @@ render_html(f"""
 </div>
 """)
 
-# Interactive One-Tap Live Sync Bar + Target League Selector
-sync_col1, sync_col2 = st.columns([1.8, 1.2])
-with sync_col1:
-    if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Live FPL Roster & Captaincy", use_container_width=True):
-        st.cache_data.clear()
-        st.session_state["sync_nonce"] += 1
-        st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
-        st.rerun()
-
-with sync_col2:
-    classic_leagues = [
-        lg for lg in entry_data.get("leagues", {}).get("classic", [])
-        if lg.get("league_type") == "x" or lg.get("id", 0) > 350
-    ]
-    if not classic_leagues:
-        classic_leagues = entry_data.get("leagues", {}).get("classic", [])
-
-    target_league_standings = []
-    rival_threat_players = {}
-    rival_ownership_set = set()
-    gap_to_leader = 0
-    target_league_name = "Global Overall"
-
-    if classic_leagues:
-        lg_options = {lg["id"]: f"Target League: {lg['name']} (#{lg.get('entry_rank', '?')})" for lg in classic_leagues}
-        default_lg_id = int(st.query_params.get("lg_id", classic_leagues[0]["id"]))
-        if default_lg_id not in lg_options:
-            default_lg_id = classic_leagues[0]["id"]
-
-        chosen_lg_id = st.selectbox(
-            "Primary Mini-League Strategy Focus:",
-            options=list(lg_options.keys()),
-            format_func=lambda x: lg_options[x],
-            index=list(lg_options.keys()).index(default_lg_id),
-            label_visibility="collapsed"
-        )
-        st.query_params["lg_id"] = str(chosen_lg_id)
-        target_league_name = next((lg["name"] for lg in classic_leagues if lg["id"] == chosen_lg_id), "Mini-League")
-
-        st_json = fetch_league_standings(chosen_lg_id, sync_nonce)
-        if st_json:
-            target_league_standings = st_json.get("standings", {}).get("results", [])
-            if target_league_standings:
-                leader_total = target_league_standings[0]["total"]
-                my_entry_row = next((r for r in target_league_standings if r["entry"] == team_id), None)
-                my_league_pts = my_entry_row["total"] if my_entry_row else total_pts
-                gap_to_leader = leader_total - my_league_pts
-
-                top_rivals = [r for r in target_league_standings[:4] if r["entry"] != team_id][:3]
-                for rv in top_rivals:
-                    rv_picks = fetch_rival_picks(rv["entry"], last_active_gw, sync_nonce)
-                    if rv_picks and "picks" in rv_picks:
-                        for pk in rv_picks["picks"]:
-                            if pk.get("position", 1) <= 11:
-                                el_id = pk["element"]
-                                rival_ownership_set.add(el_id)
-                                rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
-
-# Optional Live Pre-Deadline Private Account Sync Settings
-with st.expander("🔐 Live Pre-Deadline FPL Account Sync (Auto-Pull Unreleased GW7 Captaincy & Bench Order)"):
-    st.caption(
-        "FPL's public API only shows your locked GW6 captain until the GW7 deadline passes. "
-        "To auto-pull unreleased GW7 captaincy and substitutions directly from `/api/my-team/`, add `FPL_EMAIL` & `FPL_PASSWORD` (or `FPL_COOKIE`) in Streamlit Secrets or below:"
-    )
-    ac1, ac2, ac3 = st.columns(3)
-    with ac1:
-        in_email = st.text_input("FPL Email", value=fpl_email_val, placeholder="email@example.com")
-    with ac2:
-        in_pass = st.text_input("FPL Password", value=fpl_pass_val, type="password")
-    with ac3:
-        in_cookie = st.text_input("Or `pl_profile` Cookie / Bearer Token", value=fpl_cookie_val, type="password")
-    if st.button("Connect Private FPL Session & Sync GW7 Lineup", use_container_width=True):
-        st.session_state["custom_fpl_email"] = in_email
-        st.session_state["custom_fpl_password"] = in_pass
-        st.session_state["custom_fpl_cookie"] = in_cookie
-        st.session_state["cap_override_id"] = None
-        st.session_state["vc_override_id"] = None
-        st.cache_data.clear()
-        st.session_state["sync_nonce"] += 1
-        st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
-        st.rerun()
+# 1-Line Sync & Reset Bar (Clears Cache AND Resets Captain/Vice-Captain Overrides)
+if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Reset Captaincy to Live FPL", use_container_width=True):
+    st.cache_data.clear()
+    st.session_state["sync_nonce"] += 1
+    st.session_state["cap_override_id"] = None
+    st.session_state["vc_override_id"] = None
+    if "cap_id" in st.query_params:
+        del st.query_params["cap_id"]
+    if "vc_id" in st.query_params:
+        del st.query_params["vc_id"]
+    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+    st.rerun()
 
 render_html(f"""
 <div class="kpi-grid-6" style="margin-top:6px;">
@@ -1387,13 +1429,14 @@ for donor in full_squad:
 funding_pairs.sort(key=lambda x: x[0], reverse=True)
 
 # ---------------------------------------------------------
-# 12. NAVIGATION TABS (NO EMOJIS)
+# 12. NAVIGATION TABS (NO EMOJIS, DEDICATED SETTINGS TAB)
 # ---------------------------------------------------------
-tab_pitch, tab_transfers, tab_league, tab_ai = st.tabs([
+tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
     "Tactical Pitch & Dossier",
     "Transfer Matrix & Cart Simulator",
     "Mini-League & Rival Spy",
-    "AI Tactical Advisor"
+    "AI Tactical Advisor",
+    "Settings"
 ])
 
 def build_pitch_node_html(p, is_selected=False, bench_slot=None):
@@ -1418,10 +1461,8 @@ def build_pitch_node_html(p, is_selected=False, bench_slot=None):
     sel_c = "selected" if is_selected else ""
     price = p.get("now_cost", 50) / 10.0
 
-    lg_param = st.query_params.get("lg_id", "")
-    cap_param = st.session_state.get("cap_override_id") or ""
-    vc_param = st.session_state.get("vc_override_id") or ""
-    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&cap_id={cap_param}&vc_id={vc_param}&pid={pid}#player-dossier"
+    lg_param = st.session_state.get("target_lg_id", "")
+    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&pid={pid}#player-dossier"
 
     return (
         f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
@@ -1501,16 +1542,15 @@ def render_pitch_and_dossier_fragment():
 
         sp = next((x for x in full_squad if x["id"] == st.session_state.get("selected_pid")), full_squad[0] if full_squad else None)
         if sp:
+            # Manual What-If Captain Simulation Buttons (Resets automatically when top Sync bar is clicked)
             cap_btn_c1, cap_btn_c2 = st.columns(2)
             with cap_btn_c1:
-                if st.button(f"Set {sp['web_name']} as GW{upcoming_gw} Captain (C)", use_container_width=True):
+                if st.button(f"Simulate {sp['web_name']} as Captain (C)", use_container_width=True):
                     st.session_state["cap_override_id"] = sp["id"]
-                    st.query_params["cap_id"] = str(sp["id"])
                     st.rerun()
             with cap_btn_c2:
-                if st.button(f"Set {sp['web_name']} as Vice-Captain (V)", use_container_width=True):
+                if st.button(f"Simulate {sp['web_name']} as Vice (V)", use_container_width=True):
                     st.session_state["vc_override_id"] = sp["id"]
-                    st.query_params["vc_id"] = str(sp["id"])
                     st.rerun()
 
             code = str(sp.get("code") or sp.get("photo", "").split(".")[0].lstrip("p"))
@@ -2000,7 +2040,7 @@ with tab_ai:
     key_status_badge = (
         "<span class='kpi-delta delta-up'>GEMINI 2.5 FLASH CONNECTED</span>"
         if active_gemini_key else
-        "<span class='kpi-delta delta-warn'>LOCAL ENGINE (ADD GEMINI_API_KEY IN SECRETS)</span>"
+        "<span class='kpi-delta delta-warn'>LOCAL ENGINE (CONFIGURE KEY IN SETTINGS TAB)</span>"
     )
 
     render_html(f"""
@@ -2016,16 +2056,6 @@ with tab_ai:
       </div>
     </div>
     """)
-
-    with st.expander("Configure Live Gemini API Key (Optional if already set in Streamlit Secrets)"):
-        user_api_key = st.text_input(
-            "Enter `GEMINI_API_KEY` for Live Web Search Grounding:",
-            value=st.session_state.get("custom_gemini_key", ""),
-            type="password"
-        )
-        if user_api_key:
-            st.session_state["custom_gemini_key"] = user_api_key
-            st.rerun()
 
     if "ai_messages" not in st.session_state:
         st.session_state["ai_messages"] = [
@@ -2195,3 +2225,125 @@ with tab_ai:
         st.session_state["ai_messages"].append({"role": "user", "content": user_q})
         st.session_state["ai_messages"].append({"role": "assistant", "content": answer_natural_language_query(user_q)})
         st.rerun()
+
+# =========================================================
+# TAB 5: DEDICATED SETTINGS & LIVE CONNECTION VALIDATOR
+# =========================================================
+with tab_settings:
+    # 1. LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR CARD
+    auth_ok = auth_diag.get("authenticated", False)
+    status_badge_html = (
+        "<span class='kpi-delta delta-up'>AUTHENTICATED (/api/my-team/ 200 OK)</span>"
+        if auth_ok else
+        f"<span class='kpi-delta delta-down'>PUBLIC FALLBACK (HTTP {auth_diag.get('status_code') or 'N/A'})</span>"
+    )
+
+    render_html(f"""
+    <div class="dossier-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <div>
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#FFF;">LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>
+          <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
+            Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN`) and displays the exact Captaincy & Bank returned by FPL's server.
+          </p>
+        </div>
+        {status_badge_html}
+      </div>
+      <div class="stat-grid-4">
+        <div class="stat-box">
+          <div class="stat-box-lbl">Auth Protocol Used</div>
+          <div class="stat-box-val" style="font-size:13px;">{auth_diag.get('method_used', 'None')}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-lbl">API Returned Captain</div>
+          <div class="stat-box-val" style="color:#00FF85;">{api_official_cap_name} (C)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-lbl">API Returned Vice-Cap</div>
+          <div class="stat-box-val" style="color:#06B6D4;">{api_official_vc_name} (V)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-lbl">Manual Sim Override</div>
+          <div class="stat-box-val" style="font-size:13px; color:{'#FBBF24' if cap_override else '#94A3B8'};">
+            {'ACTIVE (Tap Sync to Reset)' if cap_override or vc_override else 'NONE (Using Live API)'}
+          </div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; font-size:12px; color:#E2E8F0; margin-top:8px;">
+        <strong>Diagnostic Status:</strong> {auth_diag.get('message')}
+      </div>
+    </div>
+    """)
+
+    # 2. TARGET MINI-LEAGUE & TEAM ID CONFIGURATION
+    set_col1, set_col2 = st.columns(2, gap="medium")
+
+    with set_col1:
+        render_html("""
+        <div class="dossier-card" style="padding:16px 20px;">
+          <h4 style="margin:0 0 6px 0; color:#FFF;">Target Mini-League & Team ID</h4>
+          <p style="margin:0; font-size:12px; color:var(--text-secondary);">
+            Select the primary mini-league that drives all rival block/differential badges and AI strategy.
+          </p>
+        </div>
+        """)
+        if classic_leagues:
+            lg_options = {lg["id"]: f"{lg['name']} (Current Rank: #{lg.get('entry_rank', '?')})" for lg in classic_leagues}
+            cur_lg = st.session_state.get("target_lg_id", classic_leagues[0]["id"])
+            new_lg = st.selectbox(
+                "Default Target Mini-League:",
+                options=list(lg_options.keys()),
+                format_func=lambda x: lg_options[x],
+                index=list(lg_options.keys()).index(cur_lg) if cur_lg in lg_options else 0
+            )
+            if new_lg != cur_lg:
+                st.session_state["target_lg_id"] = new_lg
+                st.query_params["lg_id"] = str(new_lg)
+                st.rerun()
+
+        new_tid = st.number_input("FPL Entry / Team ID:", value=int(team_id), step=1)
+        if st.button("Update Team ID & Reset Overrides", use_container_width=True):
+            st.session_state["team_id"] = int(new_tid)
+            st.session_state["cap_override_id"] = None
+            st.session_state["vc_override_id"] = None
+            st.query_params["team_id"] = str(new_tid)
+            st.cache_data.clear()
+            st.session_state["sync_nonce"] += 1
+            st.rerun()
+
+    # 3. RUNTIME CREDENTIALS OVERRIDE (IF NOT IN STREAMLIT SECRETS)
+    with set_col2:
+        render_html("""
+        <div class="dossier-card" style="padding:16px 20px;">
+          <h4 style="margin:0 0 6px 0; color:#FFF;">Live API Credentials (Overrides / Secrets Fallback)</h4>
+          <p style="margin:0; font-size:12px; color:var(--text-secondary);">
+            If not already stored in Streamlit Secrets, paste your `x-api-authorization` Bearer token, full Cookie header, or Gemini API key below.
+          </p>
+        </div>
+        """)
+        with st.form("settings_creds_form"):
+            in_cookie = st.text_input(
+                "FPL Cookie or Bearer Token (`FPL_COOKIE` / `x-api-authorization`):",
+                value=fpl_cookie_val,
+                type="password",
+                help="Paste either the 'Bearer eyJ...' token from x-api-authorization or the full Cookie string from DevTools -> Network -> my-team."
+            )
+            in_gem = st.text_input(
+                "Gemini API Key (`GEMINI_API_KEY`):",
+                value=st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", ""),
+                type="password"
+            )
+            in_email = st.text_input("FPL Email (Optional fallback):", value=fpl_email_val)
+            in_pass = st.text_input("FPL Password (Optional fallback):", value=fpl_pass_val, type="password")
+
+            if st.form_submit_button("Save Credentials, Test Connection & Reset Captaincy", use_container_width=True):
+                st.session_state["custom_fpl_cookie"] = in_cookie.strip()
+                st.session_state["custom_gemini_key"] = in_gem.strip()
+                st.session_state["custom_fpl_email"] = in_email.strip()
+                st.session_state["custom_fpl_password"] = in_pass
+                st.session_state["cap_override_id"] = None
+                st.session_state["vc_override_id"] = None
+                st.cache_data.clear()
+                st.session_state["sync_nonce"] += 1
+                st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+                st.rerun()
