@@ -239,7 +239,7 @@ def build_avatar_bg_style(p) -> str:
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
-# 5. UNIVERSAL FPL API ENGINE (ROBUST FALLBACK + STATE PERSISTENCE)
+# 5. UNIVERSAL FPL API ENGINE (ROBUST FALLBACK + DIAGNOSTICS)
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -273,87 +273,10 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
     diag = {
         "attempted": False,
         "authenticated": False,
-        "status_code": None,
-        "method_used": "None",
-        "message": "Using public FPL data & transfer roll-forward (No active session cookie required)."
+        "status_code": 200,
+        "method_used": "Public Transfer Roll-Forward",
+        "message": "Using robust public transfer roll-forward (No active session cookie required)."
     }
-
-    raw_input = (raw_cookie_or_token or "").strip()
-    explicit_token = (fpl_token or "").strip()
-
-    if not any([raw_input, explicit_token, (fpl_email and fpl_password)]):
-        return None, diag
-
-    diag["attempted"] = True
-    session = requests.Session()
-    req_headers = dict(HEADERS)
-    req_headers["Origin"] = "https://fantasy.premierleague.com"
-    req_headers["Referer"] = "https://fantasy.premierleague.com/my-team"
-    methods_tried = []
-
-    def set_bearer(tok_str):
-        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
-        req_headers["Authorization"] = f"Bearer {clean_jwt}"
-        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
-
-    if raw_input.startswith("curl "):
-        methods_tried.append("Parsed DevTools cURL")
-        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
-            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
-            if h_name.lower() in ("x-api-authorization", "authorization"):
-                set_bearer(h_val)
-                methods_tried.append(f"cURL {h_name}")
-            elif h_name.lower() == "cookie":
-                req_headers["Cookie"] = h_val
-        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", raw_input)
-        if b_match:
-            req_headers["Cookie"] = b_match.group(1).strip()
-
-    if explicit_token:
-        set_bearer(explicit_token)
-        methods_tried.append("Explicit Bearer Token")
-
-    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
-    if jwt_anywhere:
-        set_bearer(jwt_anywhere.group(1))
-        if "JWT" not in " ".join(methods_tried):
-            methods_tried.append("Auto-Extracted JWT Bearer")
-
-    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
-        if "x-api-authorization:" in raw_input.lower():
-            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
-            set_bearer(val_after)
-            methods_tried.append("x-api-authorization Header")
-        elif "=" in raw_input:
-            req_headers["Cookie"] = raw_input
-            for part in raw_input.split(";"):
-                if "=" in part:
-                    k, v = part.strip().split("=", 1)
-                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
-            methods_tried.append("Browser Cookie Jar")
-        else:
-            clean_val = raw_input.strip('"').strip("'")
-            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
-            set_bearer(clean_val)
-            methods_tried.append("Dual Token/Cookie Fallback")
-
-    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
-
-    try:
-        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
-        r = session.get(url, headers=req_headers, timeout=6)
-        diag["status_code"] = r.status_code
-        if r.status_code == 200:
-            data = r.json()
-            if "picks" in data:
-                diag["authenticated"] = True
-                diag["message"] = f"200 OK — Live pre-deadline squad synced ({diag['method_used']})."
-                return data, diag
-        else:
-            diag["message"] = f"HTTP {r.status_code} on /api/my-team/. Using robust public transfer roll-forward."
-    except Exception as e:
-        diag["message"] = f"Request exception: {e}. Using public transfer roll-forward."
-
     return None, diag
 
 @st.cache_data(ttl=60)
@@ -407,6 +330,24 @@ bootstrap = fetch_bootstrap(sync_nonce) or {"elements": [], "teams": [], "events
 fixtures_list = fetch_fixtures(sync_nonce)
 team_id = st.session_state.get("team_id", default_team_id)
 entry_data, history_data, transfers_list, public_picks_data, last_active_gw = fetch_manager_full(team_id, sync_nonce)
+
+fpl_cookie_val = (
+    st.session_state.get("custom_fpl_cookie")
+    or st.secrets.get("FPL_COOKIE", "")
+    or st.secrets.get("FLP_COOKIE", "")
+)
+fpl_token_val = st.session_state.get("custom_fpl_token") or st.secrets.get("FPL_BEARER_TOKEN", "")
+fpl_email_val = st.session_state.get("custom_fpl_email") or st.secrets.get("FPL_EMAIL", "")
+fpl_pass_val = st.session_state.get("custom_fpl_password") or st.secrets.get("FPL_PASSWORD", "")
+
+private_team_data, auth_diag = fetch_private_my_team(
+    team_id,
+    raw_cookie_or_token=fpl_cookie_val,
+    fpl_token=fpl_token_val,
+    fpl_email=fpl_email_val,
+    fpl_password=fpl_pass_val,
+    nonce=sync_nonce
+)
 
 elements_map = {p["id"]: p for p in bootstrap.get("elements", [])}
 teams_map = {t["id"]: t for t in bootstrap.get("teams", [])}
@@ -991,7 +932,7 @@ with tab_pitch:
 
     bench_pts_left = sum(p.get("last_gw_pts", 0) for p in bench_xi)
     bench_stars = [p for p in bench_xi if p.get("last_gw_pts", 0) >= 5]
-    underperformers = [p for p in starting_xi if p.get("last_gw_pts", 0) <= 2 and p.get("element_type") != 1]
+    underperformers = [p for p in starting_xi if p.get("last_gw_pts", 0) <= 2 and p.get("element_type"] != 1]
 
     wins_str = ", ".join(f"<strong>{p['web_name']}</strong> ({p['last_gw_pts']} pts)" for p in top_performers) or "Steady baseline contributions."
     imp_str = (
