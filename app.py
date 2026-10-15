@@ -781,7 +781,7 @@ sell_rankings = []
 for p in full_squad:
     chance = p.get("chance_of_playing_next_round")
     chance_val = 100 if chance is None else chance
-    is_gk = (p.get("element_type"] == 1)
+    is_gk = (p.get("element_type") == 1)
     gk_penalty = -25.0 if (is_gk and chance_val >= 75) else 0.0
     starter_boost = 4.5 if p in starting_xi else 0.0
     urgency = (
@@ -797,7 +797,7 @@ sell_rankings.sort(key=lambda x: x[0], reverse=True)
 
 funding_pairs = []
 for donor in full_squad:
-    if donor.get("element_type"] == 1:
+    if donor.get("element_type") == 1:
         continue
     d_sell = donor.get("selling_price", donor.get("now_cost", 50) / 10.0)
     cheap_enablers = [
@@ -871,7 +871,7 @@ def render_pitch_and_dossier_fragment():
     sel_pid = st.session_state.get("selected_pid")
 
     with col_left:
-        gks = [p for p in starting_xi if p.get("element_type") == 1]
+        gks = [p for p in starting_xi if p.get("element_type"] == 1]
         defs = [p for p in starting_xi if p.get("element_type") == 2]
         mids = [p for p in starting_xi if p.get("element_type") == 3]
         fwds = [p for p in starting_xi if p.get("element_type") == 4]
