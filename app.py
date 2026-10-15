@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Persistent Local State Delta Merger | Gemini 3.8 Flash Co-Pilot
+Production Mobile-First Architecture | Full Tactical Pitch View | Gemini 3.8 Flash Co-Pilot
 """
 
 import streamlit as st
@@ -267,6 +267,94 @@ def fetch_fixtures(nonce=0):
     except Exception:
         pass
     return []
+
+@st.cache_data(ttl=30)
+def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
+    diag = {
+        "attempted": False,
+        "authenticated": False,
+        "status_code": None,
+        "method_used": "None",
+        "message": "Using public FPL data & transfer roll-forward (No active session cookie required)."
+    }
+
+    raw_input = (raw_cookie_or_token or "").strip()
+    explicit_token = (fpl_token or "").strip()
+
+    if not any([raw_input, explicit_token, (fpl_email and fpl_password)]):
+        return None, diag
+
+    diag["attempted"] = True
+    session = requests.Session()
+    req_headers = dict(HEADERS)
+    req_headers["Origin"] = "https://fantasy.premierleague.com"
+    req_headers["Referer"] = "https://fantasy.premierleague.com/my-team"
+    methods_tried = []
+
+    def set_bearer(tok_str):
+        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
+        req_headers["Authorization"] = f"Bearer {clean_jwt}"
+        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
+
+    if raw_input.startswith("curl "):
+        methods_tried.append("Parsed DevTools cURL")
+        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
+            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
+            if h_name.lower() in ("x-api-authorization", "authorization"):
+                set_bearer(h_val)
+                methods_tried.append(f"cURL {h_name}")
+            elif h_name.lower() == "cookie":
+                req_headers["Cookie"] = h_val
+        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", raw_input)
+        if b_match:
+            req_headers["Cookie"] = b_match.group(1).strip()
+
+    if explicit_token:
+        set_bearer(explicit_token)
+        methods_tried.append("Explicit Bearer Token")
+
+    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
+    if jwt_anywhere:
+        set_bearer(jwt_anywhere.group(1))
+        if "JWT" not in " ".join(methods_tried):
+            methods_tried.append("Auto-Extracted JWT Bearer")
+
+    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
+        if "x-api-authorization:" in raw_input.lower():
+            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
+            set_bearer(val_after)
+            methods_tried.append("x-api-authorization Header")
+        elif "=" in raw_input:
+            req_headers["Cookie"] = raw_input
+            for part in raw_input.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
+            methods_tried.append("Browser Cookie Jar")
+        else:
+            clean_val = raw_input.strip('"').strip("'")
+            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
+            set_bearer(clean_val)
+            methods_tried.append("Dual Token/Cookie Fallback")
+
+    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
+
+    try:
+        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
+        r = session.get(url, headers=req_headers, timeout=6)
+        diag["status_code"] = r.status_code
+        if r.status_code == 200:
+            data = r.json()
+            if "picks" in data:
+                diag["authenticated"] = True
+                diag["message"] = f"200 OK — Live pre-deadline squad synced ({diag['method_used']})."
+                return data, diag
+        else:
+            diag["message"] = f"HTTP {r.status_code} on /api/my-team/. Using robust public transfer roll-forward."
+    except Exception as e:
+        diag["message"] = f"Request exception: {e}. Using public transfer roll-forward."
+
+    return None, diag
 
 @st.cache_data(ttl=60)
 def fetch_manager_full(tid, nonce=0):
@@ -816,7 +904,6 @@ def render_pitch_and_dossier_fragment():
             with cap_btn_c1:
                 if st.button(f"Simulate {sp['web_name']} as Captain (C)", use_container_width=True):
                     st.session_state["cap_override_id"] = sp["id"]
-                    # Save current picks layout into session state as our persistent team state
                     st.session_state["persisted_squad_state"] = [
                         {"element": x["id"], "position": x["pick_pos"], "is_captain": x["id"] == sp["id"], "is_vice_captain": x.get("is_vice_captain", False)}
                         for x in full_squad
@@ -1534,19 +1621,19 @@ with tab_settings:
     )
 
     render_html(
-        f"<div class='dossier-card'>"
-        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;'>"
-        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#FFF;'>LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>"
-        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
-        f"Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays the exact Captaincy & Bank returned by FPL's server.</p></div>"
+        "<div class='dossier-card'>"
+        "<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;'>"
+        "<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#FFF;'>LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>"
+        "<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
+        "Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays the exact Captaincy & Bank returned by FPL's server.</p></div>"
         f"{status_badge_html}</div>"
-        f"<div class='stat-grid-4'>"
+        "<div class='stat-grid-4'>"
         f"<div class='stat-box'><div class='stat-box-lbl'>Auth Protocol Used</div><div class='stat-box-val' style='font-size:13px;'>{auth_diag.get('method_used', 'None')}</div></div>"
         f"<div class='stat-box'><div class='stat-box-lbl'>API Returned Captain</div><div class='stat-box-val' style='color:#00FF85;'>{api_official_cap_name} (C)</div></div>"
         f"<div class='stat-box'><div class='stat-box-lbl'>API Returned Vice-Cap</div><div class='stat-box-val' style='color:#06B6D4;'>{api_official_vc_name} (V)</div></div>"
         f"<div class='stat-box'><div class='stat-box-lbl'>Manual Sim Override</div><div class='stat-box-val' style='font-size:13px; color:{'#FBBF24' if cap_override else '#94A3B8'};'>"
         f"{'ACTIVE (Tap Sync to Reset)' if cap_override or vc_override else 'NONE (Using Live API)'}</div></div>"
-        f"</div>"
+        "</div>"
         f"<div style='background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; font-size:12px; color:#E2E8F0; margin-top:8px;'>"
         f"<strong>Diagnostic Status:</strong> {auth_diag.get('message')}</div></div>"
     )
@@ -1588,7 +1675,7 @@ with tab_settings:
     with set_col2:
         render_html(
             "<div class='dossier-card' style='padding:16px 20px;'>"
-            "<h4 style='margin:0 0 6px 0; color:#FFF;">Live API Credentials (Overrides / Secrets Fallback)</h4>"
+            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Live API Credentials (Overrides / Secrets Fallback)</h4>"
             "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
             "Paste your `x-api-authorization` Bearer token, full `Copy as cURL` command, or Gemini API key below.</p></div>"
         )
