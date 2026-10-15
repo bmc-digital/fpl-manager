@@ -239,7 +239,7 @@ def build_avatar_bg_style(p) -> str:
     return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
-# 5. UNIVERSAL FPL API ENGINE (ROBUST FALLBACK + DIAGNOSTICS)
+# 5. UNIVERSAL FPL API ENGINE (FULLY RESTORED AUTH & PRIVATE SYNC)
 # ---------------------------------------------------------
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -273,10 +273,87 @@ def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="
     diag = {
         "attempted": False,
         "authenticated": False,
-        "status_code": 200,
-        "method_used": "Public Transfer Roll-Forward",
-        "message": "Using robust public transfer roll-forward (No active session cookie required)."
+        "status_code": None,
+        "method_used": "None",
+        "message": "Initializing private API sync..."
     }
+
+    raw_input = (raw_cookie_or_token or "").strip()
+    explicit_token = (fpl_token or "").strip()
+
+    if not any([raw_input, explicit_token, (fpl_email and fpl_password)]):
+        diag["message"] = "No authentication credentials provided. Using public transfer roll-forward."
+        return None, diag
+
+    diag["attempted"] = True
+    session = requests.Session()
+    req_headers = dict(HEADERS)
+    req_headers["Origin"] = "https://fantasy.premierleague.com"
+    req_headers["Referer"] = f"https://fantasy.premierleague.com/my-team/{tid}"
+    methods_tried = []
+
+    def set_bearer(tok_str):
+        clean_jwt = tok_str.replace("Bearer ", "").replace("bearer ", "").strip().strip('"').strip("'")
+        req_headers["Authorization"] = f"Bearer {clean_jwt}"
+        req_headers["x-api-authorization"] = f"Bearer {clean_jwt}"
+
+    if raw_input.startswith("curl "):
+        methods_tried.append("Parsed DevTools cURL")
+        for h_match in re.finditer(r"(?:-H|--header)\s+\$?['\"]([^:]+):\s*([^'\"]+)['\"]", raw_input):
+            h_name, h_val = h_match.group(1).strip(), h_match.group(2).strip()
+            if h_name.lower() in ("x-api-authorization", "authorization"):
+                set_bearer(h_val)
+                methods_tried.append(f"cURL {h_name}")
+            elif h_name.lower() == "cookie":
+                req_headers["Cookie"] = h_val
+        b_match = re.search(r"(?:-b|--cookie)\s+\$?['\"]([^'\"]+)['\"]", raw_input)
+        if b_match:
+            req_headers["Cookie"] = b_match.group(1).strip()
+
+    if explicit_token:
+        set_bearer(explicit_token)
+        methods_tried.append("Explicit Bearer Token")
+
+    jwt_anywhere = re.search(r"(eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,})", raw_input)
+    if jwt_anywhere:
+        set_bearer(jwt_anywhere.group(1))
+        if "JWT" not in " ".join(methods_tried):
+            methods_tried.append("Auto-Extracted JWT Bearer")
+
+    if raw_input and not raw_input.startswith("curl ") and not raw_input.startswith("eyJ") and not raw_input.lower().startswith("bearer "):
+        if "x-api-authorization:" in raw_input.lower():
+            val_after = re.split(r"x-api-authorization:\s*", raw_input, flags=re.IGNORECASE)[-1].splitlines()[0]
+            set_bearer(val_after)
+            methods_tried.append("x-api-authorization Header")
+        elif "=" in raw_input:
+            req_headers["Cookie"] = raw_input
+            for part in raw_input.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    session.cookies.set(k.strip(), v.strip().strip('"'), domain=".premierleague.com")
+            methods_tried.append("Browser Cookie Jar")
+        else:
+            clean_val = raw_input.strip('"').strip("'")
+            req_headers["Cookie"] = f"pl_profile={clean_val}; access_token={clean_val}"
+            set_bearer(clean_val)
+            methods_tried.append("Dual Token/Cookie Fallback")
+
+    diag["method_used"] = " + ".join(methods_tried) if methods_tried else "None"
+
+    try:
+        url = f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}"
+        r = session.get(url, headers=req_headers, timeout=8)
+        diag["status_code"] = r.status_code
+        if r.status_code == 200:
+            data = r.json()
+            if "picks" in data:
+                diag["authenticated"] = True
+                diag["message"] = f"200 OK — Live pre-deadline squad successfully synced via {diag['method_used']}."
+                return data, diag
+        diag["message"] = f"HTTP {r.status_code} received from FPL private endpoint. Check token expiration or format."
+    except Exception as e:
+        diag["message"] = f"Request exception: {e}."
+
     return None, diag
 
 @st.cache_data(ttl=60)
@@ -458,7 +535,7 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. PERSISTENT STATE + SQUAD ROLL-FORWARD ENGINE
+# 8. AUTHENTICATED / PERSISTED SQUAD ROLL-FORWARD ENGINE
 # ---------------------------------------------------------
 if "persisted_squad_state" not in st.session_state:
     st.session_state["persisted_squad_state"] = None
@@ -470,6 +547,10 @@ vc_override = st.session_state.get("vc_override_id")
 if st.session_state["persisted_squad_state"]:
     active_picks_source = st.session_state["persisted_squad_state"]
     roster_sync_mode = f"CACHED & PERSISTED GW{upcoming_gw} SQUAD"
+    roster_mode_cls = "delta-up"
+elif auth_diag.get("authenticated") and private_team_data and "picks" in private_team_data:
+    active_picks_source = private_team_data["picks"]
+    roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw} SQUAD"
     roster_mode_cls = "delta-up"
 else:
     raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
@@ -700,7 +781,7 @@ sell_rankings = []
 for p in full_squad:
     chance = p.get("chance_of_playing_next_round")
     chance_val = 100 if chance is None else chance
-    is_gk = (p.get("element_type") == 1)
+    is_gk = (p.get("element_type"] == 1)
     gk_penalty = -25.0 if (is_gk and chance_val >= 75) else 0.0
     starter_boost = 4.5 if p in starting_xi else 0.0
     urgency = (
@@ -716,7 +797,7 @@ sell_rankings.sort(key=lambda x: x[0], reverse=True)
 
 funding_pairs = []
 for donor in full_squad:
-    if donor.get("element_type") == 1:
+    if donor.get("element_type"] == 1:
         continue
     d_sell = donor.get("selling_price", donor.get("now_cost", 50) / 10.0)
     cheap_enablers = [
@@ -1329,9 +1410,9 @@ with tab_ai:
                 "role": "assistant",
                 "content": (
                     f"Ready for **GW{upcoming_gw}**, Manager. I have your live **Kings County FC** starting XI, bench order, "
-                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded[cite: 1, 2].\n\n"
+                    f"**{ft_remaining_now} Free Transfer(s)**, **£{bank_now:.1f}m** bank balance, and rival data for **{target_league_name}** loaded.\n\n"
                     f"Ask me anything in plain English—like *'Who should I start and bench this week?'*, *'Why is Semenyo projected so high?'*, "
-                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale[cite: 1, 2]."
+                    f"or *'How can I restructure my midfield to get Saka?'*—and I'll research the latest team news and walk you through the rationale."
                 )
             }
         ]
