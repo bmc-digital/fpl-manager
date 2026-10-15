@@ -1,13 +1,15 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Full-Width Hero Countdown | Self-Calibrating xP Engine
+Production Mobile-First Architecture | Private /my-team/ Live Sync + Transfer Roll-Forward
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import urllib.parse
 import re
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 # ---------------------------------------------------------
 # 1. PAGE CONFIGURATION & ZERO-INDENT HTML RENDERER
@@ -28,8 +30,41 @@ def render_html(html_str: str):
     st.markdown(cleaned, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. PRODUCTION MOBILE-FIRST CSS DESIGN SYSTEM
+# 2. PARENT-DOM CROWN REMOVER + MOBILE-FIRST CSS DESIGN SYSTEM
 # ---------------------------------------------------------
+components.html(
+    """
+    <script>
+    (function() {
+      function nukeBadges() {
+        try {
+          const parentDoc = window.parent.document;
+          const selectors = [
+            '[class*="viewerBadge"]',
+            '[class*="profileContainer"]',
+            '[data-testid="manage-app-button"]',
+            '[data-testid="stStatusWidget"]',
+            'footer',
+            '#MainMenu'
+          ];
+          selectors.forEach(sel => {
+            parentDoc.querySelectorAll(sel).forEach(el => {
+              el.style.display = 'none';
+              el.style.visibility = 'hidden';
+              el.style.opacity = '0';
+              el.style.pointerEvents = 'none';
+            });
+          });
+        } catch (e) {}
+      }
+      nukeBadges();
+      setInterval(nukeBadges, 1000);
+    })();
+    </script>
+    """,
+    height=0,
+)
+
 render_html("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
@@ -64,7 +99,6 @@ html, body, [class*="css"] {
   background: radial-gradient(circle at 50% 0%, #132238 0%, #070B12 62%);
 }
 
-/* HIDE ALL STREAMLIT CHROME, FOOTER, AND FLOATING CLOUD BADGES */
 #MainMenu,
 header,
 footer,
@@ -87,8 +121,15 @@ iframe[title="streamlit_badge"] {
   pointer-events: none !important;
 }
 
+iframe[height="0"] {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .block-container {
-  padding-top: 0.8rem !important;
+  padding-top: 0.6rem !important;
   padding-bottom: 2.5rem !important;
   max-width: 1280px !important;
 }
@@ -99,7 +140,7 @@ iframe[title="streamlit_badge"] {
   border: 1px solid rgba(0, 255, 133, 0.35);
   border-radius: 22px;
   padding: 20px 22px 16px 22px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -109,8 +150,16 @@ iframe[title="streamlit_badge"] {
 .kcfc-hero-top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
   width: 100%;
+}
+
+.kcfc-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .kcfc-emblem {
@@ -319,7 +368,6 @@ a.pitch-node-link {
   box-shadow: 0 0 20px rgba(0, 255, 133, 0.55);
 }
 
-/* ENLARGED PLAYER AVATAR ON PITCH (58px) */
 .node-avatar-wrap {
   position: relative;
   width: 58px;
@@ -482,7 +530,6 @@ a.pitch-node-link {
   margin-bottom: 14px;
 }
 
-/* ENLARGED DOSSIER PORTRAIT (92px) */
 .dossier-avatar {
   width: 92px;
   height: 92px;
@@ -624,11 +671,11 @@ div.stButton > button {
   background: var(--bg-elevated) !important;
   color: var(--text-primary) !important;
   border: 1px solid rgba(0, 255, 133, 0.28) !important;
-  border-radius: 8px !important;
-  font-size: 11px !important;
+  border-radius: 10px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
-  padding: 4px 10px !important;
-  min-height: 30px !important;
+  padding: 5px 12px !important;
+  min-height: 32px !important;
 }
 
 div.stButton > button:hover {
@@ -640,7 +687,7 @@ div.stButton > button:hover {
 """)
 
 # ---------------------------------------------------------
-# 3. AUTHENTICATION & URL QUERY PARAM SYNC
+# 3. AUTHENTICATION, SYNC TIMESTAMP & URL PARAM MANAGEMENT
 # ---------------------------------------------------------
 auth_secret = st.secrets.get("APP_PASSWORD", "fpl2025")
 default_team_id = int(st.secrets.get("DEFAULT_TEAM_ID", 1153921))
@@ -651,6 +698,20 @@ if "authenticated" not in st.session_state:
 if "team_id" not in st.session_state:
     q_tid = st.query_params.get("team_id")
     st.session_state["team_id"] = int(q_tid) if q_tid and str(q_tid).isdigit() else default_team_id
+
+if "sync_nonce" not in st.session_state:
+    st.session_state["sync_nonce"] = 0
+
+if "last_synced_str" not in st.session_state:
+    st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+
+if "cap_override_id" not in st.session_state:
+    q_cap = st.query_params.get("cap_id")
+    st.session_state["cap_override_id"] = int(q_cap) if q_cap and str(q_cap).isdigit() else None
+
+if "vc_override_id" not in st.session_state:
+    q_vc = st.query_params.get("vc_id")
+    st.session_state["vc_override_id"] = int(q_vc) if q_vc and str(q_vc).isdigit() else None
 
 q_pid = st.query_params.get("pid")
 if q_pid and str(q_pid).isdigit():
@@ -726,80 +787,153 @@ def generate_svg_kit(team_short, is_gk=False):
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
 
 # ---------------------------------------------------------
-# 5. LIVE FPL API ENGINE (WITH TRANSFERS & LIVE BACKTESTING)
+# 5. DUAL-MODE FPL API ENGINE (AUTHENTICATED /my-team/ + PUBLIC ROLL-FORWARD)
 # ---------------------------------------------------------
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache"
+}
 
-@st.cache_data(ttl=300)
-def fetch_bootstrap():
+@st.cache_data(ttl=180)
+def fetch_bootstrap(nonce=0):
     try:
-        r = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/", headers=HEADERS, timeout=8)
+        r = requests.get(f"https://fantasy.premierleague.com/api/bootstrap-static/?_={nonce}", headers=HEADERS, timeout=8)
         if r.status_code == 200:
             return r.json()
     except Exception:
         pass
     return None
 
-@st.cache_data(ttl=300)
-def fetch_fixtures():
+@st.cache_data(ttl=180)
+def fetch_fixtures(nonce=0):
     try:
-        r = requests.get("https://fantasy.premierleague.com/api/fixtures/", headers=HEADERS, timeout=8)
+        r = requests.get(f"https://fantasy.premierleague.com/api/fixtures/?_={nonce}", headers=HEADERS, timeout=8)
         if r.status_code == 200:
             return r.json()
     except Exception:
         pass
     return []
 
-@st.cache_data(ttl=120)
-def fetch_manager_full(tid):
+@st.cache_data(ttl=30)
+def fetch_private_my_team(tid, fpl_cookie="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
+    """
+    Queries the private authenticated endpoint `/api/my-team/{team_id}/`
+    which returns the REAL-TIME pre-deadline roster, current captaincy,
+    exact selling prices, bank balance, and remaining free transfers.
+    """
+    session = requests.Session()
+    req_headers = dict(HEADERS)
+
+    # 1. Bearer Token / x-api-authorization support
+    if fpl_token:
+        clean_tok = fpl_token.replace("Bearer ", "").strip()
+        req_headers["Authorization"] = f"Bearer {clean_tok}"
+        req_headers["x-api-authorization"] = f"Bearer {clean_tok}"
+
+    # 2. Raw Cookie string or pl_profile value support
+    if fpl_cookie:
+        clean_cookie = fpl_cookie.strip()
+        if "=" in clean_cookie:
+            req_headers["Cookie"] = clean_cookie
+        else:
+            req_headers["Cookie"] = f"pl_profile={clean_cookie}"
+
+    # 3. Direct FPL Email & Password Login Session
+    if not fpl_cookie and not fpl_token and fpl_email and fpl_password:
+        try:
+            login_url = "https://users.premierleague.com/accounts/login/"
+            payload = {
+                "login": fpl_email.strip(),
+                "password": fpl_password,
+                "app": "plfpl-web",
+                "redirect_uri": "https://fantasy.premierleague.com/a/login"
+            }
+            login_headers = dict(HEADERS)
+            login_headers["Origin"] = "https://fantasy.premierleague.com"
+            login_headers["Referer"] = "https://fantasy.premierleague.com/"
+            session.post(login_url, data=payload, headers=login_headers, timeout=10)
+        except Exception:
+            pass
+
     try:
-        r_ent = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/", headers=HEADERS, timeout=8)
-        r_hist = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/history/", headers=HEADERS, timeout=8)
-        r_tr = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/transfers/", headers=HEADERS, timeout=8)
+        r = session.get(f"https://fantasy.premierleague.com/api/my-team/{tid}/?_={nonce}", headers=req_headers, timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            if "picks" in data:
+                return data
+    except Exception:
+        pass
+    return None
+
+@st.cache_data(ttl=60)
+def fetch_manager_full(tid, nonce=0):
+    try:
+        r_ent = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/?_={nonce}", headers=HEADERS, timeout=8)
+        r_hist = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/history/?_={nonce}", headers=HEADERS, timeout=8)
+        r_tr = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/transfers/?_={nonce}", headers=HEADERS, timeout=8)
         entry = r_ent.json() if r_ent.status_code == 200 else {}
         history = r_hist.json() if r_hist.status_code == 200 else {}
         transfers = r_tr.json() if r_tr.status_code == 200 else []
         curr_gw = entry.get("current_event") or 6
-        r_picks = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/event/{curr_gw}/picks/", headers=HEADERS, timeout=8)
+        r_picks = requests.get(f"https://fantasy.premierleague.com/api/entry/{tid}/event/{curr_gw}/picks/?_={nonce}", headers=HEADERS, timeout=8)
         picks = r_picks.json() if r_picks.status_code == 200 else {}
         return entry, history, transfers, picks, int(curr_gw)
     except Exception:
         return {}, {}, [], {}, 6
 
-@st.cache_data(ttl=600)
-def fetch_event_live(gw):
+@st.cache_data(ttl=300)
+def fetch_event_live(gw, nonce=0):
     try:
-        r = requests.get(f"https://fantasy.premierleague.com/api/event/{gw}/live/", headers=HEADERS, timeout=8)
+        r = requests.get(f"https://fantasy.premierleague.com/api/event/{gw}/live/?_={nonce}", headers=HEADERS, timeout=8)
         if r.status_code == 200:
             return r.json()
     except Exception:
         pass
     return None
 
-@st.cache_data(ttl=180)
-def fetch_league_standings(league_id):
+@st.cache_data(ttl=120)
+def fetch_league_standings(league_id, nonce=0):
     try:
-        r = requests.get(f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/", headers=HEADERS, timeout=8)
+        r = requests.get(f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?_={nonce}", headers=HEADERS, timeout=8)
         if r.status_code == 200:
             return r.json()
     except Exception:
         pass
     return None
 
-@st.cache_data(ttl=180)
-def fetch_rival_picks(rival_tid, gw):
+@st.cache_data(ttl=120)
+def fetch_rival_picks(rival_tid, gw, nonce=0):
     try:
-        r = requests.get(f"https://fantasy.premierleague.com/api/entry/{rival_tid}/event/{gw}/picks/", headers=HEADERS, timeout=6)
+        r = requests.get(f"https://fantasy.premierleague.com/api/entry/{rival_tid}/event/{gw}/picks/?_={nonce}", headers=HEADERS, timeout=6)
         if r.status_code == 200:
             return r.json()
     except Exception:
         pass
     return None
 
-bootstrap = fetch_bootstrap() or {"elements": [], "teams": [], "events": []}
-fixtures_list = fetch_fixtures()
+sync_nonce = st.session_state["sync_nonce"]
+bootstrap = fetch_bootstrap(sync_nonce) or {"elements": [], "teams": [], "events": []}
+fixtures_list = fetch_fixtures(sync_nonce)
 team_id = st.session_state.get("team_id", default_team_id)
-entry_data, history_data, transfers_list, picks_data, last_active_gw = fetch_manager_full(team_id)
+entry_data, history_data, transfers_list, public_picks_data, last_active_gw = fetch_manager_full(team_id, sync_nonce)
+
+# Check for Private FPL Auth Credentials (Secrets or Session State)
+fpl_cookie_val = st.session_state.get("custom_fpl_cookie") or st.secrets.get("FPL_COOKIE", "")
+fpl_token_val = st.session_state.get("custom_fpl_token") or st.secrets.get("FPL_BEARER_TOKEN", "")
+fpl_email_val = st.session_state.get("custom_fpl_email") or st.secrets.get("FPL_EMAIL", "")
+fpl_pass_val = st.session_state.get("custom_fpl_password") or st.secrets.get("FPL_PASSWORD", "")
+
+private_team_data = None
+if any([fpl_cookie_val, fpl_token_val, (fpl_email_val and fpl_pass_val)]):
+    private_team_data = fetch_private_my_team(
+        team_id,
+        fpl_cookie=fpl_cookie_val,
+        fpl_token=fpl_token_val,
+        fpl_email=fpl_email_val,
+        fpl_password=fpl_pass_val,
+        nonce=sync_nonce
+    )
 
 elements_map = {p["id"]: p for p in bootstrap.get("elements", [])}
 teams_map = {t["id"]: t for t in bootstrap.get("teams", [])}
@@ -850,7 +984,7 @@ for fix in fixtures_list:
 # ---------------------------------------------------------
 # 7. SELF-CALIBRATING HISTORICAL LEARNING & SELL PRICE ENGINE
 # ---------------------------------------------------------
-live_last_gw = fetch_event_live(last_active_gw)
+live_last_gw = fetch_event_live(last_active_gw, sync_nonce)
 live_pts_map = {}
 if live_last_gw and "elements" in live_last_gw:
     for el in live_last_gw["elements"]:
@@ -912,21 +1046,58 @@ for pid, p_obj in elements_map.items():
     p_obj["selling_price"] = estimate_selling_price(p_obj)
 
 # ---------------------------------------------------------
-# 8. SQUAD EXTRACTION
+# 8. CURRENT ROSTER & CAPTAINCY EXTRACTION (PRIVATE + ROLL-FORWARD)
 # ---------------------------------------------------------
 starting_xi, bench_xi = [], []
-if picks_data and "picks" in picks_data:
-    for pk in picks_data["picks"]:
-        base_p = elements_map.get(pk["element"])
-        if base_p:
-            p_copy = dict(base_p)
+cap_override = st.session_state.get("cap_override_id")
+vc_override = st.session_state.get("vc_override_id")
+
+# Determine whether we have live private `/my-team/` picks or public picks + transfer roll-forward
+if private_team_data and "picks" in private_team_data:
+    active_picks_source = private_team_data["picks"]
+    roster_sync_mode = f"LIVE AUTHENTICATED GW{upcoming_gw} ROSTER"
+    roster_mode_cls = "delta-up"
+else:
+    # Roll forward any public transfers made for upcoming_gw onto the last locked squad
+    raw_picks = [dict(pk) for pk in public_picks_data.get("picks", [])]
+    gw_transfers = [t for t in reversed(transfers_list) if t.get("event") == upcoming_gw]
+    for tr in gw_transfers:
+        out_el = tr.get("element_out")
+        in_el = tr.get("element_in")
+        for pk in raw_picks:
+            if pk.get("element") == out_el and in_el in elements_map:
+                pk["element"] = in_el
+                break
+    active_picks_source = raw_picks
+    roster_sync_mode = f"PUBLIC GW{last_active_gw} + GW{upcoming_gw} TRANSFERS"
+    roster_mode_cls = "delta-warn"
+
+for pk in active_picks_source:
+    base_p = elements_map.get(pk["element"])
+    if base_p:
+        p_copy = dict(base_p)
+        pid = p_copy["id"]
+
+        # Exact selling price straight from private endpoint if available
+        if "selling_price" in pk:
+            p_copy["selling_price"] = pk["selling_price"] / 10.0
+            elements_map[pid]["selling_price"] = p_copy["selling_price"]
+
+        if cap_override is not None:
+            p_copy["is_captain"] = (pid == cap_override)
+        else:
             p_copy["is_captain"] = pk.get("is_captain", False)
-            p_copy["is_vice_captain"] = pk.get("is_vice_captain", False)
-            p_copy["pick_pos"] = pk.get("position", 1)
-            if p_copy["pick_pos"] <= 11:
-                starting_xi.append(p_copy)
-            else:
-                bench_xi.append(p_copy)
+
+        if vc_override is not None:
+            p_copy["is_vice_captain"] = (pid == vc_override and not p_copy["is_captain"])
+        else:
+            p_copy["is_vice_captain"] = (pk.get("is_vice_captain", False) and not p_copy["is_captain"])
+
+        p_copy["pick_pos"] = pk.get("position", 1)
+        if p_copy["pick_pos"] <= 11:
+            starting_xi.append(p_copy)
+        else:
+            bench_xi.append(p_copy)
 
 full_squad = starting_xi + bench_xi
 if "selected_pid" not in st.session_state and full_squad:
@@ -934,7 +1105,7 @@ if "selected_pid" not in st.session_state and full_squad:
     st.session_state["selected_pid"] = cap_p["id"]
 
 # ---------------------------------------------------------
-# 9. CALCULATE FREE TRANSFERS & HISTORICAL KPI DELTAS
+# 9. CALCULATE FREE TRANSFERS, BANK & HISTORICAL KPI DELTAS
 # ---------------------------------------------------------
 curr_hist = history_data.get("current", [])
 chips_used = {c.get("event"): c.get("name") for c in history_data.get("chips", [])}
@@ -952,6 +1123,9 @@ for h_row in curr_hist:
         ft_available = min(5, max(1, ft_available))
     else:
         ft_available = min(5, max(0, ft_available - used_tr) + 1)
+
+upcoming_gw_transfers = [t for t in transfers_list if t.get("event") == upcoming_gw]
+ft_remaining_now = max(0, ft_available - len(upcoming_gw_transfers))
 
 if len(curr_hist) >= 2:
     latest_h = curr_hist[-1]
@@ -977,13 +1151,23 @@ else:
     bank_now, bank_delta = (entry_data.get("last_deadline_bank", 1) or 1) / 10.0, 0.0
     val_now, val_delta = (entry_data.get("last_deadline_value", 1009) or 1009) / 10.0, 0.0
 
+# Override Bank, Squad Value & Free Transfers with exact live `/my-team/` data if authenticated
+if private_team_data and "transfers" in private_team_data:
+    tr_meta = private_team_data["transfers"]
+    if tr_meta.get("bank") is not None:
+        bank_now = tr_meta["bank"] / 10.0
+    if tr_meta.get("value") is not None:
+        val_now = tr_meta["value"] / 10.0
+    if tr_meta.get("limit") is not None:
+        ft_remaining_now = max(0, int(tr_meta["limit"]) - int(tr_meta.get("made", 0)))
+
 team_xp_total = round(sum(
     p["xp_next"] * (2 if p.get("is_captain") else 1) for p in starting_xi
 ), 1)
 
 starter_flags = [p for p in starting_xi if p.get("chance_of_playing_next_round") is not None and p.get("chance_of_playing_next_round") < 75]
 weak_starters = [p for p in starting_xi if p.get("element_type") != 1 and p.get("xp_next", 0) < 3.4]
-if starter_flags or len(weak_starters) >= 2 or ft_available >= 2:
+if starter_flags or len(weak_starters) >= 2 or ft_remaining_now >= 2:
     ft_rec_text = "USE FT (UPGRADE XI)"
     ft_rec_cls = "delta-up"
 else:
@@ -991,7 +1175,7 @@ else:
     ft_rec_cls = "delta-warn"
 
 # ---------------------------------------------------------
-# 10. RENDER BALANCED HERO HEADER (FULL-WIDTH COUNTDOWN BAR)
+# 10. RENDER BALANCED HERO HEADER + CLICKABLE SYNC REFRESH BAR
 # ---------------------------------------------------------
 pl_vector_svg = (
     '<div class="kcfc-emblem">'
@@ -1018,14 +1202,20 @@ val_delta_str = f"{'+' if val_delta >= 0 else ''}£{val_delta:.1f}m vs LW"
 bank_cls = "delta-up" if bank_delta > 0 else ("delta-down" if bank_delta < 0 else "delta-neutral")
 bank_delta_str = f"{'+' if bank_delta > 0 else ''}£{bank_delta:.1f}m vs LW"
 
+active_cap_obj = next((p for p in starting_xi if p.get("is_captain")), starting_xi[0] if starting_xi else {})
+active_vc_obj = next((p for p in starting_xi if p.get("is_vice_captain")), starting_xi[1] if len(starting_xi) > 1 else {})
+
 render_html(f"""
 <div class="kcfc-hero">
   <div class="kcfc-hero-top">
-    {pl_vector_svg}
-    <div>
-      <div class="kcfc-hero-title">KINGS COUNTY FC</div>
-      <div class="kcfc-hero-sub">TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE</div>
+    <div class="kcfc-hero-brand">
+      {pl_vector_svg}
+      <div>
+        <div class="kcfc-hero-title">KINGS COUNTY FC</div>
+        <div class="kcfc-hero-sub">TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE</div>
+      </div>
     </div>
+    <span class="kpi-delta {roster_mode_cls}">{roster_sync_mode}</span>
   </div>
   <div class="countdown-bar">
     <div class="countdown-left">
@@ -1035,8 +1225,92 @@ render_html(f"""
     <div class="countdown-val">{countdown_display}</div>
   </div>
 </div>
+""")
 
-<div class="kpi-grid-6">
+# Interactive One-Tap Live Sync Bar + Target League Selector
+sync_col1, sync_col2 = st.columns([1.8, 1.2])
+with sync_col1:
+    if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Live FPL Roster & Captaincy", use_container_width=True):
+        st.cache_data.clear()
+        st.session_state["sync_nonce"] += 1
+        st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+        st.rerun()
+
+with sync_col2:
+    classic_leagues = [
+        lg for lg in entry_data.get("leagues", {}).get("classic", [])
+        if lg.get("league_type") == "x" or lg.get("id", 0) > 350
+    ]
+    if not classic_leagues:
+        classic_leagues = entry_data.get("leagues", {}).get("classic", [])
+
+    target_league_standings = []
+    rival_threat_players = {}
+    rival_ownership_set = set()
+    gap_to_leader = 0
+    target_league_name = "Global Overall"
+
+    if classic_leagues:
+        lg_options = {lg["id"]: f"Target League: {lg['name']} (#{lg.get('entry_rank', '?')})" for lg in classic_leagues}
+        default_lg_id = int(st.query_params.get("lg_id", classic_leagues[0]["id"]))
+        if default_lg_id not in lg_options:
+            default_lg_id = classic_leagues[0]["id"]
+
+        chosen_lg_id = st.selectbox(
+            "Primary Mini-League Strategy Focus:",
+            options=list(lg_options.keys()),
+            format_func=lambda x: lg_options[x],
+            index=list(lg_options.keys()).index(default_lg_id),
+            label_visibility="collapsed"
+        )
+        st.query_params["lg_id"] = str(chosen_lg_id)
+        target_league_name = next((lg["name"] for lg in classic_leagues if lg["id"] == chosen_lg_id), "Mini-League")
+
+        st_json = fetch_league_standings(chosen_lg_id, sync_nonce)
+        if st_json:
+            target_league_standings = st_json.get("standings", {}).get("results", [])
+            if target_league_standings:
+                leader_total = target_league_standings[0]["total"]
+                my_entry_row = next((r for r in target_league_standings if r["entry"] == team_id), None)
+                my_league_pts = my_entry_row["total"] if my_entry_row else total_pts
+                gap_to_leader = leader_total - my_league_pts
+
+                top_rivals = [r for r in target_league_standings[:4] if r["entry"] != team_id][:3]
+                for rv in top_rivals:
+                    rv_picks = fetch_rival_picks(rv["entry"], last_active_gw, sync_nonce)
+                    if rv_picks and "picks" in rv_picks:
+                        for pk in rv_picks["picks"]:
+                            if pk.get("position", 1) <= 11:
+                                el_id = pk["element"]
+                                rival_ownership_set.add(el_id)
+                                rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
+
+# Optional Live Pre-Deadline Private Account Sync Settings
+with st.expander("🔐 Live Pre-Deadline FPL Account Sync (Auto-Pull Unreleased GW7 Captaincy & Bench Order)"):
+    st.caption(
+        "FPL's public API only shows your locked GW6 captain until the GW7 deadline passes. "
+        "To auto-pull unreleased GW7 captaincy and substitutions directly from `/api/my-team/`, add `FPL_EMAIL` & `FPL_PASSWORD` (or `FPL_COOKIE`) in Streamlit Secrets or below:"
+    )
+    ac1, ac2, ac3 = st.columns(3)
+    with ac1:
+        in_email = st.text_input("FPL Email", value=fpl_email_val, placeholder="email@example.com")
+    with ac2:
+        in_pass = st.text_input("FPL Password", value=fpl_pass_val, type="password")
+    with ac3:
+        in_cookie = st.text_input("Or `pl_profile` Cookie / Bearer Token", value=fpl_cookie_val, type="password")
+    if st.button("Connect Private FPL Session & Sync GW7 Lineup", use_container_width=True):
+        st.session_state["custom_fpl_email"] = in_email
+        st.session_state["custom_fpl_password"] = in_pass
+        st.session_state["custom_fpl_cookie"] = in_cookie
+        st.session_state["cap_override_id"] = None
+        st.session_state["vc_override_id"] = None
+        st.cache_data.clear()
+        st.session_state["sync_nonce"] += 1
+        st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+        st.rerun()
+
+render_html(f"""
+<div class="kpi-grid-6" style="margin-top:6px;">
   <div class="kpi-card">
     <div class="kpi-label">Season Points</div>
     <div class="kpi-value">{total_pts:,}</div>
@@ -1049,7 +1323,7 @@ render_html(f"""
   </div>
   <div class="kpi-card">
     <div class="kpi-label">Transfers Available</div>
-    <div class="kpi-value" style="color:#FBBF24;">{ft_available} FT</div>
+    <div class="kpi-value" style="color:#FBBF24;">{ft_remaining_now} FT</div>
     <span class="kpi-delta {ft_rec_cls}">{ft_rec_text}</span>
   </div>
   <div class="kpi-card">
@@ -1065,64 +1339,13 @@ render_html(f"""
   <div class="kpi-card">
     <div class="kpi-label">GW{upcoming_gw} Projected XI</div>
     <div class="kpi-value" style="color:#06B6D4;">{team_xp_total} xP</div>
-    <span class="kpi-delta delta-up">Self-Calibrated</span>
+    <span class="kpi-delta delta-up">C: {active_cap_obj.get('web_name', 'N/A')} | V: {active_vc_obj.get('web_name', 'N/A')}</span>
   </div>
 </div>
 """)
 
 # ---------------------------------------------------------
-# 11. GLOBAL TARGET MINI-LEAGUE FOCUS BAR
-# ---------------------------------------------------------
-classic_leagues = [
-    lg for lg in entry_data.get("leagues", {}).get("classic", [])
-    if lg.get("league_type") == "x" or lg.get("id", 0) > 350
-]
-if not classic_leagues:
-    classic_leagues = entry_data.get("leagues", {}).get("classic", [])
-
-target_league_standings = []
-rival_threat_players = {}
-rival_ownership_set = set()
-gap_to_leader = 0
-target_league_name = "Global Overall"
-
-if classic_leagues:
-    lg_options = {lg["id"]: f"Target Mini-League Focus: {lg['name']} (Rank #{lg.get('entry_rank', '?')})" for lg in classic_leagues}
-    default_lg_id = int(st.query_params.get("lg_id", classic_leagues[0]["id"]))
-    if default_lg_id not in lg_options:
-        default_lg_id = classic_leagues[0]["id"]
-
-    chosen_lg_id = st.selectbox(
-        "Primary Mini-League Strategy Focus:",
-        options=list(lg_options.keys()),
-        format_func=lambda x: lg_options[x],
-        index=list(lg_options.keys()).index(default_lg_id),
-        label_visibility="collapsed"
-    )
-    st.query_params["lg_id"] = str(chosen_lg_id)
-    target_league_name = next((lg["name"] for lg in classic_leagues if lg["id"] == chosen_lg_id), "Mini-League")
-
-    st_json = fetch_league_standings(chosen_lg_id)
-    if st_json:
-        target_league_standings = st_json.get("standings", {}).get("results", [])
-        if target_league_standings:
-            leader_total = target_league_standings[0]["total"]
-            my_entry_row = next((r for r in target_league_standings if r["entry"] == team_id), None)
-            my_league_pts = my_entry_row["total"] if my_entry_row else total_pts
-            gap_to_leader = leader_total - my_league_pts
-
-            top_rivals = [r for r in target_league_standings[:4] if r["entry"] != team_id][:3]
-            for rv in top_rivals:
-                rv_picks = fetch_rival_picks(rv["entry"], last_active_gw)
-                if rv_picks and "picks" in rv_picks:
-                    for pk in rv_picks["picks"]:
-                        if pk.get("position", 1) <= 11:
-                            el_id = pk["element"]
-                            rival_ownership_set.add(el_id)
-                            rival_threat_players[el_id] = rival_threat_players.get(el_id, 0) + 1
-
-# ---------------------------------------------------------
-# 12. PRE-COMPUTE GLOBAL TRANSFER RANKINGS & FUNDING PAIRS
+# 11. PRE-COMPUTE GLOBAL TRANSFER RANKINGS & FUNDING PAIRS
 # ---------------------------------------------------------
 squad_ids = {p["id"] for p in full_squad}
 
@@ -1164,7 +1387,7 @@ for donor in full_squad:
 funding_pairs.sort(key=lambda x: x[0], reverse=True)
 
 # ---------------------------------------------------------
-# 13. NAVIGATION TABS (NO EMOJIS)
+# 12. NAVIGATION TABS (NO EMOJIS)
 # ---------------------------------------------------------
 tab_pitch, tab_transfers, tab_league, tab_ai = st.tabs([
     "Tactical Pitch & Dossier",
@@ -1196,7 +1419,9 @@ def build_pitch_node_html(p, is_selected=False, bench_slot=None):
     price = p.get("now_cost", 50) / 10.0
 
     lg_param = st.query_params.get("lg_id", "")
-    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&pid={pid}#player-dossier"
+    cap_param = st.session_state.get("cap_override_id") or ""
+    vc_param = st.session_state.get("vc_override_id") or ""
+    href_url = f"?auth=passed&team_id={team_id}&lg_id={lg_param}&cap_id={cap_param}&vc_id={vc_param}&pid={pid}#player-dossier"
 
     return (
         f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
@@ -1260,7 +1485,7 @@ def render_pitch_and_dossier_fragment():
         render_html("<div id='player-dossier'></div>")
 
         squad_options = {
-            p["id"]: f"{'[C] ' if p.get('is_captain') else ''}{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m | {p['xp_next']}xP)"
+            p["id"]: f"{'[C] ' if p.get('is_captain') else ('[V] ' if p.get('is_vice_captain') else '')}{p['web_name']} ({p['team_short']} - £{p['now_cost']/10:.1f}m | {p['xp_next']}xP)"
             for p in full_squad
         }
         if squad_options:
@@ -1276,6 +1501,18 @@ def render_pitch_and_dossier_fragment():
 
         sp = next((x for x in full_squad if x["id"] == st.session_state.get("selected_pid")), full_squad[0] if full_squad else None)
         if sp:
+            cap_btn_c1, cap_btn_c2 = st.columns(2)
+            with cap_btn_c1:
+                if st.button(f"Set {sp['web_name']} as GW{upcoming_gw} Captain (C)", use_container_width=True):
+                    st.session_state["cap_override_id"] = sp["id"]
+                    st.query_params["cap_id"] = str(sp["id"])
+                    st.rerun()
+            with cap_btn_c2:
+                if st.button(f"Set {sp['web_name']} as Vice-Captain (V)", use_container_width=True):
+                    st.session_state["vc_override_id"] = sp["id"]
+                    st.query_params["vc_id"] = str(sp["id"])
+                    st.rerun()
+
             code = str(sp.get("code") or sp.get("photo", "").split(".")[0].lstrip("p"))
             p_img = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
             p_svg = generate_svg_kit(sp.get("team_short", "EPL"), is_gk=(sp.get("element_type") == 1))
@@ -1439,7 +1676,7 @@ with tab_transfers:
             Goalkeepers are deprioritized unless injured. Evaluates direct in-budget swaps AND 2-move premium upgrade paths (e.g., funding Saka/Palmer/Haaland) tailored to beat <strong>{target_league_name}</strong>.
           </p>
         </div>
-        <span class="kpi-delta delta-up">{ft_available} Free Transfer(s) | £{bank_now:.1f}m Bank</span>
+        <span class="kpi-delta delta-up">{ft_remaining_now} Free Transfer(s) | £{bank_now:.1f}m Bank</span>
       </div>
     </div>
     """)
@@ -1600,7 +1837,7 @@ with tab_transfers:
 
         rem_bank_cart = round(total_released - running_spend, 1)
         num_moves = len(out_objs)
-        extra_hits = max(0, num_moves - ft_available)
+        extra_hits = max(0, num_moves - ft_remaining_now)
         hit_cost = extra_hits * -4
 
         gw1_xp_delta = round(sum(x["xp_next"] for x in selected_in_objs) - sum(x["xp_next"] for x in out_objs) + hit_cost, 1)
@@ -1722,7 +1959,7 @@ with tab_league:
 
             if rival_map:
                 sel_rival_id = st.selectbox("Inspect Specific Rival Starting XI:", options=list(rival_map.keys()), format_func=lambda x: rival_map[x])
-                rv_json = fetch_rival_picks(sel_rival_id, last_active_gw)
+                rv_json = fetch_rival_picks(sel_rival_id, last_active_gw, sync_nonce)
                 rv_xi_ids = {pk["element"] for pk in rv_json.get("picks", []) if pk.get("position", 1) <= 11} if rv_json else set()
                 rv_cap_id = next((pk["element"] for pk in rv_json.get("picks", []) if pk.get("is_captain")), None) if rv_json else None
                 rv_cap_name = elements_map.get(rv_cap_id, {}).get("web_name", "Unknown")
@@ -1795,7 +2032,8 @@ with tab_ai:
             {
                 "role": "assistant",
                 "content": (
-                    f"Tactical telemetry online for **GW{upcoming_gw}**. You have **{ft_available} Free Transfer(s)** and **£{bank_now:.1f}m** in the bank "
+                    f"Tactical telemetry online for **GW{upcoming_gw}**. Current Captain: **{active_cap_obj.get('web_name', 'N/A')} (C)**. "
+                    f"You have **{ft_remaining_now} Free Transfer(s)** and **£{bank_now:.1f}m** in the bank "
                     f"(focused on **{target_league_name}**). Ask me anything—for example: *'How can I get Saka into my squad?'*, "
                     f"*'Compare my midfielders over the next 5 Gameweeks'*, or *'Who is the best differential captain to gain points on 1st place?'*"
                 )
@@ -1805,7 +2043,7 @@ with tab_ai:
     def answer_natural_language_query(query_str: str) -> str:
         active_key = (st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", "")).strip()
         squad_summary = ", ".join(
-            f"{p['web_name']} ({p['team_short']}, Pos:{ {1:'GK',2:'DEF',3:'MID',4:'FWD'}.get(p['element_type'],'PLY') }, Sell:£{p.get('selling_price', p['now_cost']/10):.1f}m, GW{upcoming_gw} xP:{p['xp_next']}, 5GW xP:{p['xp_5gw']}, AvgFDR:{p['avg_5_fdr']})"
+            f"{p['web_name']}{' [CAPTAIN]' if p.get('is_captain') else ''} ({p['team_short']}, Pos:{ {1:'GK',2:'DEF',3:'MID',4:'FWD'}.get(p['element_type'],'PLY') }, Sell:£{p.get('selling_price', p['now_cost']/10):.1f}m, GW{upcoming_gw} xP:{p['xp_next']}, 5GW xP:{p['xp_5gw']}, AvgFDR:{p['avg_5_fdr']})"
             for p in full_squad
         )
         top_market = sorted(
@@ -1821,7 +2059,7 @@ with tab_ai:
         if active_key:
             sys_prompt = (
                 f"You are the Elite FPL Tactical Director for Kings County FC. Current Date: October 2026 (2026/27 Premier League Season). "
-                f"Upcoming Gameweek: GW{upcoming_gw}. Free Transfers: {ft_available}. Bank: £{bank_now:.1f}m. "
+                f"Upcoming Gameweek: GW{upcoming_gw}. Current Captain: {active_cap_obj.get('web_name', 'N/A')}. Free Transfers: {ft_remaining_now}. Bank: £{bank_now:.1f}m. "
                 f"Target Mini-League: {target_league_name} (Gap to 1st: {gap_to_leader} pts). "
                 f"Current 15-Man Squad: {squad_summary}. Top Unowned Market Targets: {market_summary}. "
                 f"Never suggest Goalkeeper transfers unless their GK is injured. Always provide exact £m math, 2-move upgrade paths when a target exceeds single-move budget, and concrete xP comparisons."
@@ -1918,7 +2156,7 @@ with tab_ai:
 
         return (
             f"### Custom Tactical Analysis for '{query_str}' (GW{upcoming_gw})\n"
-            f"* **Captaincy & Ceiling:** **{cap_1['web_name']}** leads your squad at **`{cap_1['xp_next']} xP`** (`{cap_1['xp_5gw']} xP` over 5 GWs), followed by **{cap_2['web_name']}** (`{cap_2['xp_next']} xP`).\n"
+            f"* **Current Active Captain:** **{active_cap_obj.get('web_name', 'N/A')}** (`{active_cap_obj.get('xp_next', 0)} xP`). Highest projected alternatives: **{cap_1['web_name']}** (`{cap_1['xp_next']} xP`) and **{cap_2['web_name']}** (`{cap_2['xp_next']} xP`).\n"
             f"* **Outfield Weak Links to Address:** **{weakest_2[0]['web_name']}** (`{weakest_2[0]['xp_next']} xP`) and **{weakest_2[1]['web_name']}** (`{weakest_2[1]['xp_next']} xP`) carry your lowest projections.\n"
             f"* **Highest-Upside Market Target:** **{best_unowned.get('web_name')} ({best_unowned.get('team_short')}, £{best_unowned.get('now_cost',50)/10:.1f}m)** projects for **`{best_unowned.get('xp_5gw')} xP`** over the next 5 Gameweeks.\n"
             f"* *Tip:* Name any specific player in the chat (e.g., *'How do I afford Saka?'* or *'Compare Cherki and Palmer'*) for an exact budget and 2-move upgrade path calculation."
