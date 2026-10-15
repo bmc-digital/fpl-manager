@@ -1335,7 +1335,7 @@ with tab_league:
                 their_only.sort(key=lambda x: x.get("xp_next", 0), reverse=True)
 
                 best_my_cap = sorted(starting_xi, key=lambda x: x.get("xp_next", 0), reverse=True)[0]
-                weakest_my_starter = sorted([p for p in starting_xi if p.get("element_type"] != 1], key=lambda x: x.get("xp_next", 0))[0]
+                weakest_my_starter = sorted([p for p in starting_xi if p.get("element_type") != 1], key=lambda x: x.get("xp_next", 0))[0]
                 top_block_target = their_only[0] if their_only else None
 
                 render_html(
