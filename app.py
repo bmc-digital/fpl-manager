@@ -1,23 +1,3 @@
-### Why the Persistence Failed (Technical Analysis)
-
-The reason your synced data reverted back to GW6 when reopening the app or after an idle period comes down to two inherent limitations in Streamlit's architecture:
-
-1. **WebSocket Session Lifecycle:** Streamlit's native `st.session_state` is tied to an active browser WebSocket connection. When you close the app tab, open it later, or when the server idles and recycles the process, the memory is wiped clean, reverting the app to public server endpoints.
-2. **FPL Public Endpoint Locking:** Because public FPL endpoints (`/entry/{id}/event/{gw}/picks/`) are locked to the *last completed Gameweek* (GW6) until matches start, the app had no server-side database backing to remember your token-authenticated pull from 19 minutes prior.
-
----
-
-### The Permanent Solution: Browser Local Storage State Caching
-
-To ensure that your token sync, bank balance (£m), and exact pre-deadline squad **persist permanently across browser reloads, tab closures, and hours away**, we must store your team snapshot directly in your browser's **`localStorage`** using a lightweight JavaScript component bridge.
-
----
-
-### Complete Production Script (`app.py`)
-
-Replace your entire script with the code below. This version uses persistent browser storage to capture and reload your exact team data, bank balance, and timestamp across sessions:
-
-```python
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
 Production Mobile-First Architecture | Persistent LocalStorage Engine | Gemini 3.8 Flash Co-Pilot
