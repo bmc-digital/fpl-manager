@@ -1,7 +1,5 @@
-"""
-KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Multi-Layer CSS Avatar Stack | Gemini 3.8 Flash Co-Pilot
-"""
+# KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
+# Production Mobile-First Architecture | Copy-Paste Safe Single-Line Strings
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -22,10 +20,6 @@ st.set_page_config(
 )
 
 def render_html(html_str: str):
-    """
-    Strips leading indentation from every line so Streamlit's Markdown parser
-    NEVER misinterprets nested HTML tags as a 4-space <pre><code> block.
-    """
     cleaned = "\n".join(line.lstrip() for line in html_str.splitlines() if line.strip())
     st.markdown(cleaned, unsafe_allow_html=True)
 
@@ -33,664 +27,109 @@ def render_html(html_str: str):
 # 2. PARENT-DOM CROWN REMOVER + MOBILE-FIRST CSS DESIGN SYSTEM
 # ---------------------------------------------------------
 components.html(
-    """
-    <script>
-    (function() {
-      function nukeBadges() {
-        try {
-          const parentDoc = window.parent.document;
-          const selectors = [
-            '[class*="viewerBadge"]',
-            '[class*="profileContainer"]',
-            '[data-testid="manage-app-button"]',
-            '[data-testid="stStatusWidget"]',
-            'footer',
-            '#MainMenu'
-          ];
-          selectors.forEach(sel => {
-            parentDoc.querySelectorAll(sel).forEach(el => {
-              el.style.display = 'none';
-              el.style.visibility = 'hidden';
-              el.style.opacity = '0';
-              el.style.pointerEvents = 'none';
-            });
-          });
-        } catch (e) {}
-      }
-      nukeBadges();
-      setInterval(nukeBadges, 1000);
-    })();
-    </script>
-    """,
+    "<script>"
+    "(function() {"
+    "  function nukeBadges() {"
+    "    try {"
+    "      const parentDoc = window.parent.document;"
+    "      const selectors = ['[class*=\"viewerBadge\"]','[class*=\"profileContainer\"]','[data-testid=\"manage-app-button\"]','[data-testid=\"stStatusWidget\"]','footer','#MainMenu'];"
+    "      selectors.forEach(sel => {"
+    "        parentDoc.querySelectorAll(sel).forEach(el => {"
+    "          el.style.display = 'none'; el.style.visibility = 'hidden'; el.style.opacity = '0'; el.style.pointerEvents = 'none';"
+    "        });"
+    "      });"
+    "    } catch (e) {}"
+    "  }"
+    "  nukeBadges(); setInterval(nukeBadges, 1000);"
+    "})();"
+    "</script>",
     height=0,
 )
 
-render_html("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
-
-:root {
-  --bg-base: #070B12;
-  --bg-surface: #0F172A;
-  --bg-elevated: #1E293B;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --accent-emerald: #10B981;
-  --accent-neon: #00FF85;
-  --accent-cyan: #06B6D4;
-  --accent-amber: #F59E0B;
-  --accent-rose: #F43F5E;
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --fdr-1: #059669;
-  --fdr-2: #10B981;
-  --fdr-3: #475569;
-  --fdr-4: #D97706;
-  --fdr-5: #E11D48;
-}
-
-html, body, [class*="css"] {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: var(--text-primary);
-  background-color: var(--bg-base);
-  scroll-behavior: smooth;
-}
-
-.stApp {
-  background: radial-gradient(circle at 50% 0%, #132238 0%, #070B12 62%);
-}
-
-#MainMenu,
-header,
-footer,
-[data-testid="stHeader"],
-[data-testid="stToolbar"],
-[data-testid="stDecoration"],
-[data-testid="stStatusWidget"],
-[data-testid="manage-app-button"],
-.stAppToolbar,
-.stDeployButton,
-div[class*="viewerBadge"],
-a[class*="viewerBadge"],
-div[class*="profileContainer"],
-iframe[title="streamlit_badge"] {
-  visibility: hidden !important;
-  display: none !important;
-  height: 0 !important;
-  width: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-iframe[height="0"] {
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.block-container {
-  padding-top: 0.6rem !important;
-  padding-bottom: 2.5rem !important;
-  max-width: 1280px !important;
-}
-
-/* BALANCED HERO BANNER WITH FULL-WIDTH COUNTDOWN BAR */
-.kcfc-hero {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(15, 23, 42, 0.96) 50%, rgba(6, 182, 212, 0.12) 100%);
-  border: 1px solid rgba(0, 255, 133, 0.35);
-  border-radius: 22px;
-  padding: 20px 22px 16px 22px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
-}
-
-.kcfc-hero-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px;
-  width: 100%;
-}
-
-.kcfc-hero-brand {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.kcfc-emblem {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #00FF85 0%, #10B981 100%);
-  border: 2px solid #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 22px rgba(0, 255, 133, 0.35);
-}
-
-.kcfc-hero-title {
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.08;
-  text-transform: uppercase;
-}
-
-.kcfc-hero-sub {
-  font-size: 11px;
-  font-weight: 800;
-  color: #00FF85;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-
-/* FULL-WIDTH BALANCED COUNTDOWN BAR */
-.countdown-bar {
-  width: 100%;
-  background: rgba(7, 11, 18, 0.9);
-  border: 1px solid rgba(0, 255, 133, 0.4);
-  border-radius: 14px;
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  box-shadow: inset 0 0 18px rgba(0, 255, 133, 0.08);
-}
-
-.countdown-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #00FF85;
-  box-shadow: 0 0 10px #00FF85;
-}
-
-.countdown-lbl {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #E2E8F0;
-}
-
-.countdown-val {
-  font-size: 17px;
-  font-weight: 800;
-  color: #00FF85;
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.5px;
-}
-
-/* 6-TILE STACKED KPI BENTO GRID */
-.kpi-grid-6 {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-@media (max-width: 992px) {
-  .kpi-grid-6 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .kpi-grid-6 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.kpi-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 13px 15px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.kpi-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.kpi-value {
-  font-size: 21px;
-  font-weight: 800;
-  color: var(--text-primary);
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1.15;
-  margin-bottom: 7px;
-}
-
-.kpi-delta {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 7px;
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  display: inline-block;
-  width: fit-content;
-}
-.delta-up { background: rgba(16, 185, 129, 0.16); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
-.delta-down { background: rgba(244, 63, 94, 0.16); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3); }
-.delta-warn { background: rgba(245, 158, 11, 0.16); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-.delta-neutral { background: rgba(148, 163, 184, 0.14); color: #CBD5E1; }
-
-/* FULL TACTICAL PITCH VIEW */
-.pitch-wrapper {
-  background: radial-gradient(circle at 50% 50%, #154D2E 0%, #0E351F 62%, #082012 100%);
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-radius: 24px;
-  padding: 20px 8px 18px 8px;
-  box-shadow: inset 0 0 65px rgba(0, 0, 0, 0.65), 0 14px 36px rgba(0, 0, 0, 0.5);
-  position: relative;
-  background-image:
-    linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.16) 49.5%, rgba(255,255,255,0.16) 50.5%, transparent 50.5%),
-    radial-gradient(circle at 50% 50%, transparent 52px, rgba(255,255,255,0.16) 53px, rgba(255,255,255,0.16) 55px, transparent 56px),
-    linear-gradient(to right, transparent 22%, rgba(255,255,255,0.12) 22%, rgba(255,255,255,0.12) 78%, transparent 78%),
-    radial-gradient(circle at 50% 50%, #165231 0%, #0D331D 68%, #071C10 100%);
-  background-size: 100% 100%, 100% 100%, 100% 14%, 100% 100%;
-  background-repeat: no-repeat;
-  margin-bottom: 14px;
-}
-
-.pitch-row {
-  display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  gap: 6px;
-  margin-bottom: 14px;
-  flex-wrap: nowrap;
-}
-.pitch-row:last-child {
-  margin-bottom: 0;
-}
-
-a.pitch-node-link {
-  text-decoration: none !important;
-  color: inherit !important;
-  flex: 1 1 0;
-  max-width: 122px;
-  min-width: 64px;
-  display: flex;
-}
-
-.pitch-node {
-  width: 100%;
-  background: rgba(11, 17, 30, 0.90);
-  backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.16);
-  border-radius: 15px;
-  padding: 8px 4px 6px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
-  transition: transform 0.15s ease, border-color 0.15s ease;
-  cursor: pointer;
-}
-
-.pitch-node:hover {
-  transform: translateY(-2px);
-  border-color: #00FF85;
-}
-
-.pitch-node.selected {
-  border: 2px solid #00FF85;
-  box-shadow: 0 0 20px rgba(0, 255, 133, 0.55);
-}
-
-/* ZERO-BROKEN-IMAGE CSS AVATAR STACK (58px) */
-.node-avatar-wrap {
-  position: relative;
-  width: 58px;
-  height: 58px;
-  margin-bottom: 5px;
-}
-
-.node-avatar-circle {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background-color: #0B111E;
-  background-size: cover, cover, 84% 84%;
-  background-position: top center, top center, center center;
-  background-repeat: no-repeat;
-  border: 2px solid rgba(255, 255, 255, 0.32);
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.badge-cap {
-  position: absolute;
-  bottom: -2px;
-  right: -4px;
-  background: #FBBF24;
-  color: #000;
-  font-size: 9.5px;
-  font-weight: 900;
-  padding: 1px 5px;
-  border-radius: 6px;
-  border: 1.5px solid #FFF;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-}
-
-.badge-vc {
-  position: absolute;
-  bottom: -2px;
-  right: -4px;
-  background: #CBD5E1;
-  color: #000;
-  font-size: 9.5px;
-  font-weight: 900;
-  padding: 1px 5px;
-  border-radius: 6px;
-  border: 1.5px solid #FFF;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-}
-
-.badge-flag {
-  position: absolute;
-  top: -3px;
-  left: -4px;
-  background: var(--accent-rose);
-  color: #FFF;
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 5px;
-}
-
-.badge-sub {
-  position: absolute;
-  top: -3px;
-  left: -4px;
-  background: #334155;
-  color: #F8FAFC;
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 5px;
-}
-
-.node-name {
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 96%;
-  line-height: 1.2;
-}
-
-.node-meta {
-  font-size: 10px;
-  color: #CBD5E1;
-  font-family: 'JetBrains Mono', monospace;
-  margin: 2px 0 4px 0;
-}
-
-.fdr-pill {
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 5px;
-  width: 92%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-.fdr-1 { background: var(--fdr-1); color: #FFF; }
-.fdr-2 { background: var(--fdr-2); color: #052E16; }
-.fdr-3 { background: var(--fdr-3); color: #F8FAFC; }
-.fdr-4 { background: var(--fdr-4); color: #FFF; }
-.fdr-5 { background: var(--fdr-5); color: #FFF; }
-
-.node-dossier-btn {
-  font-size: 9.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(0, 255, 133, 0.12);
-  color: #00FF85;
-  border: 1px solid rgba(0, 255, 133, 0.35);
-  border-radius: 6px;
-  padding: 2px 0;
-  width: 92%;
-  transition: all 0.15s ease;
-}
-
-.pitch-node:hover .node-dossier-btn {
-  background: #00FF85;
-  color: #070B12;
-}
-
-/* BENCH TRAY */
-.bench-tray {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 18px;
-  padding: 14px 10px;
-  margin-bottom: 18px;
-}
-
-.bench-label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-secondary);
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-
-/* DOSSIER & SECTION CARDS */
-.dossier-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  padding: 18px 20px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-  margin-bottom: 16px;
-}
-
-.dossier-top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 14px;
-}
-
-/* ZERO-BROKEN-IMAGE DOSSIER PORTRAIT (92px) */
-.dossier-avatar-circle {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background-color: #070B12;
-  background-size: cover, cover, 82% 82%;
-  background-position: top center, top center, center center;
-  background-repeat: no-repeat;
-  border: 3px solid #00FF85;
-  box-shadow: 0 6px 20px rgba(0, 255, 133, 0.25);
-}
-
-.stat-grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-@media (max-width: 640px) {
-  .stat-grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.stat-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 9px 11px;
-}
-
-.stat-box-lbl {
-  font-size: 9.5px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-.stat-box-val {
-  font-size: 15.5px;
-  font-weight: 800;
-  color: #FFF;
-  font-family: 'JetBrains Mono', monospace;
-  margin-top: 2px;
-}
-
-.runway-grid-5 {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-}
-
-/* TRANSFER MATRIX & UPGRADE CARDS */
-.sell-banner {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.11) 0%, rgba(15, 23, 42, 0.95) 100%);
-  border: 1px solid rgba(244, 63, 94, 0.3);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.buy-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 10px;
-}
-
-@media (max-width: 768px) {
-  .buy-grid-3 {
-    grid-template-columns: 1fr;
-  }
-}
-
-.buy-card {
-  background: rgba(16, 185, 129, 0.06);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.upgrade-card {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.35);
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 10px;
-}
-
-/* MINI-LEAGUE TABLE */
-.ml-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-.ml-table th {
-  text-align: left;
-  padding: 9px 10px;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.ml-table td {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.ml-row-me {
-  background: rgba(0, 255, 133, 0.11);
-  font-weight: 700;
-}
-
-/* TABS & COMPACT BUTTONS */
-.stTabs [data-baseweb="tab-list"] {
-  gap: 6px;
-  background-color: var(--bg-surface);
-  padding: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--border-subtle);
-}
-
-.stTabs [data-baseweb="tab"] {
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-weight: 700;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-}
-
-.stTabs [aria-selected="true"] {
-  background-color: var(--bg-elevated) !important;
-  color: #00FF85 !important;
-}
-
-div.stButton > button {
-  background: var(--bg-elevated) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid rgba(0, 255, 133, 0.28) !important;
-  border-radius: 10px !important;
-  font-size: 11.5px !important;
-  font-weight: 700 !important;
-  padding: 5px 12px !important;
-  min-height: 32px !important;
-}
-
-div.stButton > button:hover {
-  background: #00FF85 !important;
-  color: #070B12 !important;
-  border-color: #00FF85 !important;
-}
-</style>
-""")
+CSS_LINES = [
+    "<style>",
+    "@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap');",
+    ":root {",
+    "  --bg-base: #070B12; --bg-surface: #0F172A; --bg-elevated: #1E293B;",
+    "  --border-subtle: rgba(255, 255, 255, 0.08); --accent-emerald: #10B981;",
+    "  --accent-neon: #00FF85; --accent-cyan: #06B6D4; --accent-amber: #F59E0B;",
+    "  --accent-rose: #F43F5E; --text-primary: #F8FAFC; --text-secondary: #94A3B8;",
+    "  --fdr-1: #059669; --fdr-2: #10B981; --fdr-3: #475569; --fdr-4: #D97706; --fdr-5: #E11D48;",
+    "}",
+    "html, body, [class*='css'] { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; color: var(--text-primary); background-color: var(--bg-base); scroll-behavior: smooth; }",
+    ".stApp { background: radial-gradient(circle at 50% 0%, #132238 0%, #070B12 62%); }",
+    "#MainMenu, header, footer, [data-testid='stHeader'], [data-testid='stToolbar'], [data-testid='stDecoration'], [data-testid='stStatusWidget'], [data-testid='manage-app-button'], .stAppToolbar, .stDeployButton, div[class*='viewerBadge'], a[class*='viewerBadge'], div[class*='profileContainer'], iframe[title='streamlit_badge'] { visibility: hidden !important; display: none !important; height: 0 !important; width: 0 !important; opacity: 0 !important; pointer-events: none !important; }",
+    "iframe[height='0'] { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }",
+    ".block-container { padding-top: 0.6rem !important; padding-bottom: 2.5rem !important; max-width: 1280px !important; }",
+    ".kcfc-hero { background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(15, 23, 42, 0.96) 50%, rgba(6, 182, 212, 0.12) 100%); border: 1px solid rgba(0, 255, 133, 0.35); border-radius: 22px; padding: 20px 22px 16px 22px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55); }",
+    ".kcfc-hero-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; width: 100%; }",
+    ".kcfc-hero-brand { display: flex; align-items: center; gap: 16px; }",
+    ".kcfc-emblem { width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, #00FF85 0%, #10B981 100%); border: 2px solid #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 22px rgba(0, 255, 133, 0.35); }",
+    ".kcfc-hero-title { font-size: 26px; font-weight: 900; letter-spacing: 0.8px; color: #FFFFFF; margin: 0; line-height: 1.08; text-transform: uppercase; }",
+    ".kcfc-hero-sub { font-size: 11px; font-weight: 800; color: #00FF85; letter-spacing: 1.6px; text-transform: uppercase; margin-top: 4px; }",
+    ".countdown-bar { width: 100%; background: rgba(7, 11, 18, 0.9); border: 1px solid rgba(0, 255, 133, 0.4); border-radius: 14px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: inset 0 0 18px rgba(0, 255, 133, 0.08); }",
+    ".countdown-left { display: flex; align-items: center; gap: 8px; }",
+    ".pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #00FF85; box-shadow: 0 0 10px #00FF85; }",
+    ".countdown-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #E2E8F0; }",
+    ".countdown-val { font-size: 17px; font-weight: 800; color: #00FF85; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; }",
+    ".kpi-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }",
+    "@media (max-width: 992px) { .kpi-grid-6 { grid-template-columns: repeat(3, 1fr); } }",
+    "@media (max-width: 640px) { .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); } }",
+    ".kpi-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 13px 15px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; }",
+    ".kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); margin-bottom: 4px; }",
+    ".kpi-value { font-size: 21px; font-weight: 800; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; line-height: 1.15; margin-bottom: 7px; }",
+    ".kpi-delta { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; display: inline-block; width: fit-content; }",
+    ".delta-up { background: rgba(16, 185, 129, 0.16); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }",
+    ".delta-down { background: rgba(244, 63, 94, 0.16); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3); }",
+    ".delta-warn { background: rgba(245, 158, 11, 0.16); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }",
+    ".delta-neutral { background: rgba(148, 163, 184, 0.14); color: #CBD5E1; }",
+    ".pitch-wrapper { background: radial-gradient(circle at 50% 50%, #154D2E 0%, #0E351F 62%, #082012 100%); border: 2px solid rgba(255, 255, 255, 0.22); border-radius: 24px; padding: 20px 8px 18px 8px; box-shadow: inset 0 0 65px rgba(0, 0, 0, 0.65), 0 14px 36px rgba(0, 0, 0, 0.5); position: relative; background-image: linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.16) 49.5%, rgba(255,255,255,0.16) 50.5%, transparent 50.5%), radial-gradient(circle at 50% 50%, transparent 52px, rgba(255,255,255,0.16) 53px, rgba(255,255,255,0.16) 55px, transparent 56px), linear-gradient(to right, transparent 22%, rgba(255,255,255,0.12) 22%, rgba(255,255,255,0.12) 78%, transparent 78%), radial-gradient(circle at 50% 50%, #165231 0%, #0D331D 68%, #071C10 100%); background-size: 100% 100%, 100% 100%, 100% 14%, 100% 100%; background-repeat: no-repeat; margin-bottom: 14px; }",
+    ".pitch-row { display: flex; justify-content: space-around; align-items: stretch; gap: 6px; margin-bottom: 14px; flex-wrap: nowrap; }",
+    ".pitch-row:last-child { margin-bottom: 0; }",
+    "a.pitch-node-link { text-decoration: none !important; color: inherit !important; flex: 1 1 0; max-width: 122px; min-width: 64px; display: flex; }",
+    ".pitch-node { width: 100%; background: rgba(11, 17, 30, 0.90); backdrop-filter: blur(8px); border: 1.5px solid rgba(255, 255, 255, 0.16); border-radius: 15px; padding: 8px 4px 6px 4px; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); transition: transform 0.15s ease, border-color 0.15s ease; cursor: pointer; }",
+    ".pitch-node:hover { transform: translateY(-2px); border-color: #00FF85; }",
+    ".pitch-node.selected { border: 2px solid #00FF85; box-shadow: 0 0 20px rgba(0, 255, 133, 0.55); }",
+    ".node-avatar-wrap { position: relative; width: 58px; height: 58px; margin-bottom: 5px; }",
+    ".node-avatar-circle { width: 58px; height: 58px; border-radius: 50%; background-color: #0B111E; background-size: cover, cover, 84% 84%; background-position: top center, top center, center center; background-repeat: no-repeat; border: 2px solid rgba(255, 255, 255, 0.32); box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); }",
+    ".badge-cap { position: absolute; bottom: -2px; right: -4px; background: #FBBF24; color: #000; font-size: 9.5px; font-weight: 900; padding: 1px 5px; border-radius: 6px; border: 1.5px solid #FFF; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }",
+    ".badge-vc { position: absolute; bottom: -2px; right: -4px; background: #CBD5E1; color: #000; font-size: 9.5px; font-weight: 900; padding: 1px 5px; border-radius: 6px; border: 1.5px solid #FFF; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }",
+    ".badge-flag { position: absolute; top: -3px; left: -4px; background: var(--accent-rose); color: #FFF; font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 5px; }",
+    ".badge-sub { position: absolute; top: -3px; left: -4px; background: #334155; color: #F8FAFC; font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 5px; }",
+    ".node-name { font-size: 11.5px; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 96%; line-height: 1.2; }",
+    ".node-meta { font-size: 10px; color: #CBD5E1; font-family: 'JetBrains Mono', monospace; margin: 2px 0 4px 0; }",
+    ".fdr-pill { font-size: 9.5px; font-weight: 800; padding: 2px 5px; border-radius: 5px; width: 92%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }",
+    ".fdr-1 { background: var(--fdr-1); color: #FFF; } .fdr-2 { background: var(--fdr-2); color: #052E16; } .fdr-3 { background: var(--fdr-3); color: #F8FAFC; } .fdr-4 { background: var(--fdr-4); color: #FFF; } .fdr-5 { background: var(--fdr-5); color: #FFF; }",
+    ".node-dossier-btn { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(0, 255, 133, 0.12); color: #00FF85; border: 1px solid rgba(0, 255, 133, 0.35); border-radius: 6px; padding: 2px 0; width: 92%; transition: all 0.15s ease; }",
+    ".pitch-node:hover .node-dossier-btn { background: #00FF85; color: #070B12; }",
+    ".bench-tray { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 14px 10px; margin-bottom: 18px; }",
+    ".bench-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 10px; display: flex; justify-content: space-between; }",
+    ".dossier-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 18px 20px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); margin-bottom: 16px; }",
+    ".dossier-top { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 14px; }",
+    ".dossier-avatar-circle { width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0; background-color: #070B12; background-size: cover, cover, 82% 82%; background-position: top center, top center, center center; background-repeat: no-repeat; border: 3px solid #00FF85; box-shadow: 0 6px 20px rgba(0, 255, 133, 0.25); }",
+    ".stat-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }",
+    "@media (max-width: 640px) { .stat-grid-4 { grid-template-columns: repeat(2, 1fr); } }",
+    ".stat-box { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 9px 11px; }",
+    ".stat-box-lbl { font-size: 9.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }",
+    ".stat-box-val { font-size: 15.5px; font-weight: 800; color: #FFF; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }",
+    ".runway-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }",
+    ".sell-banner { background: linear-gradient(90deg, rgba(244, 63, 94, 0.11) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px; }",
+    ".buy-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }",
+    "@media (max-width: 768px) { .buy-grid-3 { grid-template-columns: 1fr; } }",
+    ".buy-card { background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.28); border-radius: 12px; padding: 12px; }",
+    ".upgrade-card { background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 12px; padding: 12px; margin-top: 10px; }",
+    ".ml-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }",
+    ".ml-table th { text-align: left; padding: 9px 10px; font-size: 10.5px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle); }",
+    ".ml-table td { padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }",
+    ".ml-row-me { background: rgba(0, 255, 133, 0.11); font-weight: 700; }",
+    ".stTabs [data-baseweb='tab-list'] { gap: 6px; background-color: var(--bg-surface); padding: 6px; border-radius: 14px; border: 1px solid var(--border-subtle); }",
+    ".stTabs [data-baseweb='tab'] { border-radius: 10px; padding: 8px 16px; font-weight: 700; font-size: 12.5px; color: var(--text-secondary); }",
+    ".stTabs [aria-selected='true'] { background-color: var(--bg-elevated) !important; color: #00FF85 !important; }",
+    "div.stButton > button { background: var(--bg-elevated) !important; color: var(--text-primary) !important; border: 1px solid rgba(0, 255, 133, 0.28) !important; border-radius: 10px !important; font-size: 11.5px !important; font-weight: 700 !important; padding: 5px 12px !important; min-height: 32px !important; }",
+    "div.stButton > button:hover { background: #00FF85 !important; color: #070B12 !important; border-color: #00FF85 !important; }",
+    "</style>"
+]
+render_html("\n".join(CSS_LINES))
 
 # ---------------------------------------------------------
 # 3. AUTHENTICATION, SYNC TIMESTAMP & CLEAN STATE MANAGEMENT
@@ -724,14 +163,12 @@ if q_pid and str(q_pid).isdigit():
 if not st.session_state["authenticated"]:
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        render_html("""
-        <div class="dossier-card" style="text-align: center; margin-top: 40px;">
-          <h2 style="margin:0; font-weight:900; color:#FFF; letter-spacing:0.8px;">KINGS COUNTY FC</h2>
-          <p style="color:#00FF85; font-size:11.5px; font-weight:800; letter-spacing:1.6px; margin-top:4px;">
-            FPL TACTICAL COMMAND & MINI-LEAGUE ENGINE
-          </p>
-        </div>
-        """)
+        render_html(
+            "<div class='dossier-card' style='text-align: center; margin-top: 40px;'>"
+            "<h2 style='margin:0; font-weight:900; color:#FFF; letter-spacing:0.8px;'>KINGS COUNTY FC</h2>"
+            "<p style='color:#00FF85; font-size:11.5px; font-weight:800; letter-spacing:1.6px; margin-top:4px;'>"
+            "FPL TACTICAL COMMAND & MINI-LEAGUE ENGINE</p></div>"
+        )
         with st.form("auth_form"):
             pw = st.text_input("Manager Access Key", type="password")
             tid = st.number_input("FPL Entry ID", value=st.session_state["team_id"], step=1)
@@ -793,13 +230,6 @@ def generate_svg_kit(team_short, is_gk=False):
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
 
 def build_avatar_bg_style(p) -> str:
-    """
-    Returns a 3-layer CSS background-image stack:
-      1. 2025/26 & 2026/27 Premier League CDN (/premierleague25/photos/players/110x140/{code}.png)
-      2. Legacy Premier League CDN (/premierleague/photos/players/110x140/p{code}.png)
-      3. Authentic Club SVG Kit Data URI
-    Works 100% natively in CSS with zero JavaScript `onerror` needed.
-    """
     raw_code = str(p.get("code") or p.get("photo", "").split(".")[0]).lstrip("p").strip()
     url_25 = f"https://resources.premierleague.com/premierleague25/photos/players/110x140/{raw_code}.png"
     url_legacy = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{raw_code}.png"
@@ -838,14 +268,6 @@ def fetch_fixtures(nonce=0):
 
 @st.cache_data(ttl=30)
 def fetch_private_my_team(tid, raw_cookie_or_token="", fpl_token="", fpl_email="", fpl_password="", nonce=0):
-    """
-    Universal FPL Authenticator for `/api/my-team/{team_id}/`.
-    Accepts:
-      1. Full 'Copy as cURL' command from Chrome/Edge/Safari DevTools
-      2. Raw JWT token ('eyJ...') or 'Bearer eyJ...' from x-api-authorization
-      3. Browser Cookie string
-      4. Direct FPL Email + Password credentials
-    """
     diag = {
         "attempted": False,
         "authenticated": False,
@@ -1083,9 +505,7 @@ avg_top_xgi = sum(float(p.get("expected_goal_involvements") or 0) for p in top_a
 
 w_form = 0.58 if avg_top_form >= 5.0 else 0.46
 w_xgi = 4.4 if avg_top_xgi >= 2.2 else 3.8
-calibration_note = (
-    f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form*100)}% | xGI Multiplier {w_xgi}x"
-)
+calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form*100)}% | xGI Multiplier {w_xgi}x"
 
 purchase_price_map = {}
 for tr in transfers_list:
@@ -1336,27 +756,17 @@ bank_delta_str = f"{'+' if bank_delta > 0 else ''}£{bank_delta:.1f}m vs LW"
 active_cap_obj = next((p for p in starting_xi if p.get("is_captain")), starting_xi[0] if starting_xi else {})
 active_vc_obj = next((p for p in starting_xi if p.get("is_vice_captain")), starting_xi[1] if len(starting_xi) > 1 else {})
 
-render_html(f"""
-<div class="kcfc-hero">
-  <div class="kcfc-hero-top">
-    <div class="kcfc-hero-brand">
-      {pl_vector_svg}
-      <div>
-        <div class="kcfc-hero-title">KINGS COUNTY FC</div>
-        <div class="kcfc-hero-sub">TACTICAL COMMAND &bull; TARGET LEAGUE: {target_league_name}</div>
-      </div>
-    </div>
-    <span class="kpi-delta {roster_mode_cls}">{roster_sync_mode}</span>
-  </div>
-  <div class="countdown-bar">
-    <div class="countdown-left">
-      <div class="pulse-dot"></div>
-      <div class="countdown-lbl">GAMEWEEK {upcoming_gw} DEADLINE</div>
-    </div>
-    <div class="countdown-val">{countdown_display}</div>
-  </div>
-</div>
-""")
+render_html(
+    f"<div class='kcfc-hero'>"
+    f"<div class='kcfc-hero-top'>"
+    f"<div class='kcfc-hero-brand'>{pl_vector_svg}"
+    f"<div><div class='kcfc-hero-title'>KINGS COUNTY FC</div>"
+    f"<div class='kcfc-hero-sub'>TACTICAL COMMAND &bull; TARGET LEAGUE: {target_league_name}</div></div></div>"
+    f"<span class='kpi-delta {roster_mode_cls}'>{roster_sync_mode}</span></div>"
+    f"<div class='countdown-bar'><div class='countdown-left'><div class='pulse-dot'></div>"
+    f"<div class='countdown-lbl'>GAMEWEEK {upcoming_gw} DEADLINE</div></div>"
+    f"<div class='countdown-val'>{countdown_display}</div></div></div>"
+)
 
 if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap to Refresh Data & Reset Captaincy to Live FPL", use_container_width=True):
     st.cache_data.clear()
@@ -1370,40 +780,16 @@ if st.button(f"⟳ Last Updated: {st.session_state['last_synced_str']} — Tap t
     st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
     st.rerun()
 
-render_html(f"""
-<div class="kpi-grid-6" style="margin-top:6px;">
-  <div class="kpi-card">
-    <div class="kpi-label">Season Points</div>
-    <div class="kpi-value">{total_pts:,}</div>
-    <span class="kpi-delta {gw_cls}">{gw_delta_str}</span>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Overall Rank</div>
-    <div class="kpi-value">{overall_rank:,}</div>
-    <span class="kpi-delta {rank_cls}">{rank_arrow}</span>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Transfers Available</div>
-    <div class="kpi-value" style="color:#FBBF24;">{ft_remaining_now} FT</div>
-    <span class="kpi-delta {ft_rec_cls}">{ft_rec_text}</span>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Squad Value</div>
-    <div class="kpi-value">£{val_now:.1f}m</div>
-    <span class="kpi-delta {val_cls}">{val_delta_str}</span>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">In The Bank</div>
-    <div class="kpi-value" style="color:#00FF85;">£{bank_now:.1f}m</div>
-    <span class="kpi-delta {bank_cls}">{bank_delta_str}</span>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">GW{upcoming_gw} Projected XI</div>
-    <div class="kpi-value" style="color:#06B6D4;">{team_xp_total} xP</div>
-    <span class="kpi-delta delta-up">C: {active_cap_obj.get('web_name', 'N/A')} | V: {active_vc_obj.get('web_name', 'N/A')}</span>
-  </div>
-</div>
-""")
+render_html(
+    f"<div class='kpi-grid-6' style='margin-top:6px;'>"
+    f"<div class='kpi-card'><div class='kpi-label'>Season Points</div><div class='kpi-value'>{total_pts:,}</div><span class='kpi-delta {gw_cls}'>{gw_delta_str}</span></div>"
+    f"<div class='kpi-card'><div class='kpi-label'>Overall Rank</div><div class='kpi-value'>{overall_rank:,}</div><span class='kpi-delta {rank_cls}'>{rank_arrow}</span></div>"
+    f"<div class='kpi-card'><div class='kpi-label'>Transfers Available</div><div class='kpi-value' style='color:#FBBF24;'>{ft_remaining_now} FT</div><span class='kpi-delta {ft_rec_cls}'>{ft_rec_text}</span></div>"
+    f"<div class='kpi-card'><div class='kpi-label'>Squad Value</div><div class='kpi-value'>£{val_now:.1f}m</div><span class='kpi-delta {val_cls}'>{val_delta_str}</span></div>"
+    f"<div class='kpi-card'><div class='kpi-label'>In The Bank</div><div class='kpi-value' style='color:#00FF85;'>£{bank_now:.1f}m</div><span class='kpi-delta {bank_cls}'>{bank_delta_str}</span></div>"
+    f"<div class='kpi-card'><div class='kpi-label'>GW{upcoming_gw} Projected XI</div><div class='kpi-value' style='color:#06B6D4;'>{team_xp_total} xP</div><span class='kpi-delta delta-up'>C: {active_cap_obj.get('web_name', 'N/A')} | V: {active_vc_obj.get('web_name', 'N/A')}</span></div>"
+    f"</div>"
+)
 
 # ---------------------------------------------------------
 # 11. PRE-COMPUTE GLOBAL TRANSFER RANKINGS & FUNDING PAIRS
@@ -1485,7 +871,7 @@ def build_pitch_node_html(p, is_selected=False, bench_slot=None):
         f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
         f"<div class='pitch-node {sel_c}'>"
         f"<div class='node-avatar-wrap'>"
-        f"<div class='node-avatar-circle' style='{bg_style}'></div>"
+        f"<div class='node-avatar-circle' style=\"{bg_style}\"></div>"
         f"{cap_badge}{flag_badge}"
         f"</div>"
         f"<div class='node-name'>{p.get('web_name')}</div>"
@@ -1515,28 +901,25 @@ def render_pitch_and_dossier_fragment():
         mid_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in mids)
         fwd_html = "".join(build_pitch_node_html(p, p["id"] == sel_pid) for p in fwds)
 
-        render_html(f"""
-        <div class="pitch-wrapper">
-          <div class="pitch-row">{gk_html}</div>
-          <div class="pitch-row">{def_html}</div>
-          <div class="pitch-row">{mid_html}</div>
-          <div class="pitch-row">{fwd_html}</div>
-        </div>
-        """)
+        render_html(
+            f"<div class='pitch-wrapper'>"
+            f"<div class='pitch-row'>{gk_html}</div>"
+            f"<div class='pitch-row'>{def_html}</div>"
+            f"<div class='pitch-row'>{mid_html}</div>"
+            f"<div class='pitch-row'>{fwd_html}</div>"
+            f"</div>"
+        )
 
         bench_html = "".join(
             build_pitch_node_html(p, p["id"] == sel_pid, bench_slot=i+1)
             for i, p in enumerate(bench_sorted)
         )
-        render_html(f"""
-        <div class="bench-tray">
-          <div class="bench-label">
-            <span>PRIORITY AUTO-SUB BENCH</span>
-            <span style="color:#00FF85;">TAP ANY PLAYER FOR DOSSIER</span>
-          </div>
-          <div class="pitch-row" style="margin-bottom:0;">{bench_html}</div>
-        </div>
-        """)
+        render_html(
+            f"<div class='bench-tray'>"
+            f"<div class='bench-label'><span>PRIORITY AUTO-SUB BENCH</span>"
+            f"<span style='color:#00FF85;'>TAP ANY PLAYER FOR DOSSIER</span></div>"
+            f"<div class='pitch-row' style='margin-bottom:0;'>{bench_html}</div></div>"
+        )
 
     with col_right:
         render_html("<div id='player-dossier'></div>")
@@ -1600,68 +983,36 @@ def render_pitch_and_dossier_fragment():
             else:
                 verdict_tag, verdict_col = "UPGRADE / BENCH CANDIDATE", "#F59E0B"
 
-            render_html(f"""
-            <div class="dossier-card">
-              <div class="dossier-top">
-                <div class="dossier-avatar-circle" style='{dossier_bg_style}'></div>
-                <div style="flex:1;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                    <span style="font-size:20px; font-weight:800; color:#FFF;">{sp.get('first_name')} {sp.get('second_name')}</span>
-                    <span style="font-size:10px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(0,255,133,0.12); color:{verdict_col}; border:1px solid {verdict_col};">
-                      {verdict_tag}
-                    </span>
-                  </div>
-                  <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
-                    {pos_name} &bull; <strong>{teams_map.get(sp.get('team'), {}).get('name', 'Premier League')}</strong> &bull; Global TSB: {sp.get('selected_by_percent')}%
-                  </div>
-                  <div style="font-size:11px; color:#06B6D4; font-weight:700; margin-top:3px;">
-                    {target_league_name}: {rival_tag}
-                  </div>
-                </div>
-              </div>
-              {news_banner}
-              <div class="stat-grid-4">
-                <div class="stat-box">
-                  <div class="stat-box-lbl">Market / Sell Price</div>
-                  <div class="stat-box-val">£{p_price:.1f}m / <span style="color:#00FF85;">£{sell_val:.1f}m</span></div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">GW{upcoming_gw} xP</div>
-                  <div class="stat-box-val" style="color:#00FF85;">{sp.get('xp_next')}</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">5-GW Projected</div>
-                  <div class="stat-box-val" style="color:#06B6D4;">{sp.get('xp_5gw')}p</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">GW{last_active_gw} Actual</div>
-                  <div class="stat-box-val">{sp.get('last_gw_pts', 0)} pts</div>
-                </div>
-              </div>
-              <div class="stat-grid-4">
-                <div class="stat-box">
-                  <div class="stat-box-lbl">Form Rating</div>
-                  <div class="stat-box-val">{sp.get('form')}</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">xG + xA (xGI)</div>
-                  <div class="stat-box-val">{sp.get('expected_goal_involvements', '0.00')}</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">ICT Index</div>
-                  <div class="stat-box-val">{sp.get('ict_index', '0.0')}</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-box-lbl">Value (Pts/£m)</div>
-                  <div class="stat-box-val">{pts_per_m}</div>
-                </div>
-              </div>
-              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin:12px 0 8px 0;">
-                Upcoming 5-GW Runway (Avg FDR: {sp.get('avg_5_fdr')})
-              </div>
-              <div class="runway-grid-5">{runway_chips}</div>
-            </div>
-            """)
+            render_html(
+                f"<div class='dossier-card'>"
+                f"<div class='dossier-top'>"
+                f"<div class='dossier-avatar-circle' style=\"{dossier_bg_style}\"></div>"
+                f"<div style='flex:1;'>"
+                f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;'>"
+                f"<span style='font-size:20px; font-weight:800; color:#FFF;'>{sp.get('first_name')} {sp.get('second_name')}</span>"
+                f"<span style='font-size:10px; font-weight:800; padding:4px 9px; border-radius:999px; background:rgba(0,255,133,0.12); color:{verdict_col}; border:1px solid {verdict_col};'>{verdict_tag}</span>"
+                f"</div>"
+                f"<div style='font-size:12px; color:var(--text-secondary); margin-top:4px;'>"
+                f"{pos_name} &bull; <strong>{teams_map.get(sp.get('team'), {}).get('name', 'Premier League')}</strong> &bull; Global TSB: {sp.get('selected_by_percent')}%"
+                f"</div>"
+                f"<div style='font-size:11px; color:#06B6D4; font-weight:700; margin-top:3px;'>{target_league_name}: {rival_tag}</div>"
+                f"</div></div>"
+                f"{news_banner}"
+                f"<div class='stat-grid-4'>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>Market / Sell Price</div><div class='stat-box-val'>£{p_price:.1f}m / <span style='color:#00FF85;'>£{sell_val:.1f}m</span></div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>GW{upcoming_gw} xP</div><div class='stat-box-val' style='color:#00FF85;'>{sp.get('xp_next')}</div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>5-GW Projected</div><div class='stat-box-val' style='color:#06B6D4;'>{sp.get('xp_5gw')}p</div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>GW{last_active_gw} Actual</div><div class='stat-box-val'>{sp.get('last_gw_pts', 0)} pts</div></div>"
+                f"</div>"
+                f"<div class='stat-grid-4'>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>Form Rating</div><div class='stat-box-val'>{sp.get('form')}</div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>xG + xA (xGI)</div><div class='stat-box-val'>{sp.get('expected_goal_involvements', '0.00')}</div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>ICT Index</div><div class='stat-box-val'>{sp.get('ict_index', '0.0')}</div></div>"
+                f"<div class='stat-box'><div class='stat-box-lbl'>Value (Pts/£m)</div><div class='stat-box-val'>{pts_per_m}</div></div>"
+                f"</div>"
+                f"<div style='font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin:12px 0 8px 0;'>Upcoming 5-GW Runway (Avg FDR: {sp.get('avg_5_fdr')})</div>"
+                f"<div class='runway-grid-5'>{runway_chips}</div></div>"
+            )
 
 with tab_pitch:
     render_pitch_and_dossier_fragment()
@@ -1690,48 +1041,36 @@ with tab_pitch:
             watch_items.append(f"<strong>{p['web_name']}</strong> faces tough GW{upcoming_gw} matchup vs {nxt['opp']} (FDR {nxt['fdr']})")
     watch_str = " &bull; ".join(watch_items[:4]) or "No major injury or suspension flags across your 15-man squad."
 
-    render_html(f"""
-    <div class="dossier-card" style="margin-top:20px; border-color:rgba(0, 255, 133, 0.25);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-        <span style="font-size:16px; font-weight:800; color:#FFF;">GW{last_active_gw} EXECUTIVE DEBRIEF & FORWARD RADAR</span>
-        <span style="font-size:11px; color:#00FF85; font-family:'JetBrains Mono', monospace;">{calibration_note}</span>
-      </div>
-      <div class="buy-grid-3">
-        <div style="background:rgba(16,185,129,0.07); border-left:3px solid #00FF85; padding:12px; border-radius:10px;">
-          <div style="font-size:11px; font-weight:800; color:#00FF85; text-transform:uppercase;">What Went Well (GW{last_active_gw})</div>
-          <div style="font-size:12.5px; color:#E2E8F0; margin-top:6px;">
-            Scored <strong>{gw_pts} pts</strong> ({'+' if gw_vs_avg >= 0 else ''}{gw_vs_avg} vs GW Average). Key drivers: {wins_str}.
-          </div>
-        </div>
-        <div style="background:rgba(245,158,11,0.07); border-left:3px solid #F59E0B; padding:12px; border-radius:10px;">
-          <div style="font-size:11px; font-weight:800; color:#FBBF24; text-transform:uppercase;">Areas for Improvement</div>
-          <div style="font-size:12.5px; color:#E2E8F0; margin-top:6px;">{imp_str}</div>
-        </div>
-        <div style="background:rgba(244,63,94,0.07); border-left:3px solid #F43F5E; padding:12px; border-radius:10px;">
-          <div style="font-size:11px; font-weight:800; color:#FB7185; text-transform:uppercase;">GW{upcoming_gw} Risk & Fixture Watch</div>
-          <div style="font-size:12.5px; color:#E2E8F0; margin-top:6px;">{watch_str}</div>
-        </div>
-      </div>
-    </div>
-    """)
+    render_html(
+        f"<div class='dossier-card' style='margin-top:20px; border-color:rgba(0, 255, 133, 0.25);'>"
+        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;'>"
+        f"<span style='font-size:16px; font-weight:800; color:#FFF;'>GW{last_active_gw} EXECUTIVE DEBRIEF & FORWARD RADAR</span>"
+        f"<span style='font-size:11px; color:#00FF85; font-family:JetBrains Mono, monospace;'>{calibration_note}</span></div>"
+        f"<div class='buy-grid-3'>"
+        f"<div style='background:rgba(16,185,129,0.07); border-left:3px solid #00FF85; padding:12px; border-radius:10px;'>"
+        f"<div style='font-size:11px; font-weight:800; color:#00FF85; text-transform:uppercase;'>What Went Well (GW{last_active_gw})</div>"
+        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>Scored <strong>{gw_pts} pts</strong> ({'+' if gw_vs_avg >= 0 else ''}{gw_vs_avg} vs GW Average). Key drivers: {wins_str}.</div></div>"
+        f"<div style='background:rgba(245,158,11,0.07); border-left:3px solid #F59E0B; padding:12px; border-radius:10px;'>"
+        f"<div style='font-size:11px; font-weight:800; color:#FBBF24; text-transform:uppercase;'>Areas for Improvement</div>"
+        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>{imp_str}</div></div>"
+        f"<div style='background:rgba(244,63,94,0.07); border-left:3px solid #F43F5E; padding:12px; border-radius:10px;'>"
+        f"<div style='font-size:11px; font-weight:800; color:#FB7185; text-transform:uppercase;'>GW{upcoming_gw} Risk & Fixture Watch</div>"
+        f"<div style='font-size:12.5px; color:#E2E8F0; margin-top:6px;'>{watch_str}</div></div>"
+        f"</div></div>"
+    )
 
 # =========================================================
 # TAB 2: OUTFIELD-FIRST TRANSFER MATRIX, UPGRADE PATHS & MULTI-CART
 # =========================================================
 with tab_transfers:
-    render_html(f"""
-    <div class="dossier-card" style="padding:16px 20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-        <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#FFF;">OUTFIELD-FIRST TRANSFER MATRIX & PREMIUM UPGRADE PATHS</h3>
-          <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-            Goalkeepers are deprioritized unless injured. Evaluates direct in-budget swaps AND 2-move premium upgrade paths (e.g., funding Saka/Palmer/Haaland) tailored to beat <strong>{target_league_name}</strong>.
-          </p>
-        </div>
-        <span class="kpi-delta delta-up">{ft_remaining_now} Free Transfer(s) | £{bank_now:.1f}m Bank</span>
-      </div>
-    </div>
-    """)
+    render_html(
+        f"<div class='dossier-card' style='padding:16px 20px;'>"
+        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>"
+        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#FFF;'>OUTFIELD-FIRST TRANSFER MATRIX & PREMIUM UPGRADE PATHS</h3>"
+        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
+        f"Goalkeepers are deprioritized unless injured. Evaluates direct in-budget swaps AND 2-move premium upgrade paths tailored to beat <strong>{target_league_name}</strong>.</p></div>"
+        f"<span class='kpi-delta delta-up'>{ft_remaining_now} Free Transfer(s) | £{bank_now:.1f}m Bank</span></div></div>"
+    )
 
     for idx, (urg_score, sell_p) in enumerate(sell_rankings[:3]):
         s_sell_val = sell_p.get("selling_price", sell_p.get("now_cost", 50) / 10.0)
@@ -1778,7 +1117,7 @@ with tab_transfers:
             if cand["id"] not in squad_ids
             and cand.get("element_type") == pos_id
             and (cand.get("now_cost", 0) / 10.0) > max_direct_budget
-            and cand.get("xp_5gw", 0) > ( (top_3_direct[0]["xp_5gw"] if top_3_direct else 0) + 3.0 )
+            and cand.get("xp_5gw", 0) > ((top_3_direct[0]["xp_5gw"] if top_3_direct else 0) + 3.0)
         ]
         elite_targets.sort(key=lambda x: x.get("xp_5gw", 0), reverse=True)
         if elite_targets and funding_pairs:
@@ -1803,40 +1142,22 @@ with tab_transfers:
                     f"</div></div>"
                 )
 
-        render_html(f"""
-        <div class="sell-banner">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-              <span style="font-size:10.5px; font-weight:800; background:#F43F5E; color:#FFF; padding:3px 8px; border-radius:6px; margin-right:8px;">
-                OUTFIELD PRIORITY #{idx+1}
-              </span>
-              <span style="font-size:16px; font-weight:800; color:#FFF;">{sell_p.get('web_name')} ({sell_p.get('team_short')})</span>
-            </div>
-            <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#F8FAFC;">
-              Est. Sell Value: <strong>£{s_sell_val:.1f}m</strong> &bull; 1-Move Max Budget: <strong style="color:#00FF85;">£{max_direct_budget:.1f}m</strong>
-            </div>
-          </div>
-          <div style="font-size:12px; color:#FDA4AF; margin-top:6px;">
-            <strong>Audit Trigger:</strong> {reason_str}
-          </div>
-          <div class="buy-grid-3">{buy_cards_html}</div>
-          {upgrade_banner_html}
-        </div>
-        """)
+        render_html(
+            f"<div class='sell-banner'>"
+            f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;'>"
+            f"<div><span style='font-size:10.5px; font-weight:800; background:#F43F5E; color:#FFF; padding:3px 8px; border-radius:6px; margin-right:8px;'>OUTFIELD PRIORITY #{idx+1}</span>"
+            f"<span style='font-size:16px; font-weight:800; color:#FFF;'>{sell_p.get('web_name')} ({sell_p.get('team_short')})</span></div>"
+            f"<div style='font-family:JetBrains Mono, monospace; font-size:12px; color:#F8FAFC;'>Est. Sell Value: <strong>£{s_sell_val:.1f}m</strong> &bull; 1-Move Max Budget: <strong style='color:#00FF85;'>£{max_direct_budget:.1f}m</strong></div></div>"
+            f"<div style='font-size:12px; color:#FDA4AF; margin-top:6px;'><strong>Audit Trigger:</strong> {reason_str}</div>"
+            f"<div class='buy-grid-3'>{buy_cards_html}</div>{upgrade_banner_html}</div>"
+        )
 
-    # ---------------------------------------------------------
-    # FPL-STYLE MULTI-PLAYER TRANSFER CART SIMULATOR
-    # ---------------------------------------------------------
-    render_html("""
-    <div class="dossier-card" style="margin-top:20px; padding:16px 20px;">
-      <h3 style="margin:0; font-size:16px; font-weight:800; color:#06B6D4;">
-        MULTI-PLAYER TRANSFER CART & HIT SIMULATOR
-      </h3>
-      <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-        Select 1 to 5 squad players to transfer out simultaneously. Validates exact selling prices, 3-per-club limits, point hits (-4 pts per extra move), and 5-GW breakeven math.
-      </p>
-    </div>
-    """)
+    render_html(
+        "<div class='dossier-card' style='margin-top:20px; padding:16px 20px;'>"
+        "<h3 style='margin:0; font-size:16px; font-weight:800; color:#06B6D4;'>MULTI-PLAYER TRANSFER CART & HIT SIMULATOR</h3>"
+        "<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
+        "Select 1 to 5 squad players to transfer out simultaneously. Validates exact selling prices, 3-per-club limits, point hits (-4 pts per extra move), and 5-GW breakeven math.</p></div>"
+    )
 
     out_options_map = {
         p["id"]: f"{p['web_name']} ({p['team_short']} | Pos: { {1:'GK',2:'DEF',3:'MID',4:'FWD'}[p['element_type']] } | Sell: £{p.get('selling_price', p['now_cost']/10):.1f}m | {p['xp_next']}xP)"
@@ -1918,26 +1239,14 @@ with tab_transfers:
             cart_verdict = "NEGATIVE EV — DO NOT EXECUTE"
             cart_col = "#F43F5E"
 
-        render_html(f"""
-        <div class="stat-grid-4" style="margin-top:14px;">
-          <div class="stat-box">
-            <div class="stat-box-lbl">Moves / Point Hit Cost</div>
-            <div class="stat-box-val">{num_moves} Move(s) ({hit_cost} pts)</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-lbl">GW{upcoming_gw} Net Impact (After Hit)</div>
-            <div class="stat-box-val" style="color:{'#00FF85' if gw1_xp_delta >= 0 else '#F43F5E'};">{'+' if gw1_xp_delta >= 0 else ''}{gw1_xp_delta} xP</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-lbl">5-GW Net Impact (After Hit)</div>
-            <div class="stat-box-val" style="color:{'#00FF85' if gw5_xp_delta >= 0 else '#F43F5E'};">{'+' if gw5_xp_delta >= 0 else ''}{gw5_xp_delta} xP</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-lbl">Remaining Bank & Verdict</div>
-            <div class="stat-box-val" style="font-size:13px; color:{cart_col};">£{rem_bank_cart:.1f}m &bull; {cart_verdict}</div>
-          </div>
-        </div>
-        """)
+        render_html(
+            f"<div class='stat-grid-4' style='margin-top:14px;'>"
+            f"<div class='stat-box'><div class='stat-box-lbl'>Moves / Point Hit Cost</div><div class='stat-box-val'>{num_moves} Move(s) ({hit_cost} pts)</div></div>"
+            f"<div class='stat-box'><div class='stat-box-lbl'>GW{upcoming_gw} Net Impact (After Hit)</div><div class='stat-box-val' style='color:{'#00FF85' if gw1_xp_delta >= 0 else '#F43F5E'};'>{'+' if gw1_xp_delta >= 0 else ''}{gw1_xp_delta} xP</div></div>"
+            f"<div class='stat-box'><div class='stat-box-lbl'>5-GW Net Impact (After Hit)</div><div class='stat-box-val' style='color:{'#00FF85' if gw5_xp_delta >= 0 else '#F43F5E'};'>{'+' if gw5_xp_delta >= 0 else ''}{gw5_xp_delta} xP</div></div>"
+            f"<div class='stat-box'><div class='stat-box-lbl'>Remaining Bank & Verdict</div><div class='stat-box-val' style='font-size:13px; color:{cart_col};'>£{rem_bank_cart:.1f}m &bull; {cart_verdict}</div></div>"
+            f"</div>"
+        )
 
 # =========================================================
 # TAB 3: MINI-LEAGUE STANDINGS & RIVAL BLOCK/ATTACK MATRIX
@@ -1970,22 +1279,15 @@ with tab_league:
                     f"</tr>"
                 )
 
-            render_html(f"""
-            <div class="dossier-card">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:16px; font-weight:800; color:#FFF;">{target_league_name} Standings</span>
-                <span style="font-size:12px; font-weight:700; color:#00FF85;">
-                  {'1st Place Leader' if gap_to_leader <= 0 else f'{gap_to_leader} pts behind 1st'}
-                </span>
-              </div>
-              <table class="ml-table">
-                <thead>
-                  <tr><th>Rank</th><th>Team & Manager</th><th>GW</th><th>Total</th><th>vs You</th></tr>
-                </thead>
-                <tbody>{table_rows_html}</tbody>
-              </table>
-            </div>
-            """)
+            render_html(
+                f"<div class='dossier-card'>"
+                f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;'>"
+                f"<span style='font-size:16px; font-weight:800; color:#FFF;'>{target_league_name} Standings</span>"
+                f"<span style='font-size:12px; font-weight:700; color:#00FF85;'>"
+                f"{'1st Place Leader' if gap_to_leader <= 0 else f'{gap_to_leader} pts behind 1st'}</span></div>"
+                f"<table class='ml-table'><thead><tr><th>Rank</th><th>Team & Manager</th><th>GW</th><th>Total</th><th>vs You</th></tr></thead>"
+                f"<tbody>{table_rows_html}</tbody></table></div>"
+            )
 
         with col_spy:
             my_xi_ids = {p["id"] for p in starting_xi}
@@ -2023,30 +1325,52 @@ with tab_league:
                 weakest_my_starter = sorted([p for p in starting_xi if p["element_type"] != 1], key=lambda x: x.get("xp_next", 0))[0]
                 top_block_target = their_only[0] if their_only else None
 
-                render_html(f"""
-                <div class="dossier-card">
-                  <h4 style="margin:0 0 10px 0; color:#FFF;">Tactical Blueprint to Defeat Selected Rival</h4>
-                  <div style="background:rgba(0,255,133,0.08); border:1px solid rgba(0,255,133,0.3); border-radius:12px; padding:12px; margin-bottom:12px;">
-                    <div style="font-size:11px; font-weight:800; color:#00FF85;">3-STEP ACTION PLAN FOR GW{upcoming_gw}</div>
-                    <ol style="margin:6px 0 0 16px; padding:0; font-size:12px; color:#E2E8F0; line-height:1.55;">
-                      <li><strong>Captaincy Leverage:</strong> Rival last captained <strong>{rv_cap_name}</strong>. Lock armband on <strong>{best_my_cap['web_name']} ({best_my_cap['xp_next']} xP)</strong> for maximum expected ceiling.</li>
-                      <li><strong>Weak-Link Upgrade:</strong> Replace your lowest-projected outfield starter <strong>{weakest_my_starter['web_name']} ({weakest_my_starter['xp_next']} xP)</strong> with a high-upside attacker ({killer_str}).</li>
-                      <li><strong>Defensive Block Check:</strong> Rival's highest-projected differential against you is <strong>{top_block_target['web_name'] if top_block_target else 'None'} ({top_block_target['xp_next'] if top_block_target else 0} xP)</strong>.</li>
-                    </ol>
-                  </div>
-                  <div style="font-size:12px; line-height:1.5;">
-                    <p><strong>League-Wide Danger Players (Owned by 2+ Top Rivals, Not You):</strong><br><span style="color:#FB7185;">{danger_str}</span></p>
-                    <p><strong>Your Exclusive Attacking Differentials (0/3 Top Rivals Own):</strong><br><span style="color:#00FF85;">{diff_str}</span></p>
-                    <p><strong>Top Unowned League-Winning Targets (0% Top-4 League Ownership):</strong><br><span style="color:#06B6D4;">{killer_str}</span></p>
-                  </div>
-                </div>
-                """)
+                render_html(
+                    f"<div class='dossier-card'>"
+                    f"<h4 style='margin:0 0 10px 0; color:#FFF;'>Tactical Blueprint to Defeat Selected Rival</h4>"
+                    f"<div style='background:rgba(0,255,133,0.08); border:1px solid rgba(0,255,133,0.3); border-radius:12px; padding:12px; margin-bottom:12px;'>"
+                    f"<div style='font-size:11px; font-weight:800; color:#00FF85;'>3-STEP ACTION PLAN FOR GW{upcoming_gw}</div>"
+                    f"<ol style='margin:6px 0 0 16px; padding:0; font-size:12px; color:#E2E8F0; line-height:1.55;'>"
+                    f"<li><strong>Captaincy Leverage:</strong> Rival last captained <strong>{rv_cap_name}</strong>. Lock armband on <strong>{best_my_cap['web_name']} ({best_my_cap['xp_next']} xP)</strong>.</li>"
+                    f"<li><strong>Weak-Link Upgrade:</strong> Replace lowest-projected outfield starter <strong>{weakest_my_starter['web_name']} ({weakest_my_starter['xp_next']} xP)</strong> with a high-upside attacker ({killer_str}).</li>"
+                    f"<li><strong>Defensive Block Check:</strong> Rival's highest-projected differential against you is <strong>{top_block_target['web_name'] if top_block_target else 'None'} ({top_block_target['xp_next'] if top_block_target else 0} xP)</strong>.</li>"
+                    f"</ol></div>"
+                    f"<div style='font-size:12px; line-height:1.5;'>"
+                    f"<p><strong>League-Wide Danger Players (Owned by 2+ Top Rivals, Not You):</strong><br><span style='color:#FB7185;'>{danger_str}</span></p>"
+                    f"<p><strong>Your Exclusive Attacking Differentials (0/3 Top Rivals Own):</strong><br><span style='color:#00FF85;'>{diff_str}</span></p>"
+                    f"<p><strong>Top Unowned League-Winning Targets (0% Top-4 League Ownership):</strong><br><span style='color:#06B6D4;'>{killer_str}</span></p>"
+                    f"</div></div>"
+                )
     else:
         st.info("No classic mini-leagues found for this Team ID.")
 
 # =========================================================
-# TAB 4: TRUE MULTI-TURN GEMINI 3.8 FLASH + GOOGLE SEARCH GROUNDED CO-PILOT
+# TAB 4: MULTI-TURN GEMINI CONVERSATIONAL AI + GOOGLE SEARCH GROUNDING
 # =========================================================
+@st.cache_data(ttl=3600)
+def discover_available_gemini_models(api_key: str):
+    """Queries the key's enabled models so we never hit a 404 model name mismatch."""
+    preferred = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
+    try:
+        r = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=8)
+        if r.status_code == 200:
+            models_data = r.json().get("models", [])
+            supported = [
+                m["name"].replace("models/", "")
+                for m in models_data
+                if "generateContent" in m.get("supportedGenerationMethods", [])
+                and "gemini" in m.get("name", "")
+                and "vision" not in m.get("name", "")
+                and "embedding" not in m.get("name", "")
+            ]
+            # Sort so flash/pro models come first
+            flash_first = [m for m in supported if "flash" in m] + [m for m in supported if "pro" in m]
+            if flash_first:
+                return flash_first[:4]
+    except Exception:
+        pass
+    return preferred
+
 with tab_ai:
     active_gemini_key = (
         st.session_state.get("custom_gemini_key")
@@ -2055,24 +1379,19 @@ with tab_ai:
     ).strip()
 
     key_status_badge = (
-        "<span class='kpi-delta delta-up'>GEMINI 3.8 FLASH + SEARCH ONLINE</span>"
+        "<span class='kpi-delta delta-up'>GEMINI LIVE SEARCH ENGINE ONLINE</span>"
         if active_gemini_key else
         "<span class='kpi-delta delta-down'>API KEY REQUIRED IN SETTINGS TAB</span>"
     )
 
-    render_html(f"""
-    <div class="dossier-card" style="padding:16px 20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#00FF85;">GEMINI 3.8 FLASH FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>
-          <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-            Multi-turn conversational AI with live Google Search grounding, full squad telemetry, fixture runways, and rationale-driven coaching.
-          </p>
-        </div>
-        {key_status_badge}
-      </div>
-    </div>
-    """)
+    render_html(
+        f"<div class='dossier-card' style='padding:16px 20px;'>"
+        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;'>"
+        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#00FF85;'>GEMINI FPL TACTICAL CO-PILOT (LIVE WEB GROUNDED)</h3>"
+        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
+        f"Multi-turn conversational AI with live Google Search grounding, full squad telemetry, fixture runways, and rationale-driven coaching.</p></div>"
+        f"{key_status_badge}</div></div>"
+    )
 
     if "ai_messages" not in st.session_state:
         st.session_state["ai_messages"] = [
@@ -2116,20 +1435,283 @@ with tab_ai:
             key=lambda x: x.get("xp_5gw", 0),
             reverse=True
         )[:30]
-        market_lines = [
-            f"- {p['web_name']} ({p['team_short']}, {pos_lbl_map.get(p['element_type'])}, £{p['now_cost']/10:.1f}m): "
-            f"GW{upcoming_gw} xP {p['xp_next']} | 5-GW xP {p['xp_5gw']} | Form {p['form']} | xGI {p.get('expected_goal_involvements')} | "
-            f"Next: {p['runway'][0]['opp']}({p['runway'][0]['venue']}) if p.get('runway') else 'TBD'"
-            for p in top_unowned
+        market_lines = []
+        for p in top_unowned:
+            nxt_m = p["runway"][0] if p.get("runway") else {"opp": "TBD", "venue": "H"}
+            market_lines.append(
+                f"- {p['web_name']} ({p['team_short']}, {pos_lbl_map.get(p['element_type'])}, £{p['now_cost']/10:.1f}m): "
+                f"GW{upcoming_gw} xP {p['xp_next']} | 5-GW xP {p['xp_5gw']} | Form {p['form']} | xGI {p.get('expected_goal_involvements')} | "
+                f"Next: {nxt_m['opp']}({nxt_m['venue']})"
+            )
+
+        danger_rivals = [
+            elements_map[pid]["web_name"]
+            for pid, cnt in rival_threat_players.items()
+            if cnt >= 2 and pid not in squad_ids and pid in elements_map
         ]
 
-        danger_rivals = [elements_map[pid]["web_name"] for pid, cnt in rival_threat_players.items() if cnt >= 2 and pid not in squad_ids and pid in elements_map]
+        prompt_parts = [
+            "You are Gemini, the Elite FPL Tactical Co-Pilot and Coach for Barney's team, Kings County FC.",
+            "Your goal is to have a natural, insightful, analytical conversation that directly answers whatever the user asks AND teaches them the underlying FPL strategy and rationale so they become a sharper manager.",
+            "",
+            "CRITICAL OPERATING RULES:",
+            "1. NEVER output a generic canned template. Always answer the user's exact question directly in sentence 1.",
+            f"2. Explain the 'WHY' (the rationale): break down underlying numbers (xGI, Form, minutes security, home/away fixture swings, clean sheet odds, and Effective Ownership/differential leverage in {target_league_name}).",
+            "3. Use Google Search when helpful to verify the latest Premier League press conference quotes, injury updates, tactical role changes, or penalty/set-piece duties.",
+            f"4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK, at least 3 DEF, at least 2 MID, at least 1 FWD) and exact 1-2-3 outfield auto-sub bench order, and explain any tough 50/50 calls between their starters and bench players.",
+            "5. Never recommend Goalkeeper transfers unless their starting GK is injured/suspended.",
+            f"6. When discussing transfers, always check exact affordability (Sell Price + £{bank_now:.1f}m Bank) and show 2-move downgrade+upgrade paths if a premium target costs more than a 1-move swap.",
+            "",
+            f"LIVE KINGS COUNTY FC TELEMETRY (UPCOMING GAMEWEEK: GW{upcoming_gw}):",
+            f"- Free Transfers Available: {ft_remaining_now} FT",
+            f"- Money In The Bank: £{bank_now:.1f}m (Total Squad Value: £{val_now:.1f}m)",
+            f"- Target Mini-League: {target_league_name} (Gap to 1st place: {gap_to_leader} pts)",
+            f"- High-Owned Rival Danger Players (Owned by 2+ top mini-league rivals, NOT in user's squad): {', '.join(danger_rivals) if danger_rivals else 'None'}",
+            "",
+            "CURRENT STARTING XI:",
+            "\n".join(xi_lines),
+            "",
+            "CURRENT BENCH (IN ORDER):",
+            "\n".join(bench_lines),
+            "",
+            "TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):",
+            "\n".join(market_lines),
+        ]
+        return "\n".join(prompt_parts)
 
-        return f"""You are Gemini, the Elite FPL Tactical Co-Pilot and Coach for Barney's team, Kings County FC.
-Your goal is to have a natural, insightful, analytical conversation that directly answers whatever the user asks AND teaches them the underlying FPL strategy and rationale so they become a sharper manager.
+    def call_gemini_conversational_advisor(user_prompt: str) -> str:
+        active_key = (
+            st.session_state.get("custom_gemini_key")
+            or st.secrets.get("GEMINI_API_KEY", "")
+            or st.secrets.get("GOOGLE_API_KEY", "")
+        ).strip()
 
-CRITICAL OPERATING RULES:
-1. NEVER output a generic canned template. Always answer the user's exact question directly in sentence 1.
-2. Explain the 'WHY' (the rationale): break down underlying numbers (xGI, Form, minutes security, home/away fixture swings, clean sheet odds, and Effective Ownership/differential leverage in {target_league_name}).
-3. Use Google Search when helpful to verify the latest Premier League press conference quotes, injury updates, tactical role changes, or penalty/set-piece duties.
-4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK,
+        if not active_key:
+            return (
+                "⚠️ **Gemini API Key Not Detected:** To get live web-researched, natural-language coaching from Gemini, "
+                "add `GEMINI_API_KEY = \"AIza...\"` in your Streamlit Cloud Secrets (or paste it into the **Settings** tab)."
+            )
+
+        sys_instruction = build_rich_tactical_system_prompt()
+
+        contents_history = []
+        recent_msgs = st.session_state.get("ai_messages", [])[-10:]
+        for m in recent_msgs:
+            role_gemini = "user" if m["role"] == "user" else "model"
+            text_val = (m.get("content") or "").strip()
+            if not text_val:
+                continue
+            if not contents_history and role_gemini == "model":
+                continue
+            if contents_history and contents_history[-1]["role"] == role_gemini:
+                contents_history[-1]["parts"][0]["text"] += "\n\n" + text_val
+            else:
+                contents_history.append({
+                    "role": role_gemini,
+                    "parts": [{"text": text_val}]
+                })
+
+        if not contents_history or contents_history[-1]["role"] != "user":
+            contents_history.append({"role": "user", "parts": [{"text": user_prompt}]})
+
+        candidate_models = discover_available_gemini_models(active_key)
+        attempts = []
+        for m_name in candidate_models:
+            attempts.append((m_name, True))
+            attempts.append((m_name, False))
+
+        error_log = []
+        for model_name, use_search in attempts:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}"
+            payload = {
+                "system_instruction": {"parts": [{"text": sys_instruction}]},
+                "contents": contents_history,
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "maxOutputTokens": 2048
+                }
+            }
+            if use_search:
+                payload["tools"] = [{"google_search": {}}]
+
+            try:
+                r = requests.post(url, json=payload, timeout=25)
+                if r.status_code == 200:
+                    resp_json = r.json()
+                    cands = resp_json.get("candidates", [])
+                    if cands:
+                        parts = cands[0].get("content", {}).get("parts", [])
+                        text_chunks = [pt.get("text", "") for pt in parts if "text" in pt]
+                        answer_text = "\n".join(text_chunks).strip()
+
+                        grounding = cands[0].get("groundingMetadata", {})
+                        chunks = grounding.get("groundingChunks", [])
+                        web_links = []
+                        for ch in chunks:
+                            web_obj = ch.get("web", {})
+                            uri = web_obj.get("uri")
+                            title = web_obj.get("title")
+                            if uri and title:
+                                web_links.append(f"[{title}]({uri})")
+                        if web_links:
+                            unique_links = list(dict.fromkeys(web_links))[:4]
+                            answer_text += "\n\n---\n**Live Web Sources Checked:** " + " &bull; ".join(unique_links)
+
+                        if answer_text:
+                            return answer_text
+                else:
+                    err_msg = r.json().get("error", {}).get("message", r.text[:200])
+                    error_log.append(f"HTTP {r.status_code} ({model_name}, search={use_search}): {err_msg}")
+            except Exception as e:
+                error_log.append(f"{model_name} exception: {e}")
+                continue
+
+        return (
+            "⚠️ **Gemini API Connection Error:**\n"
+            + "\n".join(f"- `{err}`" for err in error_log[:3])
+        )
+
+    qa1, qa2, qa3, qa4 = st.columns(4)
+    if qa1.button("Who Should I Start & Bench?", use_container_width=True):
+        q_txt = f"Who should I start in my XI and how should I order my bench for GW{upcoming_gw}? Explain the rationale and any close 50/50 calls."
+        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
+        with st.spinner("Gemini is analyzing your 15-man squad, fixtures, and latest team news..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
+
+    if qa2.button("Saka / Palmer Upgrade Path", use_container_width=True):
+        q_txt = "What is the smartest 1- or 2-transfer path to get Bukayo Saka or Cole Palmer into my squad, and is it worth doing this week?"
+        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
+        with st.spinner("Calculating budget math and 5-GW expected point swings..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
+
+    if qa3.button("Captaincy Deep Dive", use_container_width=True):
+        q_txt = f"Break down my best captain and vice-captain choices for GW{upcoming_gw}. Compare safe template shields vs differential upside."
+        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
+        with st.spinner("Researching matchup data and captaincy expected value..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
+
+    if qa4.button("Beat My Mini-League Rivals", use_container_width=True):
+        q_txt = f"Based on my {gap_to_leader} pt gap in {target_league_name} and the rival danger players, what tactical posture and moves will help me gain ground?"
+        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
+        with st.spinner("Evaluating mini-league rival overlap and differential leverage..."):
+            reply = call_gemini_conversational_advisor(q_txt)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
+
+    for msg in st.session_state["ai_messages"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_q = st.chat_input("Ask Gemini anything (e.g., 'Who should I start?', 'Why is Semenyo projected so high?', 'Should I roll my transfer?')...")
+    if user_q:
+        st.session_state["ai_messages"].append({"role": "user", "content": user_q})
+        with st.chat_message("user"):
+            st.markdown(user_q)
+        with st.chat_message("assistant"):
+            with st.spinner("Gemini is researching Premier League data and analyzing your squad..."):
+                reply = call_gemini_conversational_advisor(user_q)
+                st.markdown(reply)
+        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
+        st.rerun()
+
+# =========================================================
+# TAB 5: DEDICATED SETTINGS & LIVE CONNECTION VALIDATOR
+# =========================================================
+with tab_settings:
+    auth_ok = auth_diag.get("authenticated", False)
+    status_badge_html = (
+        "<span class='kpi-delta delta-up'>AUTHENTICATED (/api/my-team/ 200 OK)</span>"
+        if auth_ok else
+        f"<span class='kpi-delta delta-down'>PUBLIC FALLBACK (HTTP {auth_diag.get('status_code') or 'N/A'})</span>"
+    )
+
+    render_html(
+        f"<div class='dossier-card'>"
+        f"<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;'>"
+        f"<div><h3 style='margin:0; font-size:16px; font-weight:800; color:#FFF;'>LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>"
+        f"<p style='margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);'>"
+        f"Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays the exact Captaincy & Bank returned by FPL's server.</p></div>"
+        f"{status_badge_html}</div>"
+        f"<div class='stat-grid-4'>"
+        f"<div class='stat-box'><div class='stat-box-lbl'>Auth Protocol Used</div><div class='stat-box-val' style='font-size:13px;'>{auth_diag.get('method_used', 'None')}</div></div>"
+        f"<div class='stat-box'><div class='stat-box-lbl'>API Returned Captain</div><div class='stat-box-val' style='color:#00FF85;'>{api_official_cap_name} (C)</div></div>"
+        f"<div class='stat-box'><div class='stat-box-lbl'>API Returned Vice-Cap</div><div class='stat-box-val' style='color:#06B6D4;'>{api_official_vc_name} (V)</div></div>"
+        f"<div class='stat-box'><div class='stat-box-lbl'>Manual Sim Override</div><div class='stat-box-val' style='font-size:13px; color:{'#FBBF24' if cap_override else '#94A3B8'};'>"
+        f"{'ACTIVE (Tap Sync to Reset)' if cap_override or vc_override else 'NONE (Using Live API)'}</div></div>"
+        f"</div>"
+        f"<div style='background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; font-size:12px; color:#E2E8F0; margin-top:8px;'>"
+        f"<strong>Diagnostic Status:</strong> {auth_diag.get('message')}</div></div>"
+    )
+
+    set_col1, set_col2 = st.columns(2, gap="medium")
+
+    with set_col1:
+        render_html(
+            "<div class='dossier-card' style='padding:16px 20px;'>"
+            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Target Mini-League & Team ID</h4>"
+            "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
+            "Select the primary mini-league that drives all rival block/differential badges and AI strategy.</p></div>"
+        )
+        if classic_leagues:
+            lg_options = {lg["id"]: f"{lg['name']} (Current Rank: #{lg.get('entry_rank', '?')})" for lg in classic_leagues}
+            cur_lg = st.session_state.get("target_lg_id", classic_leagues[0]["id"])
+            new_lg = st.selectbox(
+                "Default Target Mini-League:",
+                options=list(lg_options.keys()),
+                format_func=lambda x: lg_options[x],
+                index=list(lg_options.keys()).index(cur_lg) if cur_lg in lg_options else 0
+            )
+            if new_lg != cur_lg:
+                st.session_state["target_lg_id"] = new_lg
+                st.query_params["lg_id"] = str(new_lg)
+                st.rerun()
+
+        new_tid = st.number_input("FPL Entry / Team ID:", value=int(team_id), step=1)
+        if st.button("Update Team ID & Reset Overrides", use_container_width=True):
+            st.session_state["team_id"] = int(new_tid)
+            st.session_state["cap_override_id"] = None
+            st.session_state["vc_override_id"] = None
+            st.query_params["team_id"] = str(new_tid)
+            st.cache_data.clear()
+            st.session_state["sync_nonce"] += 1
+            st.rerun()
+
+    with set_col2:
+        render_html(
+            "<div class='dossier-card' style='padding:16px 20px;'>"
+            "<h4 style='margin:0 0 6px 0; color:#FFF;'>Live API Credentials (Overrides / Secrets Fallback)</h4>"
+            "<p style='margin:0; font-size:12px; color:var(--text-secondary);'>"
+            "Paste your `x-api-authorization` Bearer token, full `Copy as cURL` command, or Gemini API key below.</p></div>"
+        )
+        with st.form("settings_creds_form"):
+            in_cookie = st.text_input(
+                "FPL Bearer Token / `Copy as cURL` / Cookie (`FPL_COOKIE`):",
+                value=fpl_cookie_val,
+                type="password",
+                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1153921/' in DevTools -> Copy -> Copy as cURL."
+            )
+            in_gem = st.text_input(
+                "Gemini API Key (`GEMINI_API_KEY`):",
+                value=st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", ""),
+                type="password"
+            )
+            in_email = st.text_input("FPL Email (Optional fallback):", value=fpl_email_val)
+            in_pass = st.text_input("FPL Password (Optional fallback):", value=fpl_pass_val, type="password")
+
+            if st.form_submit_button("Save Credentials, Test Connection & Reset Captaincy", use_container_width=True):
+                st.session_state["custom_fpl_cookie"] = in_cookie.strip()
+                st.session_state["custom_gemini_key"] = in_gem.strip()
+                st.session_state["custom_fpl_email"] = in_email.strip()
+                st.session_state["custom_fpl_password"] = in_pass
+                st.session_state["cap_override_id"] = None
+                st.session_state["vc_override_id"] = None
+                st.cache_data.clear()
+                st.session_state["sync_nonce"] += 1
+                st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
+                st.rerun()
