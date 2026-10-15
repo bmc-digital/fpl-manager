@@ -1,6 +1,6 @@
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
-Production Mobile-First Architecture | Gemini 3.8 Flash Search-Grounded Co-Pilot
+Production Mobile-First Architecture | Multi-Layer CSS Avatar Stack | Gemini 3.8 Flash Co-Pilot
 """
 
 import streamlit as st
@@ -368,6 +368,7 @@ a.pitch-node-link {
   box-shadow: 0 0 20px rgba(0, 255, 133, 0.55);
 }
 
+/* ZERO-BROKEN-IMAGE CSS AVATAR STACK (58px) */
 .node-avatar-wrap {
   position: relative;
   width: 58px;
@@ -375,14 +376,16 @@ a.pitch-node-link {
   margin-bottom: 5px;
 }
 
-.node-avatar-wrap img {
+.node-avatar-circle {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  object-fit: cover;
-  object-position: top center;
-  background: radial-gradient(circle, #1E293B 0%, #070B12 100%);
+  background-color: #0B111E;
+  background-size: cover, cover, 84% 84%;
+  background-position: top center, top center, center center;
+  background-repeat: no-repeat;
   border: 2px solid rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .badge-cap {
@@ -530,14 +533,17 @@ a.pitch-node-link {
   margin-bottom: 14px;
 }
 
-.dossier-avatar {
+/* ZERO-BROKEN-IMAGE DOSSIER PORTRAIT (92px) */
+.dossier-avatar-circle {
   width: 92px;
   height: 92px;
   border-radius: 50%;
-  object-fit: cover;
-  object-position: top center;
+  flex-shrink: 0;
+  background-color: #070B12;
+  background-size: cover, cover, 82% 82%;
+  background-position: top center, top center, center center;
+  background-repeat: no-repeat;
   border: 3px solid #00FF85;
-  background: #070B12;
   box-shadow: 0 6px 20px rgba(0, 255, 133, 0.25);
 }
 
@@ -741,7 +747,7 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # ---------------------------------------------------------
-# 4. CLUB KIT SVG GENERATOR (FALLBACK)
+# 4. CLUB KIT SVG GENERATOR & MULTI-LAYER PHOTO URL BUILDER
 # ---------------------------------------------------------
 CLUB_PALETTES = {
     "ARS": {"p": "#EF0107", "s": "#FFFFFF"},
@@ -749,6 +755,7 @@ CLUB_PALETTES = {
     "BOU": {"p": "#DA291C", "s": "#000000"},
     "BRE": {"p": "#E30613", "s": "#FFFFFF"},
     "BHA": {"p": "#0057B8", "s": "#FFFFFF"},
+    "BUR": {"p": "#6C1D45", "s": "#99D6EA"},
     "CHE": {"p": "#034694", "s": "#FFFFFF"},
     "COV": {"p": "#0593D0", "s": "#FFFFFF"},
     "CRY": {"p": "#1B458F", "s": "#C4122E"},
@@ -763,6 +770,7 @@ CLUB_PALETTES = {
     "MUN": {"p": "#DA291C", "s": "#000000"},
     "NEW": {"p": "#241F20", "s": "#FFFFFF"},
     "NFO": {"p": "#DD0000", "s": "#FFFFFF"},
+    "SHU": {"p": "#EE2737", "s": "#FFFFFF"},
     "SOU": {"p": "#D71920", "s": "#FFFFFF"},
     "SUN": {"p": "#EB172B", "s": "#FFFFFF"},
     "TOT": {"p": "#FFFFFF", "s": "#132257"},
@@ -783,6 +791,20 @@ def generate_svg_kit(team_short, is_gk=False):
         f"fill='{s_col}' text-anchor='middle'>{str(team_short)[:3]}</text></svg>"
     )
     return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
+
+def build_avatar_bg_style(p) -> str:
+    """
+    Returns a 3-layer CSS background-image stack:
+      1. 2025/26 & 2026/27 Premier League CDN (/premierleague25/photos/players/110x140/{code}.png)
+      2. Legacy Premier League CDN (/premierleague/photos/players/110x140/p{code}.png)
+      3. Authentic Club SVG Kit Data URI
+    Works 100% natively in CSS with zero JavaScript `onerror` needed.
+    """
+    raw_code = str(p.get("code") or p.get("photo", "").split(".")[0]).lstrip("p").strip()
+    url_25 = f"https://resources.premierleague.com/premierleague25/photos/players/110x140/{raw_code}.png"
+    url_legacy = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{raw_code}.png"
+    fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type") == 1))
+    return f"background-image: url('{url_25}'), url('{url_legacy}'), url(\"{fallback_svg}\");"
 
 # ---------------------------------------------------------
 # 5. UNIVERSAL FPL API ENGINE (cURL / BEARER / COOKIE)
@@ -1438,9 +1460,7 @@ tab_pitch, tab_transfers, tab_league, tab_ai, tab_settings = st.tabs([
 
 def build_pitch_node_html(p, is_selected=False, bench_slot=None):
     pid = p.get("id")
-    code = str(p.get("code") or p.get("photo", "").split(".")[0].lstrip("p"))
-    img_url = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
-    fallback_svg = generate_svg_kit(p.get("team_short", "EPL"), is_gk=(p.get("element_type") == 1))
+    bg_style = build_avatar_bg_style(p)
 
     cap_badge = "<div class='badge-cap'>C</div>" if p.get("is_captain") else (
                 "<div class='badge-vc'>V</div>" if p.get("is_vice_captain") else "")
@@ -1465,8 +1485,7 @@ def build_pitch_node_html(p, is_selected=False, bench_slot=None):
         f"<a class='pitch-node-link' href='{href_url}' target='_self'>"
         f"<div class='pitch-node {sel_c}'>"
         f"<div class='node-avatar-wrap'>"
-        f"<img src='{img_url}' referrerpolicy='no-referrer' loading='lazy' "
-        f"onerror=\"this.onerror=null;this.src='{fallback_svg}';\" />"
+        f"<div class='node-avatar-circle' style='{bg_style}'></div>"
         f"{cap_badge}{flag_badge}"
         f"</div>"
         f"<div class='node-name'>{p.get('web_name')}</div>"
@@ -1549,9 +1568,7 @@ def render_pitch_and_dossier_fragment():
                     st.session_state["vc_override_id"] = sp["id"]
                     st.rerun()
 
-            code = str(sp.get("code") or sp.get("photo", "").split(".")[0].lstrip("p"))
-            p_img = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{code}.png"
-            p_svg = generate_svg_kit(sp.get("team_short", "EPL"), is_gk=(sp.get("element_type") == 1))
+            dossier_bg_style = build_avatar_bg_style(sp)
             pos_name = {1: "Goalkeeper", 2: "Defender", 3: "Midfielder", 4: "Forward"}.get(sp.get("element_type"), "Player")
             p_price = sp.get("now_cost", 50) / 10.0
             sell_val = sp.get("selling_price", p_price)
@@ -1586,8 +1603,7 @@ def render_pitch_and_dossier_fragment():
             render_html(f"""
             <div class="dossier-card">
               <div class="dossier-top">
-                <img class="dossier-avatar" src="{p_img}" referrerpolicy="no-referrer"
-                     onerror="this.onerror=null;this.src='{p_svg}';" />
+                <div class="dossier-avatar-circle" style='{dossier_bg_style}'></div>
                 <div style="flex:1;">
                   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                     <span style="font-size:20px; font-weight:800; color:#FFF;">{sp.get('first_name')} {sp.get('second_name')}</span>
@@ -2116,286 +2132,4 @@ CRITICAL OPERATING RULES:
 1. NEVER output a generic canned template. Always answer the user's exact question directly in sentence 1.
 2. Explain the 'WHY' (the rationale): break down underlying numbers (xGI, Form, minutes security, home/away fixture swings, clean sheet odds, and Effective Ownership/differential leverage in {target_league_name}).
 3. Use Google Search when helpful to verify the latest Premier League press conference quotes, injury updates, tactical role changes, or penalty/set-piece duties.
-4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK, at least 3 DEF, at least 2 MID, at least 1 FWD) and exact 1-2-3 outfield auto-sub bench order, and explain any tough 50/50 calls between their starters and bench players.
-5. Never recommend Goalkeeper transfers unless their starting GK is injured/suspended.
-6. When discussing transfers, always check exact affordability (Sell Price + £{bank_now:.1f}m Bank) and show 2-move downgrade+upgrade paths if a premium target costs more than a 1-move swap.
-
-LIVE KINGS COUNTY FC TELEMETRY (UPCOMING GAMEWEEK: GW{upcoming_gw}):
-- Free Transfers Available: {ft_remaining_now} FT
-- Money In The Bank: £{bank_now:.1f}m (Total Squad Value: £{val_now:.1f}m)
-- Target Mini-League: {target_league_name} (Gap to 1st place: {gap_to_leader} pts)
-- High-Owned Rival Danger Players (Owned by 2+ top mini-league rivals, NOT in user's squad): {', '.join(danger_rivals) if danger_rivals else 'None'}
-
-CURRENT STARTING XI:
-{chr(10).join(xi_lines)}
-
-CURRENT BENCH (IN ORDER):
-{chr(10).join(bench_lines)}
-
-TOP 30 UNOWNED MARKET TARGETS (BY 5-GW xP):
-{chr(10).join(market_lines)}
-"""
-
-    def call_gemini_conversational_advisor(user_prompt: str) -> str:
-        active_key = (
-            st.session_state.get("custom_gemini_key")
-            or st.secrets.get("GEMINI_API_KEY", "")
-            or st.secrets.get("GOOGLE_API_KEY", "")
-        ).strip()
-
-        if not active_key:
-            return (
-                "⚠️ **Gemini API Key Not Detected:** To get live web-researched, natural-language coaching from Gemini, "
-                "add `GEMINI_API_KEY = \"AIza...\"` in your Streamlit Cloud Secrets (or paste it into the **Settings** tab)."
-            )
-
-        sys_instruction = build_rich_tactical_system_prompt()
-
-        # Build strictly alternating user/model conversation history starting with "user"
-        contents_history = []
-        recent_msgs = st.session_state.get("ai_messages", [])[-10:]
-        for m in recent_msgs:
-            role_gemini = "user" if m["role"] == "user" else "model"
-            text_val = (m.get("content") or "").strip()
-            if not text_val:
-                continue
-            if not contents_history and role_gemini == "model":
-                continue
-            if contents_history and contents_history[-1]["role"] == role_gemini:
-                contents_history[-1]["parts"][0]["text"] += "\n\n" + text_val
-            else:
-                contents_history.append({
-                    "role": role_gemini,
-                    "parts": [{"text": text_val}]
-                })
-
-        if not contents_history or contents_history[-1]["role"] != "user":
-            contents_history.append({"role": "user", "parts": [{"text": user_prompt}]})
-
-        # Primary 2026 production model: gemini-3.8-flash (with Google Search grounding -> standard fallback)
-        attempts = [
-            ("gemini-3.8-flash", True),
-            ("gemini-3.8-flash", False),
-            ("gemini-3.6-flash", True),
-            ("gemini-3.6-flash", False),
-            ("gemini-3.5-flash-lite", False),
-        ]
-
-        error_log = []
-        for model_name, use_search in attempts:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}"
-            payload = {
-                "system_instruction": {"parts": [{"text": sys_instruction}]},
-                "contents": contents_history,
-                "generationConfig": {
-                    "temperature": 0.4,
-                    "maxOutputTokens": 2048
-                }
-            }
-            if use_search:
-                payload["tools"] = [{"google_search": {}}]
-
-            try:
-                r = requests.post(url, json=payload, timeout=25)
-                if r.status_code == 200:
-                    resp_json = r.json()
-                    cands = resp_json.get("candidates", [])
-                    if cands:
-                        parts = cands[0].get("content", {}).get("parts", [])
-                        text_chunks = [pt.get("text", "") for pt in parts if "text" in pt]
-                        answer_text = "\n".join(text_chunks).strip()
-
-                        grounding = cands[0].get("groundingMetadata", {})
-                        chunks = grounding.get("groundingChunks", [])
-                        web_links = []
-                        for ch in chunks:
-                            web_obj = ch.get("web", {})
-                            uri = web_obj.get("uri")
-                            title = web_obj.get("title")
-                            if uri and title:
-                                web_links.append(f"[{title}]({uri})")
-                        if web_links:
-                            unique_links = list(dict.fromkeys(web_links))[:4]
-                            answer_text += "\n\n---\n**Live Web Sources Checked:** " + " &bull; ".join(unique_links)
-
-                        if answer_text:
-                            return answer_text
-                else:
-                    err_msg = r.json().get("error", {}).get("message", r.text[:200])
-                    error_log.append(f"HTTP {r.status_code} ({model_name}, search={use_search}): {err_msg}")
-            except Exception as e:
-                error_log.append(f"{model_name} exception: {e}")
-                continue
-
-        return (
-            f"⚠️ **Gemini API Connection Error:**\n"
-            + "\n".join(f"- `{err}`" for err in error_log[:3])
-        )
-
-    qa1, qa2, qa3, qa4 = st.columns(4)
-    if qa1.button("Who Should I Start & Bench?", use_container_width=True):
-        q_txt = f"Who should I start in my XI and how should I order my bench for GW{upcoming_gw}? Explain the rationale and any close 50/50 calls."
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Gemini 3.8 Flash is analyzing your 15-man squad, fixtures, and latest team news..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa2.button("Saka / Palmer Upgrade Path", use_container_width=True):
-        q_txt = "What is the smartest 1- or 2-transfer path to get Bukayo Saka or Cole Palmer into my squad, and is it worth doing this week?"
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Calculating budget math and 5-GW expected point swings..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa3.button("Captaincy Deep Dive", use_container_width=True):
-        q_txt = f"Break down my best captain and vice-captain choices for GW{upcoming_gw}. Compare safe template shields vs differential upside."
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Researching matchup data and captaincy expected value..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    if qa4.button("Beat My Mini-League Rivals", use_container_width=True):
-        q_txt = f"Based on my {gap_to_leader} pt gap in {target_league_name} and the rival danger players, what tactical posture and moves will help me gain ground?"
-        st.session_state["ai_messages"].append({"role": "user", "content": q_txt})
-        with st.spinner("Evaluating mini-league rival overlap and differential leverage..."):
-            reply = call_gemini_conversational_advisor(q_txt)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-    for msg in st.session_state["ai_messages"]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    user_q = st.chat_input("Ask Gemini anything (e.g., 'Who should I start?', 'Why is Semenyo projected so high?', 'Should I roll my transfer?')...")
-    if user_q:
-        st.session_state["ai_messages"].append({"role": "user", "content": user_q})
-        with st.chat_message("user"):
-            st.markdown(user_q)
-        with st.chat_message("assistant"):
-            with st.spinner("Gemini 3.8 Flash is researching Premier League data and analyzing your squad..."):
-                reply = call_gemini_conversational_advisor(user_q)
-                st.markdown(reply)
-        st.session_state["ai_messages"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-# =========================================================
-# TAB 5: DEDICATED SETTINGS & LIVE CONNECTION VALIDATOR
-# =========================================================
-with tab_settings:
-    auth_ok = auth_diag.get("authenticated", False)
-    status_badge_html = (
-        "<span class='kpi-delta delta-up'>AUTHENTICATED (/api/my-team/ 200 OK)</span>"
-        if auth_ok else
-        f"<span class='kpi-delta delta-down'>PUBLIC FALLBACK (HTTP {auth_diag.get('status_code') or 'N/A'})</span>"
-    )
-
-    render_html(f"""
-    <div class="dossier-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
-        <div>
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#FFF;">LIVE CONNECTION & COOKIE DIAGNOSTIC VALIDATOR</h3>
-          <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary);">
-            Verifies your private FPL session (`FPL_COOKIE` / `FPL_BEARER_TOKEN` / cURL) and displays the exact Captaincy & Bank returned by FPL's server.
-          </p>
-        </div>
-        {status_badge_html}
-      </div>
-      <div class="stat-grid-4">
-        <div class="stat-box">
-          <div class="stat-box-lbl">Auth Protocol Used</div>
-          <div class="stat-box-val" style="font-size:13px;">{auth_diag.get('method_used', 'None')}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">API Returned Captain</div>
-          <div class="stat-box-val" style="color:#00FF85;">{api_official_cap_name} (C)</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">API Returned Vice-Cap</div>
-          <div class="stat-box-val" style="color:#06B6D4;">{api_official_vc_name} (V)</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-box-lbl">Manual Sim Override</div>
-          <div class="stat-box-val" style="font-size:13px; color:{'#FBBF24' if cap_override else '#94A3B8'};">
-            {'ACTIVE (Tap Sync to Reset)' if cap_override or vc_override else 'NONE (Using Live API)'}
-          </div>
-        </div>
-      </div>
-      <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 14px; font-size:12px; color:#E2E8F0; margin-top:8px;">
-        <strong>Diagnostic Status:</strong> {auth_diag.get('message')}
-      </div>
-    </div>
-    """)
-
-    set_col1, set_col2 = st.columns(2, gap="medium")
-
-    with set_col1:
-        render_html("""
-        <div class="dossier-card" style="padding:16px 20px;">
-          <h4 style="margin:0 0 6px 0; color:#FFF;">Target Mini-League & Team ID</h4>
-          <p style="margin:0; font-size:12px; color:var(--text-secondary);">
-            Select the primary mini-league that drives all rival block/differential badges and AI strategy.
-          </p>
-        </div>
-        """)
-        if classic_leagues:
-            lg_options = {lg["id"]: f"{lg['name']} (Current Rank: #{lg.get('entry_rank', '?')})" for lg in classic_leagues}
-            cur_lg = st.session_state.get("target_lg_id", classic_leagues[0]["id"])
-            new_lg = st.selectbox(
-                "Default Target Mini-League:",
-                options=list(lg_options.keys()),
-                format_func=lambda x: lg_options[x],
-                index=list(lg_options.keys()).index(cur_lg) if cur_lg in lg_options else 0
-            )
-            if new_lg != cur_lg:
-                st.session_state["target_lg_id"] = new_lg
-                st.query_params["lg_id"] = str(new_lg)
-                st.rerun()
-
-        new_tid = st.number_input("FPL Entry / Team ID:", value=int(team_id), step=1)
-        if st.button("Update Team ID & Reset Overrides", use_container_width=True):
-            st.session_state["team_id"] = int(new_tid)
-            st.session_state["cap_override_id"] = None
-            st.session_state["vc_override_id"] = None
-            st.query_params["team_id"] = str(new_tid)
-            st.cache_data.clear()
-            st.session_state["sync_nonce"] += 1
-            st.rerun()
-
-    with set_col2:
-        render_html("""
-        <div class="dossier-card" style="padding:16px 20px;">
-          <h4 style="margin:0 0 6px 0; color:#FFF;">Live API Credentials (Overrides / Secrets Fallback)</h4>
-          <p style="margin:0; font-size:12px; color:var(--text-secondary);">
-            Paste your `x-api-authorization` Bearer token, full `Copy as cURL` command, or Gemini API key below.
-          </p>
-        </div>
-        """)
-        with st.form("settings_creds_form"):
-            in_cookie = st.text_input(
-                "FPL Bearer Token / `Copy as cURL` / Cookie (`FPL_COOKIE`):",
-                value=fpl_cookie_val,
-                type="password",
-                help="Paste the 'Bearer eyJ...' token from x-api-authorization OR right-click '1153921/' in DevTools -> Copy -> Copy as cURL."
-            )
-            in_gem = st.text_input(
-                "Gemini API Key (`GEMINI_API_KEY`):",
-                value=st.session_state.get("custom_gemini_key") or st.secrets.get("GEMINI_API_KEY", ""),
-                type="password"
-            )
-            in_email = st.text_input("FPL Email (Optional fallback):", value=fpl_email_val)
-            in_pass = st.text_input("FPL Password (Optional fallback):", value=fpl_pass_val, type="password")
-
-            if st.form_submit_button("Save Credentials, Test Connection & Reset Captaincy", use_container_width=True):
-                st.session_state["custom_fpl_cookie"] = in_cookie.strip()
-                st.session_state["custom_gemini_key"] = in_gem.strip()
-                st.session_state["custom_fpl_email"] = in_email.strip()
-                st.session_state["custom_fpl_password"] = in_pass
-                st.session_state["cap_override_id"] = None
-                st.session_state["vc_override_id"] = None
-                st.cache_data.clear()
-                st.session_state["sync_nonce"] += 1
-                st.session_state["last_synced_str"] = datetime.now(ZoneInfo("America/New_York")).strftime("%I:%M:%S %p EDT")
-                st.rerun()
+4. When the user asks 'who should I start?' or 'bench', compare their 15 squad members' GW{upcoming_gw} fixtures, FDR, form, and xP, recommend the exact Starting XI (in a valid FPL formation: 1 GK,
