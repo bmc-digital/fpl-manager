@@ -1156,7 +1156,7 @@ pb_a_lesson = (
     f"Highest 5-GW expected scoring path ({hit_1m_note}). {safe_get(pb_a_target, 'web_name')} combines strong form ({safe_get(pb_a_target, 'form')}) "
     f"with an upcoming 5-GW fixture difficulty of {safe_get(pb_a_target, 'avg_5_fdr')} vs {safe_get(primary_sell, 'web_name')}'s {safe_get(primary_sell, 'avg_5_fdr')}."
 )
-pb_c_hit_ pen = max(0, 2 - ft_remaining_now) * -4
+pb_c_hit_pen = max(0, 2 - ft_remaining_now) * -4
 pb_c_lesson = (
     f"Restructures two squad spots ({pb_c_hit_pen}p hit) to unlock premium ceiling ({safe_get(pb_c_target, 'web_name')}). "
     f"Pays off when the incoming premium becomes a captaincy option and outscores the outgoing pair within 2-3 GWs."
