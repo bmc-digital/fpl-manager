@@ -1818,7 +1818,7 @@ with tab_league:
         st.info("No classic mini-leagues found.")
 
 # =========================================================
-# TAB 4: GEMINI CONVERSATIONAL AI ADVISOR (WITH 4-TILE RIBBON & QUICK ACTIONS)
+# TAB 4: GEMINI CONVERSATIONAL AI ADVISOR
 # =========================================================
 with tab_ai:
     render_html([
@@ -1844,7 +1844,7 @@ with tab_ai:
             }
         ]
 
-def ask_gemini_advisor(q_str: str) -> str:
+    def ask_gemini_advisor(q_str: str) -> str:
         if not active_gemini_key:
             return "⚠️ **Gemini API Key Missing:** Please add `GEMINI_API_KEY` in the **Settings** tab or your Streamlit Cloud Secrets."
 
