@@ -1844,33 +1844,98 @@ with tab_ai:
             }
         ]
 
-    def ask_gemini_advisor(q_str: str) -> str:
+def ask_gemini_advisor(q_str: str) -> str:
         if not active_gemini_key:
-            return "Please add `GEMINI_API_KEY` in the Settings tab or Streamlit Secrets."
-        xi_summary = ", ".join(f"{safe_get(p, 'web_name')} ({safe_get(p, 'xp_next')}xP)" for p in starting_xi)
-        bench_summary = ", ".join(f"{safe_get(p, 'web_name')} ({safe_get(p, 'xp_next')}xP)" for p in bench_xi)
-        sys_p = (
-            f"You are the Elite FPL Tactical Coach for Barney's Kings County FC. Upcoming: GW{upcoming_gw}. "
-            f"Free Transfers: {ft_remaining_now} FT (if 0 FT, remind him any move costs -4 pts). Bank: £{bank_now:.1f}m. "
-            f"Target League: {target_league_name} (Rank #{my_league_rank}, Gap: {gap_to_leader} pts). "
-            f"Starting XI: {xi_summary}. Bench: {bench_summary}. Provide concrete, numbers-backed advice."
+            return "⚠️ **Gemini API Key Missing:** Please add `GEMINI_API_KEY` in the **Settings** tab or your Streamlit Cloud Secrets."
+
+        xi_summary = ", ".join(
+            f"{safe_get(p, 'web_name')} ({safe_get(p, 'team_short')}, £{float(safe_get(p, 'selling_price', 5.0)):.1f}m, {safe_get(p, 'xp_next')}xP, 5GW:{safe_get(p, 'xp_5gw')}xP)"
+            for p in starting_xi
         )
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={active_gemini_key}"
-        payload = {
-            "system_instruction": {"parts": [{"text": sys_p}]},
-            "contents": [{"role": "user", "parts": [{"text": q_str}]}],
-            "tools": [{"google_search": {}}],
-        }
+        bench_summary = ", ".join(
+            f"{safe_get(p, 'web_name')} ({safe_get(p, 'team_short')}, £{float(safe_get(p, 'selling_price', 5.0)):.1f}m, {safe_get(p, 'xp_next')}xP)"
+            for p in bench_xi
+        )
+        top_targets = sorted(
+            [p for p in elements_map.values() if safe_get(p, "id") not in squad_ids and safe_get(p, "element_type") != 1],
+            key=lambda x: float(safe_get(x, "xp_5gw", 0.0)),
+            reverse=True,
+        )[:20]
+        market_summary = ", ".join(
+            f"{safe_get(p, 'web_name')} ({safe_get(p, 'team_short')}, £{float(safe_get(p, 'now_cost', 50)) / 10.0:.1f}m, {safe_get(p, 'xp_next')}xP, 5GW:{safe_get(p, 'xp_5gw')}xP)"
+            for p in top_targets
+        )
+
+        sys_p = (
+            f"You are the Elite FPL Tactical Coach for Barney's Kings County FC. Upcoming Gameweek: GW{upcoming_gw}. "
+            f"Free Transfers: {ft_remaining_now} FT (if 0 FT, any transfer costs a -4 pt hit). Bank: £{bank_now:.1f}m. "
+            f"Target Mini-League: {target_league_name} (Rank #{my_league_rank}, Gap to 1st: {gap_to_leader} pts). "
+            f"Active Captain: {cap_web_name} (V: {vc_web_name}). "
+            f"Starting XI: {xi_summary}. Bench: {bench_summary}. "
+            f"Top Unowned Market Targets: {market_summary}. "
+            f"Provide direct, numbers-backed FPL strategy and explain the underlying rationale."
+        )
+
+        contents_payload = []
+        for m in st.session_state.get("ai_messages", [])[-8:]:
+            r_role = "user" if safe_get(m, "role") == "user" else "model"
+            txt = str(safe_get(m, "content", "")).strip()
+            if not txt or (not contents_payload and r_role == "model"):
+                continue
+            if contents_payload and contents_payload[-1]["role"] == r_role:
+                contents_payload[-1]["parts"][0]["text"] += "\n\n" + txt
+            else:
+                contents_payload.append({"role": r_role, "parts": [{"text": txt}]})
+
+        if not contents_payload or contents_payload[-1]["role"] != "user":
+            contents_payload.append({"role": "user", "parts": [{"text": q_str}]})
+
+        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-pro"]
         try:
-            r = requests.post(url, json=payload, timeout=22)
-            if r.status_code != 200:
-                payload.pop("tools", None)
-                r = requests.post(url, json=payload, timeout=22)
-            cands = safe_get(r.json(), "candidates", []) if r.status_code == 200 else []
-            parts = safe_get(safe_get(cands[0], "content", {}), "parts", []) if cands else []
-            return "\n".join(str(safe_get(pt, "text", "")) for pt in parts) or "No response returned."
-        except Exception as e:
-            return f"Connection error: {e}"
+            r_mod = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={active_gemini_key}", timeout=6)
+            if r_mod.status_code == 200:
+                found = [
+                    str(safe_get(m, "name", "")).replace("models/", "")
+                    for m in safe_get(r_mod.json(), "models", [])
+                    if "generateContent" in safe_get(m, "supportedGenerationMethods", [])
+                    and "gemini" in str(safe_get(m, "name", ""))
+                    and "embedding" not in str(safe_get(m, "name", ""))
+                ]
+                flash_list = [m for m in found if "flash" in m] + [m for m in found if "pro" in m]
+                if flash_list:
+                    models_to_try = flash_list[:4]
+        except Exception:
+            pass
+
+        last_err = "Unknown API error"
+        for m_name in models_to_try:
+            for use_search in (True, False):
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={active_gemini_key}"
+                payload = {
+                    "system_instruction": {"parts": [{"text": sys_p}]},
+                    "contents": contents_payload,
+                    "generationConfig": {"temperature": 0.4, "maxOutputTokens": 2048},
+                }
+                if use_search:
+                    payload["tools"] = [{"google_search": {}}]
+
+                try:
+                    r = requests.post(url, json=payload, timeout=25)
+                    if r.status_code == 200:
+                        resp_json = r.json()
+                        cands = safe_get(resp_json, "candidates", [])
+                        if cands:
+                            parts = safe_get(safe_get(cands[0], "content", {}), "parts", [])
+                            out_text = "\n".join(str(safe_get(pt, "text", "")) for pt in parts if safe_get(pt, "text")).strip()
+                            if out_text:
+                                return out_text
+                    else:
+                        err_info = safe_get(r.json(), "error", {}) if r.text else {}
+                        last_err = f"HTTP {r.status_code} ({m_name}): {safe_get(err_info, 'message', r.text[:160])}"
+                except Exception as ex:
+                    last_err = f"{m_name} error: {ex}"
+
+        return f"⚠️ **Gemini API Error:** {last_err}"
 
     qa1, qa2, qa3, qa4 = st.columns(4)
     if qa1.button("Who Should I Start & Bench?", use_container_width=True):
