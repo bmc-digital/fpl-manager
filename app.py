@@ -1,38 +1,3 @@
-Based on the `image_30c800.png` screenshot you provided, the error is a **`NameError: name 'calibration_note' is not defined`**.
-
-This happened because when I aggressively compressed the script in a previous turn to prevent copy-paste truncation, I accidentally deleted the single line of code that defined the `calibration_note` text for the Executive Debrief section.
-
-Here is the exact **1-line fix** to drop into your editor, followed by the complete, fully repaired script.
-
-### Option 1: The 5-Second Surgical Fix (Recommended)
-
-Find **Section 7 (HISTORICAL LEARNING & XP CALCULATOR)** in your `app.py` (around line 434).
-Directly underneath the `w_xgi = ...` line, paste this single line of code:
-
-```python
-calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form * 100)}% | xGI Multiplier {w_xgi}x"
-
-```
-
-So that block looks exactly like this:
-
-```python
-top_actual = sorted(elements_map.values(), key=lambda x: live_pts_map.get(safe_get(x, "id"), 0), reverse=True)[:25]
-w_form = 0.58 if (sum(float(safe_get(p, "form", 0.0) or 0.0) for p in top_actual) / 25.0) >= 5.0 else 0.46
-w_xgi = 4.4 if (sum(float(safe_get(p, "expected_goal_involvements", 0.0) or 0.0) for p in top_actual) / 25.0) >= 2.2 else 3.8
-calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form * 100)}% | xGI Multiplier {w_xgi}x"
-
-```
-
----
-
-### Option 2: The Complete Corrected `app.py`
-
-If you prefer to copy and overwrite the entire file, here is the complete, fully verified script with the missing `calibration_note` restored.
-
-*(Note: Click the copy icon in the top right of the code block and paste it starting from line 1. Do not use the "with tab_ai" partial replacement from the previous message).*
-
-```python
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
 Production Architecture | Glassmorphism Facelift | Advanced Captaincy & Playbook Strategy
@@ -1148,5 +1113,3 @@ with tab_settings:
             st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
             st.session_state["last_synced_str"] = now_ny_str()
             st.rerun()
-
-```
