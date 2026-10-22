@@ -229,7 +229,7 @@ CSS_LINES = [
     ".dossier-top { display: flex; align-items: center; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-glass); margin-bottom: 12px; }",
     ".dossier-avatar-circle { width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0; background-color: #070B12; background-size: cover, cover, 82% 82%; background-position: top center, top center, center center; background-repeat: no-repeat; border: 3px solid #00FF85; }",
     ".runway-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }",
-    ".playbook-card { background: linear-gradient(160deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%); backdrop-filter: blur(16px); border: 1.5px solid var(--border-glass); border-radius: 16px; padding: 16px; margin-bottom: 14px; }",
+    ".playbook-card { background: linear-gradient(160deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%); backdrop-filter: blur(16px); border: 1.5px solid var(--border-glass); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); position: relative; z-index: 1; }",
     ".playbook-card.active-pb { border: 2px solid #00FF85; box-shadow: 0 0 24px rgba(0, 255, 133, 0.25); }",
     ".verdict-banner { background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(15, 23, 42, 0.6) 100%); backdrop-filter: blur(12px); border: 1.5px solid rgba(0, 255, 133, 0.4); border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; }",
     
@@ -606,7 +606,7 @@ def get_cap_score(p):
     fdr_mult = 1.2 if fdr <= 2 else (0.8 if fdr >= 4 else 1.0)
     return (xp * 0.5) + (xgi * 2.5 * fdr_mult) + (pr * 0.2)
 
-cap_cands = sorted([p for p in sxi if int(p.get("chance_of_playing_next_round", 100)) >= 75], key=get_cap_score, reverse=True) or sxi
+cap_cands = sorted([p for p in sxi if (100 if p.get("chance_of_playing_next_round") is None else int(p.get("chance_of_playing_next_round"))) >= 75], key=get_cap_score, reverse=True) or sxi
 opt_cap = cap_cands[0] if cap_cands else {}
 cap_alert_str = f"✅ <strong>CAPTAIN OPTIMIZED:</strong> {cap_name} is mathematically your strongest armband choice." if safe_get(opt_cap, "id") == safe_get(act_cap, "id") else f"⚠️ <strong>CAPTAINCY ALERT:</strong> You captained {cap_name}, but data heavily favors <strong>{safe_get(opt_cap, 'web_name')}</strong> (Higher xGI/FDR ceiling)."
 
@@ -645,7 +645,7 @@ if cls_lgs:
 sq_ids = {p["id"] for p in full if "id" in p}
 s_ranks = []
 for p in full:
-    cv = int(p.get("chance_of_playing_next_round", 100) or 100)
+    cv = 100 if p.get("chance_of_playing_next_round") is None else int(p.get("chance_of_playing_next_round"))
     pc = float(safe_get(p, "now_cost", 50)) / 10.0
     urg = ((100 - cv) * 2.0 if cv < 75 else 0) + (40.0 if int(safe_get(p, "minutes", 90)) < 45 else 0) + (25.0 if float(safe_get(p, "expected_goal_involvements", 0.0)) < 0.5 and float(safe_get(p, "avg_5_fdr", 3.0)) >= 3.5 else 0)
     if pc >= 9.0 and cv == 100: urg -= 150.0 # Protect healthy premiums
@@ -662,7 +662,8 @@ def get_strat_buys(pos, max_b, avoid=None):
     av = avoid or set()
     cands = []
     for c in elements_map.values():
-        if safe_get(c, "id") in sq_ids or safe_get(c, "id") in av or safe_get(c, "element_type") != pos or (float(safe_get(c, "now_cost", 999)) / 10.0) > max_b or int(c.get("chance_of_playing_next_round", 100) or 100) < 75: continue
+        cv = 100 if c.get("chance_of_playing_next_round") is None else int(c.get("chance_of_playing_next_round"))
+        if safe_get(c, "id") in sq_ids or safe_get(c, "id") in av or safe_get(c, "element_type") != pos or (float(safe_get(c, "now_cost", 999)) / 10.0) > max_b or cv < 75: continue
         cands.append(((float(safe_get(c, "xp_5gw", 0.0)) * 0.6) + (float(safe_get(c, "expected_goal_involvements", 0.0)) * 4.0), c))
     cands.sort(key=lambda x: x[0], reverse=True)
     return [c[1] for c in cands]
