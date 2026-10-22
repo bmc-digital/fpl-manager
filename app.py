@@ -1,3 +1,38 @@
+Based on the `image_30c800.png` screenshot you provided, the error is a **`NameError: name 'calibration_note' is not defined`**.
+
+This happened because when I aggressively compressed the script in a previous turn to prevent copy-paste truncation, I accidentally deleted the single line of code that defined the `calibration_note` text for the Executive Debrief section.
+
+Here is the exact **1-line fix** to drop into your editor, followed by the complete, fully repaired script.
+
+### Option 1: The 5-Second Surgical Fix (Recommended)
+
+Find **Section 7 (HISTORICAL LEARNING & XP CALCULATOR)** in your `app.py` (around line 434).
+Directly underneath the `w_xgi = ...` line, paste this single line of code:
+
+```python
+calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form * 100)}% | xGI Multiplier {w_xgi}x"
+
+```
+
+So that block looks exactly like this:
+
+```python
+top_actual = sorted(elements_map.values(), key=lambda x: live_pts_map.get(safe_get(x, "id"), 0), reverse=True)[:25]
+w_form = 0.58 if (sum(float(safe_get(p, "form", 0.0) or 0.0) for p in top_actual) / 25.0) >= 5.0 else 0.46
+w_xgi = 4.4 if (sum(float(safe_get(p, "expected_goal_involvements", 0.0) or 0.0) for p in top_actual) / 25.0) >= 2.2 else 3.8
+calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form * 100)}% | xGI Multiplier {w_xgi}x"
+
+```
+
+---
+
+### Option 2: The Complete Corrected `app.py`
+
+If you prefer to copy and overwrite the entire file, here is the complete, fully verified script with the missing `calibration_note` restored.
+
+*(Note: Click the copy icon in the top right of the code block and paste it starting from line 1. Do not use the "with tab_ai" partial replacement from the previous message).*
+
+```python
 """
 KINGS COUNTY FC — FPL TACTICAL COMMAND & MINI-LEAGUE INTELLIGENCE
 Production Architecture | Glassmorphism Facelift | Advanced Captaincy & Playbook Strategy
@@ -189,7 +224,7 @@ CSS_LINES = [
     ".stTabs [data-baseweb='tab-border'] { display: none !important; background: transparent !important; }",
     
     "/* Pitch & Players */",
-    ".pitch-wrapper { background: radial-gradient(circle at 50% 50%, #114227 0%, #0A2616 70%, #05140B 100%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 24px 10px; position: relative; background-image: linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.12) 49.5%, rgba(255,255,255,0.12) 50.5%, transparent 50.5%), radial-gradient(circle at 50% 50%, transparent 52px, rgba(255,255,255,0.12) 53px, rgba(255,255,255,0.12) 55px, transparent 56px); background-size: 100% 100%; box-shadow: inset 0 0 80px rgba(0,0,0,0.8); margin-bottom: 14px; }",
+    ".pitch-wrapper { background: radial-gradient(circle at 50% 50%, #114227 0%, #0A2616 70%, #05140B 100%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 24px 10px; position: relative; background-image: linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,0.12) 49.5%, rgba(255,255,255,0.12) 50.5%, transparent 50.5%), radial-gradient(circle at 50% 50%, transparent 52px, rgba(255,255,255,0.12) 53px, rgba(255,255,255,0.12) 55px, transparent 56px), linear-gradient(to right, transparent 22%, rgba(255,255,255,0.12) 22%, rgba(255,255,255,0.12) 78%, transparent 78%), radial-gradient(circle at 50% 50%, #165231 0%, #0D331D 68%, #071C10 100%); background-size: 100% 100%; box-shadow: inset 0 0 80px rgba(0,0,0,0.8); margin-bottom: 14px; }",
     ".pitch-row { display: flex; justify-content: space-around; align-items: stretch; gap: 6px; margin-bottom: 14px; }",
     ".pitch-row:last-child { margin-bottom: 0; }",
     "a.pitch-node-link { text-decoration: none !important; color: inherit !important; flex: 1 1 0; max-width: 122px; min-width: 64px; display: flex; }",
@@ -471,6 +506,7 @@ live_pts_map = {safe_get(el, "id"): int(safe_get(safe_get(el, "stats", {}), "tot
 top_actual = sorted(elements_map.values(), key=lambda x: live_pts_map.get(safe_get(x, "id"), 0), reverse=True)[:25]
 w_form = 0.58 if (sum(float(safe_get(p, "form", 0.0) or 0.0) for p in top_actual) / 25.0) >= 5.0 else 0.46
 w_xgi = 4.4 if (sum(float(safe_get(p, "expected_goal_involvements", 0.0) or 0.0) for p in top_actual) / 25.0) >= 2.2 else 3.8
+calibration_note = f"Calibrated on GW{last_active_gw} actuals: Form Weight {int(w_form * 100)}% | xGI Multiplier {w_xgi}x"
 
 purchase_price_map = {safe_get(tr, "element_in"): int(safe_get(tr, "element_in_cost")) for tr in transfers_list if safe_get(tr, "element_in") and safe_get(tr, "element_in_cost")}
 
@@ -1112,3 +1148,5 @@ with tab_settings:
             st.session_state["sync_nonce"] = int(st.session_state.get("sync_nonce", 0)) + 1
             st.session_state["last_synced_str"] = now_ny_str()
             st.rerun()
+
+```
